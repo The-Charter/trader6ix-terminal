@@ -28,20 +28,20 @@ export default function PerpsPage() {
       </div>
 
       <div className="grid flex-1 grid-cols-1 gap-px bg-zinc-800 lg:grid-cols-[1fr_280px_320px]">
-        <div className="flex flex-col bg-zinc-950">
-          <div className="h-[360px] p-3">
+        <div className="order-1 flex flex-col bg-zinc-950 lg:order-none">
+          <div className="h-[280px] p-3 sm:h-[360px]">
             <CandlestickChart symbol={symbol} />
           </div>
-          <div className="flex-1 border-t border-zinc-800">
+          <div className="border-t border-zinc-800">
             <PositionsPanel />
           </div>
         </div>
 
-        <div className="bg-zinc-950">
+        <div className="order-3 bg-zinc-950 lg:order-none">
           <OrderbookPanel symbol={symbol} />
         </div>
 
-        <div className="bg-zinc-950">
+        <div className="order-2 bg-zinc-950 lg:order-none">
           <TradeTicket symbol={symbol} contractId={contractId} kind="perps" />
         </div>
       </div>

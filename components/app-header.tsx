@@ -14,8 +14,8 @@ export function AppHeader() {
   ];
 
   return (
-    <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-      <div className="flex items-center gap-6">
+    <header className="flex items-center justify-between border-b border-zinc-800 px-3 py-3 sm:px-4">
+      <div className="flex items-center gap-3 sm:gap-6">
         <Link href="/" className="font-semibold tracking-tight">
           Charter
         </Link>
@@ -24,7 +24,7 @@ export function AppHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+              className={`rounded-md px-2 py-1.5 text-sm font-medium sm:px-3 ${
                 pathname?.startsWith(item.href) ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
@@ -32,19 +32,20 @@ export function AppHeader() {
             </Link>
           ))}
         </nav>
-        <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-amber-300">
+        <span className="hidden rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-amber-300 sm:inline-block">
           Testnet
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <a
           href={FAUCET_URL}
           target="_blank"
           rel="noreferrer"
-          className="rounded-md border border-zinc-800 px-3 py-2 text-sm text-zinc-300 hover:border-zinc-600"
+          className="rounded-md border border-zinc-800 px-2 py-2 text-xs text-zinc-300 hover:border-zinc-600 sm:px-3 sm:text-sm"
         >
-          Faucet ↗
+          <span className="sm:hidden">Faucet</span>
+          <span className="hidden sm:inline">Faucet ↗</span>
         </a>
         <WalletStatus />
       </div>

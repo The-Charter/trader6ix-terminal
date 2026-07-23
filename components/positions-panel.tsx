@@ -4,6 +4,45 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useAccount } from "@/lib/hooks";
 import { useState } from "react";
 
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function DataTable({ rows }: { rows: unknown[] }) {
+  if (rows.length === 0) return null;
+  const allPlain = rows.every(isPlainObject);
+  if (!allPlain) {
+    return <pre className="overflow-x-auto font-mono text-xs text-zinc-300">{JSON.stringify(rows, null, 2)}</pre>;
+  }
+  const columns = Array.from(new Set(rows.flatMap((r) => Object.keys(r as Record<string, unknown>))));
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-xs">
+        <thead>
+          <tr className="text-zinc-500">
+            {columns.map((c) => (
+              <th key={c} className="whitespace-nowrap px-2 py-1 font-normal">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="font-mono text-zinc-200">
+          {rows.map((row, i) => (
+            <tr key={i} className="border-t border-zinc-900">
+              {columns.map((c) => (
+                <td key={c} className="whitespace-nowrap px-2 py-1">
+                  {String((row as Record<string, unknown>)[c] ?? "—")}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function PositionsPanel() {
   const { authenticated } = usePrivy();
   const { data, loading, error } = useAccount(authenticated);
@@ -40,17 +79,9 @@ export function PositionsPanel() {
 
       <div className="p-4 text-sm">
         {tab === "positions" &&
-          (positions.length === 0 ? (
-            <p className="text-zinc-500">No open positions.</p>
-          ) : (
-            <pre className="overflow-x-auto font-mono text-xs text-zinc-300">{JSON.stringify(positions, null, 2)}</pre>
-          ))}
+          (positions.length === 0 ? <p className="text-zinc-500">No open positions.</p> : <DataTable rows={positions} />)}
         {tab === "orders" &&
-          (orders.length === 0 ? (
-            <p className="text-zinc-500">No open orders.</p>
-          ) : (
-            <pre className="overflow-x-auto font-mono text-xs text-zinc-300">{JSON.stringify(orders, null, 2)}</pre>
-          ))}
+          (orders.length === 0 ? <p className="text-zinc-500">No open orders.</p> : <DataTable rows={orders} />)}
       </div>
     </div>
   );

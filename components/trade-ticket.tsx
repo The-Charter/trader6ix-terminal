@@ -20,10 +20,14 @@ export function TradeTicket({
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
 
-  const disabled = !authenticated || !symbol || contractId === null || submitting;
+  const quantityNum = parseFloat(quantity);
+  const priceNum = parseFloat(price);
+  const quantityValid = quantity.trim() !== "" && Number.isFinite(quantityNum) && quantityNum > 0;
+  const priceValid = orderType === "market" || (price.trim() !== "" && Number.isFinite(priceNum) && priceNum > 0);
+  const canSubmit = authenticated && symbol && contractId !== null && !submitting && quantityValid && priceValid;
 
   async function handleSubmit() {
-    if (!symbol || contractId === null) return;
+    if (!symbol || contractId === null || !quantityValid || !priceValid) return;
     setSubmitting(true);
     setResult(null);
     try {
@@ -83,7 +87,10 @@ export function TradeTicket({
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="0.00"
-            className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-cyan-400"
+            inputMode="decimal"
+            className={`rounded-md border bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-cyan-400 ${
+              price && !priceValid ? "border-red-500/50" : "border-zinc-800"
+            }`}
           />
         </label>
       )}
@@ -94,7 +101,10 @@ export function TradeTicket({
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           placeholder="0.00"
-          className="rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-cyan-400"
+          inputMode="decimal"
+          className={`rounded-md border bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-cyan-400 ${
+            quantity && !quantityValid ? "border-red-500/50" : "border-zinc-800"
+          }`}
         />
       </label>
 
@@ -108,7 +118,7 @@ export function TradeTicket({
       ) : (
         <button
           onClick={handleSubmit}
-          disabled={disabled || !quantity}
+          disabled={!canSubmit}
           className={`rounded-md py-2.5 text-sm font-semibold text-zinc-950 disabled:opacity-40 ${
             side === "BID" ? "bg-bull hover:bg-bull/90" : "bg-bear hover:bg-bear/90"
           }`}
