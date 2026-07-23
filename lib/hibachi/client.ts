@@ -93,8 +93,13 @@ export interface HibachiContract {
   status: "LIVE" | "DELISTED" | string;
 }
 
+export interface ExchangeInfo {
+  futureContracts: HibachiContract[];
+  maintenanceWindow?: { begin: number; end: number; note?: string }[];
+}
+
 export function getExchangeInfo() {
-  return hibachiFetch<{ contracts: HibachiContract[] }>("/market/exchange-info");
+  return hibachiFetch<ExchangeInfo>("/market/exchange-info");
 }
 
 export function getOrderbook(symbol: string, depth = 25) {

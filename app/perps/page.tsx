@@ -15,7 +15,7 @@ export default function PerpsPage() {
   const { data } = useExchangeInfo();
 
   const contractId = useMemo(() => {
-    return data?.contracts.find((c) => c.symbol === symbol)?.id ?? null;
+    return data?.futureContracts.find((c) => c.symbol === symbol)?.id ?? null;
   }, [data, symbol]);
 
   return (

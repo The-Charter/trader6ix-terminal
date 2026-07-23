@@ -18,8 +18,9 @@ export function MarketSelector({
   const { data, loading, error } = useExchangeInfo();
 
   const markets = useMemo(() => {
-    if (!data) return TARGET_MARKETS.map((m) => ({ ...m, symbol: kind === "spot" ? m.spotSymbol : m.perpSymbol, isLive: false }));
-    return reconcileMarkets(data.contracts, kind);
+    if (!data?.futureContracts)
+      return TARGET_MARKETS.map((m) => ({ ...m, symbol: kind === "spot" ? m.spotSymbol : m.perpSymbol, isLive: false }));
+    return reconcileMarkets(data.futureContracts, kind);
   }, [data, kind]);
 
   const current = markets.find((m) => m.symbol === selected) ?? markets[0];

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { HibachiContract } from "@/lib/hibachi/client";
+import type { ExchangeInfo } from "@/lib/hibachi/client";
 
 interface FetchState<T> {
   data: T | null;
@@ -18,7 +18,7 @@ function useInterval(callback: () => void, delayMs: number | null) {
 }
 
 export function useExchangeInfo() {
-  const [state, setState] = useState<FetchState<{ contracts: HibachiContract[] }>>({
+  const [state, setState] = useState<FetchState<ExchangeInfo>>({
     data: null,
     loading: true,
     error: null,

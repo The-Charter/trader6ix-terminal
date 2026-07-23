@@ -28,6 +28,11 @@ export function marketLabel(m: MarketDef) {
 /**
  * Cross-references our target market list against Hibachi's live contracts so the UI
  * never shows a market as tradable unless Hibachi actually reports it LIVE.
+ *
+ * Note: Hibachi's currently-live perps are USDT-settled (e.g. "BTC/USDT-P"), not
+ * USDC/EURC. Until Hibachi lists USDC/EURC-settled contracts, our USDC/EURC target
+ * markets will show as unavailable here — that's expected, not a bug: we only ever
+ * mark a market live if Hibachi itself reports it LIVE.
  */
 export function reconcileMarkets<T extends { symbol: string; status: string }>(
   live: T[],
