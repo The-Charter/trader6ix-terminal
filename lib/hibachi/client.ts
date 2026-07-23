@@ -61,7 +61,10 @@ async function hibachiFetch<T>(
   opts: { method?: string; body?: unknown; auth?: boolean; base?: string } = {}
 ): Promise<T> {
   const { method = "GET", body, auth = false, base = API_BASE } = opts;
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  };
 
   if (auth) {
     headers["Authorization"] = requireEnv("HIBACHI_API_KEY");
@@ -74,11 +77,27 @@ async function hibachiFetch<T>(
     cache: "no-store",
   });
 
+  const rawText = await res.text();
+
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Hibachi ${method} ${path} failed: ${res.status} ${text}`);
+    throw new Error(
+      `Hibachi ${method} ${path} failed: ${res.status} ${res.statusText} — ${rawText.slice(0, 300) || "(empty body)"}`
+    );
   }
-  return res.json() as Promise<T>;
+
+  if (!rawText) {
+    throw new Error(
+      `Hibachi ${method} ${path} returned an empty body with status ${res.status}. This usually means an upstream proxy/WAF is intercepting the request rather than Hibachi's API itself.`
+    );
+  }
+
+  try {
+    return JSON.parse(rawText) as T;
+  } catch {
+    throw new Error(
+      `Hibachi ${method} ${path} returned non-JSON content (status ${res.status}): ${rawText.slice(0, 300)}`
+    );
+  }
 }
 
 // ---- Public market data (no auth) ----
