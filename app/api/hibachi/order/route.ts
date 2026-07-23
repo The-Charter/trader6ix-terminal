@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 import { placeOrder, cancelOrder } from "@/lib/hibachi/client";
 
 export async function POST(req: NextRequest) {
