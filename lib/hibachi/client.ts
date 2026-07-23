@@ -64,6 +64,8 @@ async function hibachiFetch<T>(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (compatible; Charter/1.0; +https://charter.trading)",
+    "Origin": "https://hibachi.xyz",
   };
 
   if (auth) {
