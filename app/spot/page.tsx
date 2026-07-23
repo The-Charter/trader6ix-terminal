@@ -22,6 +22,11 @@ export default function SpotPage() {
     <div className="flex min-h-screen flex-col">
       <AppHeader />
 
+      <div className="border-b border-amber-400/20 bg-amber-400/5 px-4 py-2 text-xs text-amber-300">
+        Spot trading is not yet live on Hibachi — the Hibachi team has said it&apos;s coming soon. Markets below will
+        activate automatically once Hibachi lists them; nothing here is simulated in the meantime.
+      </div>
+
       <div className="flex items-center gap-3 border-b border-zinc-800 px-4 py-3">
         <MarketSelector kind="spot" selected={symbol} onSelect={setSymbol} />
         <span className="text-xs text-zinc-500">Spot</span>
