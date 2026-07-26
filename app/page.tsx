@@ -66,7 +66,10 @@ export default function LandingPage() {
           Arc Testnet — no real funds, no real value
         </span>
 
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">Charter</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.jpg" alt="Trader6ix" className="mb-4 h-20 w-auto rounded-lg sm:h-24" />
+
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">Trader6ix</h1>
         <p className="mt-4 max-w-xl text-lg text-zinc-400">
           Spot and perpetuals trading on Arc, powered by Hibachi&rsquo;s orderbook. Connect a wallet,
           grab testnet USDC, start trading.

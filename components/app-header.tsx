@@ -16,8 +16,9 @@ export function AppHeader() {
   return (
     <header className="flex items-center justify-between border-b border-zinc-800 px-3 py-3 sm:px-4">
       <div className="flex items-center gap-3 sm:gap-6">
-        <Link href="/" className="font-semibold tracking-tight">
-          Charter
+        <Link href="/" className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.jpg" alt="Trader6ix" className="h-8 w-auto rounded" />
         </Link>
         <nav className="flex gap-1">
           {nav.map((item) => (

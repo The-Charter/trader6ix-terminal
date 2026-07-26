@@ -3,9 +3,9 @@ import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Charter — Spot & Perps on Arc Testnet",
+  title: "Trader6ix — Spot & Perps on Arc Testnet",
   description:
-    "Charter is a testnet-only spot and perpetuals trading terminal on Arc, powered by Hibachi.",
+    "Trader6ix is a testnet-only spot and perpetuals trading terminal on Arc, powered by Hibachi.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
