@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import type { ExchangeAdapter } from "@/lib/adapters/types";
 
 export function TradeTicket({
+  adapter,
   symbol,
-  contractId,
   kind,
 }: {
+  adapter: ExchangeAdapter;
   symbol: string | null;
-  contractId: number | null;
   kind: "spot" | "perps";
 }) {
-  const { authenticated, login } = usePrivy();
-  const [side, setSide] = useState<"BID" | "ASK">("BID");
+  const { authenticated, login, user } = usePrivy();
+  const walletAddress = user?.wallet?.address ?? null;
+  const [side, setSide] = useState<"buy" | "sell">("buy");
   const [orderType, setOrderType] = useState<"market" | "limit">("limit");
   const [price, setPrice] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -24,27 +26,18 @@ export function TradeTicket({
   const priceNum = parseFloat(price);
   const quantityValid = quantity.trim() !== "" && Number.isFinite(quantityNum) && quantityNum > 0;
   const priceValid = orderType === "market" || (price.trim() !== "" && Number.isFinite(priceNum) && priceNum > 0);
-  const canSubmit = authenticated && symbol && contractId !== null && !submitting && quantityValid && priceValid;
+  const canSubmit = authenticated && !!symbol && !!walletAddress && !submitting && quantityValid && priceValid;
 
   async function handleSubmit() {
-    if (!symbol || contractId === null || !quantityValid || !priceValid) return;
+    if (!symbol || !walletAddress || !quantityValid || !priceValid) return;
     setSubmitting(true);
     setResult(null);
     try {
-      const res = await fetch("/api/hibachi/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          symbol,
-          contractId,
-          side,
-          quantity,
-          price: orderType === "limit" ? price : undefined,
-          maxFeesPercent: 0.2,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Order failed");
+      const res = await adapter.placeOrder(
+        { symbol, side, quantity, price: orderType === "limit" ? price : undefined },
+        walletAddress
+      );
+      if (!res.ok) throw new Error(res.error ?? "Order failed");
       setResult({ ok: true, message: "Order submitted." });
       setQuantity("");
     } catch (err) {
@@ -58,14 +51,14 @@ export function TradeTicket({
     <div className="flex flex-col gap-3 p-4">
       <div className="grid grid-cols-2 gap-1 rounded-md bg-zinc-900 p-1">
         <button
-          onClick={() => setSide("BID")}
-          className={`rounded py-1.5 text-sm font-medium ${side === "BID" ? "bg-bull/20 text-bull" : "text-zinc-400"}`}
+          onClick={() => setSide("buy")}
+          className={`rounded py-1.5 text-sm font-medium ${side === "buy" ? "bg-bull/20 text-bull" : "text-zinc-400"}`}
         >
           Buy
         </button>
         <button
-          onClick={() => setSide("ASK")}
-          className={`rounded py-1.5 text-sm font-medium ${side === "ASK" ? "bg-bear/20 text-bear" : "text-zinc-400"}`}
+          onClick={() => setSide("sell")}
+          className={`rounded py-1.5 text-sm font-medium ${side === "sell" ? "bg-bear/20 text-bear" : "text-zinc-400"}`}
         >
           Sell
         </button>
@@ -120,22 +113,20 @@ export function TradeTicket({
           onClick={handleSubmit}
           disabled={!canSubmit}
           className={`rounded-md py-2.5 text-sm font-semibold text-zinc-950 disabled:opacity-40 ${
-            side === "BID" ? "bg-bull hover:bg-bull/90" : "bg-bear hover:bg-bear/90"
+            side === "buy" ? "bg-bull hover:bg-bull/90" : "bg-bear hover:bg-bear/90"
           }`}
         >
-          {submitting ? "Submitting…" : `${side === "BID" ? "Buy" : "Sell"} ${symbol ?? ""}`}
+          {submitting ? "Submitting…" : `${side === "buy" ? "Buy" : "Sell"} ${symbol ?? ""}`}
         </button>
       )}
 
-      {result && (
-        <p className={`text-xs ${result.ok ? "text-bull" : "text-red-400"}`}>{result.message}</p>
-      )}
+      {result && <p className={`text-xs ${result.ok ? "text-bull" : "text-red-400"}`}>{result.message}</p>}
 
-      {kind === "perps" && (
-        <p className="text-[11px] text-zinc-500">
-          Perpetual contract — positions accrue funding and are subject to liquidation. Testnet only.
-        </p>
-      )}
+      <p className="text-[11px] text-zinc-500">
+        Routed via {adapter.displayName}
+        {kind === "perps" && " — perpetual contract. Positions accrue funding and are subject to liquidation."} Testnet
+        only.
+      </p>
     </div>
   );
 }

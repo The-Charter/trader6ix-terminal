@@ -1,47 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import type { ExchangeAdapter } from "@/lib/adapters/types";
 import { useKlines } from "@/lib/hooks";
 
-interface Candle {
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
-
-/**
- * Hibachi's kline response shape isn't pinned down without a live API key to test
- * against, so this normalizer accepts the common variants (array-of-arrays like
- * Binance, or array-of-objects) rather than assuming one exact shape.
- */
-function normalizeKlines(raw: unknown): Candle[] {
-  if (!raw) return [];
-  const arr = Array.isArray(raw) ? raw : (raw as { klines?: unknown[] }).klines;
-  if (!Array.isArray(arr)) return [];
-
-  return arr
-    .map((k): Candle | null => {
-      if (Array.isArray(k)) {
-        const [, open, high, low, close] = k;
-        return { open: Number(open), high: Number(high), low: Number(low), close: Number(close) };
-      }
-      if (k && typeof k === "object") {
-        const c = k as Record<string, unknown>;
-        const open = Number(c.open ?? c.o);
-        const high = Number(c.high ?? c.h);
-        const low = Number(c.low ?? c.l);
-        const close = Number(c.close ?? c.c);
-        if ([open, high, low, close].every((n) => !Number.isNaN(n))) return { open, high, low, close };
-      }
-      return null;
-    })
-    .filter((c): c is Candle => c !== null);
-}
-
-export function CandlestickChart({ symbol }: { symbol: string | null }) {
-  const { data, loading, error } = useKlines(symbol);
-  const candles = useMemo(() => normalizeKlines(data), [data]);
+export function CandlestickChart({ adapter, symbol }: { adapter: ExchangeAdapter; symbol: string | null }) {
+  const { data: candles, loading, error } = useKlines(adapter, symbol);
 
   if (!symbol) {
     return <div className="flex h-full items-center justify-center text-sm text-zinc-500">Select a market to view its chart.</div>;
@@ -49,10 +12,10 @@ export function CandlestickChart({ symbol }: { symbol: string | null }) {
   if (error) {
     return <div className="flex h-full items-center justify-center text-sm text-red-400">Chart unavailable — {error}</div>;
   }
-  if (loading && candles.length === 0) {
-    return <div className="flex h-full items-center justify-center text-sm text-zinc-500">Loading chart…</div>;
+  if (loading && (!candles || candles.length === 0)) {
+    return <div className="flex h-full items-center justify-center text-sm text-zinc-500">Loading chart from {adapter.displayName}…</div>;
   }
-  if (candles.length === 0) {
+  if (!candles || candles.length === 0) {
     return <div className="flex h-full items-center justify-center text-sm text-zinc-500">No trade history yet for this market.</div>;
   }
 

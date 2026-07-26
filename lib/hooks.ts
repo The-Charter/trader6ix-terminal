@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { ExchangeInfo } from "@/lib/hibachi/client";
+import type { ExchangeAdapter, AdapterMarket, AdapterOrderbook, AdapterCandle, AdapterPosition, AdapterOrder } from "@/lib/adapters/types";
 
 interface FetchState<T> {
   data: T | null;
@@ -17,25 +17,20 @@ function useInterval(callback: () => void, delayMs: number | null) {
   }, [callback, delayMs]);
 }
 
-export function useExchangeInfo() {
-  const [state, setState] = useState<FetchState<ExchangeInfo>>({
-    data: null,
-    loading: true,
-    error: null,
-  });
+export function useMarkets(adapter: ExchangeAdapter, kind: "spot" | "perps") {
+  const [state, setState] = useState<FetchState<AdapterMarket[]>>({ data: null, loading: true, error: null });
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/hibachi/exchange-info");
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to load exchange info");
-      setState({ data: json, loading: false, error: null });
+      const data = await adapter.getMarkets(kind);
+      setState({ data, loading: false, error: null });
     } catch (err) {
       setState({ data: null, loading: false, error: err instanceof Error ? err.message : "Unknown error" });
     }
-  }, []);
+  }, [adapter, kind]);
 
   useEffect(() => {
+    setState((s) => ({ ...s, loading: true }));
     fetchData();
   }, [fetchData]);
   useInterval(fetchData, 30000);
@@ -43,22 +38,18 @@ export function useExchangeInfo() {
   return state;
 }
 
-export function useOrderbook(symbol: string | null) {
-  const [state, setState] = useState<FetchState<{ bids: [string, string][]; asks: [string, string][] }>>(
-    { data: null, loading: true, error: null }
-  );
+export function useOrderbook(adapter: ExchangeAdapter, symbol: string | null) {
+  const [state, setState] = useState<FetchState<AdapterOrderbook>>({ data: null, loading: true, error: null });
 
   const fetchData = useCallback(async () => {
     if (!symbol) return;
     try {
-      const res = await fetch(`/api/hibachi/orderbook?symbol=${encodeURIComponent(symbol)}`);
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to load orderbook");
-      setState({ data: json, loading: false, error: null });
+      const data = await adapter.getOrderbook(symbol);
+      setState({ data, loading: false, error: null });
     } catch (err) {
       setState({ data: null, loading: false, error: err instanceof Error ? err.message : "Unknown error" });
     }
-  }, [symbol]);
+  }, [adapter, symbol]);
 
   useEffect(() => {
     setState((s) => ({ ...s, loading: true }));
@@ -69,22 +60,18 @@ export function useOrderbook(symbol: string | null) {
   return state;
 }
 
-export function useKlines(symbol: string | null, interval = "5m") {
-  const [state, setState] = useState<FetchState<unknown>>({ data: null, loading: true, error: null });
+export function useKlines(adapter: ExchangeAdapter, symbol: string | null, interval = "5m") {
+  const [state, setState] = useState<FetchState<AdapterCandle[]>>({ data: null, loading: true, error: null });
 
   const fetchData = useCallback(async () => {
     if (!symbol) return;
     try {
-      const res = await fetch(
-        `/api/hibachi/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}`
-      );
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to load chart data");
-      setState({ data: json, loading: false, error: null });
+      const data = await adapter.getKlines(symbol, interval);
+      setState({ data, loading: false, error: null });
     } catch (err) {
       setState({ data: null, loading: false, error: err instanceof Error ? err.message : "Unknown error" });
     }
-  }, [symbol, interval]);
+  }, [adapter, symbol, interval]);
 
   useEffect(() => {
     setState((s) => ({ ...s, loading: true }));
@@ -95,20 +82,25 @@ export function useKlines(symbol: string | null, interval = "5m") {
   return state;
 }
 
-export function useAccount(enabled: boolean) {
-  const [state, setState] = useState<FetchState<unknown>>({ data: null, loading: enabled, error: null });
+export function useAccount(adapter: ExchangeAdapter, walletAddress: string | null) {
+  const [state, setState] = useState<FetchState<{ positions: AdapterPosition[]; orders: AdapterOrder[] }>>({
+    data: null,
+    loading: !!walletAddress,
+    error: null,
+  });
 
   const fetchData = useCallback(async () => {
-    if (!enabled) return;
+    if (!walletAddress) return;
     try {
-      const res = await fetch("/api/hibachi/account");
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to load account");
-      setState({ data: json, loading: false, error: null });
+      const [positions, orders] = await Promise.all([
+        adapter.getPositions(walletAddress),
+        adapter.getOpenOrders(walletAddress),
+      ]);
+      setState({ data: { positions, orders }, loading: false, error: null });
     } catch (err) {
       setState({ data: null, loading: false, error: err instanceof Error ? err.message : "Unknown error" });
     }
-  }, [enabled]);
+  }, [adapter, walletAddress]);
 
   useEffect(() => {
     fetchData();

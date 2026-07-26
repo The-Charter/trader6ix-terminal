@@ -1,6 +1,7 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
+import type { ExchangeAdapter } from "@/lib/adapters/types";
 import { useAccount } from "@/lib/hooks";
 import { useState } from "react";
 
@@ -43,9 +44,10 @@ function DataTable({ rows }: { rows: unknown[] }) {
   );
 }
 
-export function PositionsPanel() {
-  const { authenticated } = usePrivy();
-  const { data, loading, error } = useAccount(authenticated);
+export function PositionsPanel({ adapter }: { adapter: ExchangeAdapter }) {
+  const { authenticated, user } = usePrivy();
+  const walletAddress = user?.wallet?.address ?? null;
+  const { data, loading, error } = useAccount(adapter, authenticated ? walletAddress : null);
   const [tab, setTab] = useState<"positions" | "orders">("positions");
 
   if (!authenticated) {
@@ -55,16 +57,15 @@ export function PositionsPanel() {
   }
 
   if (error) {
-    return <div className="p-4 text-sm text-red-400">Couldn&apos;t load your account — {error}</div>;
+    return <div className="p-4 text-sm text-red-400">Couldn&apos;t load your account on {adapter.displayName} — {error}</div>;
   }
 
   if (loading && !data) {
     return <div className="p-4 text-sm text-zinc-500">Loading account…</div>;
   }
 
-  const account = (data as { account?: { positions?: unknown[] } } | null)?.account;
-  const orders = (data as { orders?: unknown[] } | null)?.orders ?? [];
-  const positions = account?.positions ?? [];
+  const positions = data?.positions ?? [];
+  const orders = data?.orders ?? [];
 
   return (
     <div className="flex flex-col">

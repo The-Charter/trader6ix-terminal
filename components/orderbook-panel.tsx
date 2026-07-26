@@ -1,5 +1,6 @@
 "use client";
 
+import type { ExchangeAdapter } from "@/lib/adapters/types";
 import { useOrderbook } from "@/lib/hooks";
 
 function Row({ price, size, side, maxSize }: { price: string; size: string; side: "bid" | "ask"; maxSize: number }) {
@@ -17,23 +18,19 @@ function Row({ price, size, side, maxSize }: { price: string; size: string; side
   );
 }
 
-export function OrderbookPanel({ symbol }: { symbol: string | null }) {
-  const { data, loading, error } = useOrderbook(symbol);
+export function OrderbookPanel({ adapter, symbol }: { adapter: ExchangeAdapter; symbol: string | null }) {
+  const { data, loading, error } = useOrderbook(adapter, symbol);
 
   if (!symbol) {
     return <div className="p-4 text-sm text-zinc-500">Select a market to view its order book.</div>;
   }
 
   if (error) {
-    return (
-      <div className="p-4 text-sm text-red-400">
-        Order book unavailable — {error}
-      </div>
-    );
+    return <div className="p-4 text-sm text-red-400">Order book unavailable — {error}</div>;
   }
 
   if (loading && !data) {
-    return <div className="p-4 text-sm text-zinc-500">Loading order book…</div>;
+    return <div className="p-4 text-sm text-zinc-500">Loading order book from {adapter.displayName}…</div>;
   }
 
   if (!data || (data.bids.length === 0 && data.asks.length === 0)) {
@@ -41,8 +38,8 @@ export function OrderbookPanel({ symbol }: { symbol: string | null }) {
   }
 
   const maxSize = Math.max(
-    ...data.bids.map(([, s]) => parseFloat(s)),
-    ...data.asks.map(([, s]) => parseFloat(s)),
+    ...data.bids.map((b) => parseFloat(b.size)),
+    ...data.asks.map((a) => parseFloat(a.size)),
     0
   );
 
@@ -53,14 +50,14 @@ export function OrderbookPanel({ symbol }: { symbol: string | null }) {
         <span>Size</span>
       </div>
       <div className="flex flex-col-reverse">
-        {data.asks.slice(0, 12).map(([price, size]) => (
-          <Row key={`a-${price}`} price={price} size={size} side="ask" maxSize={maxSize} />
+        {data.asks.slice(0, 12).map((a, i) => (
+          <Row key={`a-${i}`} price={a.price} size={a.size} side="ask" maxSize={maxSize} />
         ))}
       </div>
       <div className="my-1 border-t border-zinc-800" />
       <div>
-        {data.bids.slice(0, 12).map(([price, size]) => (
-          <Row key={`b-${price}`} price={price} size={size} side="bid" maxSize={maxSize} />
+        {data.bids.slice(0, 12).map((b, i) => (
+          <Row key={`b-${i}`} price={b.price} size={b.size} side="bid" maxSize={maxSize} />
         ))}
       </div>
     </div>
