@@ -2,16 +2,14 @@
 
 import { useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import type { ExchangeAdapter } from "@/lib/adapters/types";
+import type { PerpsAdapter } from "@/lib/adapters/perps-adapter";
 
 export function TradeTicket({
   adapter,
   symbol,
-  kind,
 }: {
-  adapter: ExchangeAdapter;
+  adapter: PerpsAdapter;
   symbol: string | null;
-  kind: "spot" | "perps";
 }) {
   const { authenticated, login, user } = usePrivy();
   const walletAddress = user?.wallet?.address ?? null;
@@ -34,7 +32,7 @@ export function TradeTicket({
     setResult(null);
     try {
       const res = await adapter.placeOrder(
-        { symbol, side, quantity, price: orderType === "limit" ? price : undefined },
+        { symbol, side, type: orderType, quantity, price: orderType === "limit" ? price : undefined },
         walletAddress
       );
       if (!res.ok) throw new Error(res.error ?? "Order failed");
@@ -123,9 +121,8 @@ export function TradeTicket({
       {result && <p className={`text-xs ${result.ok ? "text-bull" : "text-red-400"}`}>{result.message}</p>}
 
       <p className="text-[11px] text-zinc-500">
-        Routed via {adapter.displayName}
-        {kind === "perps" && " — perpetual contract. Positions accrue funding and are subject to liquidation."} Testnet
-        only.
+        Routed via {adapter.displayName} — perpetual contract. Positions accrue funding and are subject to
+        liquidation. Testnet only.
       </p>
     </div>
   );

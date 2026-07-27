@@ -2,7 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-ui: "Geist", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Dark theme (default) — matches the Trader6ix mobile design reference */
+  --bg: #000000;
+  --p1: #0d0d0d;
+  --p2: #141414;
+  --p3: #1c1c1c;
+  --bd: #2a2a2a;
+  --accent: #00d4ff;
+  --green: #22c55e;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --text: #ffffff;
+  --text2: #b0b0b0;
+  --text3: #666666;
+  --text4: #3a3a3a;
+}
+
 html,
 body {
   height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
 }

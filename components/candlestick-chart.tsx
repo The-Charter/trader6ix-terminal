@@ -1,9 +1,9 @@
 "use client";
 
-import type { ExchangeAdapter } from "@/lib/adapters/types";
+import type { PerpsAdapter } from "@/lib/adapters/perps-adapter";
 import { useKlines } from "@/lib/hooks";
 
-export function CandlestickChart({ adapter, symbol }: { adapter: ExchangeAdapter; symbol: string | null }) {
+export function CandlestickChart({ adapter, symbol }: { adapter: PerpsAdapter; symbol: string | null }) {
   const { data: candles, loading, error } = useKlines(adapter, symbol);
 
   if (!symbol) {

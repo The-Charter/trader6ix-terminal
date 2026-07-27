@@ -1,24 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import type { ExchangeAdapter } from "@/lib/adapters/types";
+import type { PerpsAdapter } from "@/lib/adapters/perps-adapter";
 import { useMarkets } from "@/lib/hooks";
 import { TokenLogo } from "@/components/token-logo";
 import type { AssetSymbol } from "@/lib/markets";
 
 export function MarketSelector({
   adapter,
-  kind,
   selected,
   onSelect,
 }: {
-  adapter: ExchangeAdapter;
-  kind: "spot" | "perps";
+  adapter: PerpsAdapter;
   selected: string;
   onSelect: (symbol: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const { data: markets, loading, error } = useMarkets(adapter, kind);
+  const { data: markets, loading, error } = useMarkets(adapter);
 
   const current = markets?.find((m) => m.symbol === selected);
 

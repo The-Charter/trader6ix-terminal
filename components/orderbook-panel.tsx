@@ -1,6 +1,6 @@
 "use client";
 
-import type { ExchangeAdapter } from "@/lib/adapters/types";
+import type { PerpsAdapter } from "@/lib/adapters/perps-adapter";
 import { useOrderbook } from "@/lib/hooks";
 
 function Row({ price, size, side, maxSize }: { price: string; size: string; side: "bid" | "ask"; maxSize: number }) {
@@ -18,7 +18,7 @@ function Row({ price, size, side, maxSize }: { price: string; size: string; side
   );
 }
 
-export function OrderbookPanel({ adapter, symbol }: { adapter: ExchangeAdapter; symbol: string | null }) {
+export function OrderbookPanel({ adapter, symbol }: { adapter: PerpsAdapter; symbol: string | null }) {
   const { data, loading, error } = useOrderbook(adapter, symbol);
 
   if (!symbol) {

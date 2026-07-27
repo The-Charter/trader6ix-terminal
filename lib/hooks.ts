@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import type { ExchangeAdapter, AdapterMarket, AdapterOrderbook, AdapterCandle, AdapterPosition, AdapterOrder } from "@/lib/adapters/types";
+import type { PerpsAdapter, PerpsMarket, PerpsPosition, PerpsOrder } from "@/lib/adapters/perps-adapter";
+import type { AdapterOrderbook, AdapterCandle } from "@/lib/adapters/shared-types";
 
 interface FetchState<T> {
   data: T | null;
@@ -17,17 +18,17 @@ function useInterval(callback: () => void, delayMs: number | null) {
   }, [callback, delayMs]);
 }
 
-export function useMarkets(adapter: ExchangeAdapter, kind: "spot" | "perps") {
-  const [state, setState] = useState<FetchState<AdapterMarket[]>>({ data: null, loading: true, error: null });
+export function useMarkets(adapter: PerpsAdapter) {
+  const [state, setState] = useState<FetchState<PerpsMarket[]>>({ data: null, loading: true, error: null });
 
   const fetchData = useCallback(async () => {
     try {
-      const data = await adapter.getMarkets(kind);
+      const data = await adapter.getMarkets();
       setState({ data, loading: false, error: null });
     } catch (err) {
       setState({ data: null, loading: false, error: err instanceof Error ? err.message : "Unknown error" });
     }
-  }, [adapter, kind]);
+  }, [adapter]);
 
   useEffect(() => {
     setState((s) => ({ ...s, loading: true }));
@@ -38,7 +39,7 @@ export function useMarkets(adapter: ExchangeAdapter, kind: "spot" | "perps") {
   return state;
 }
 
-export function useOrderbook(adapter: ExchangeAdapter, symbol: string | null) {
+export function useOrderbook(adapter: PerpsAdapter, symbol: string | null) {
   const [state, setState] = useState<FetchState<AdapterOrderbook>>({ data: null, loading: true, error: null });
 
   const fetchData = useCallback(async () => {
@@ -60,7 +61,7 @@ export function useOrderbook(adapter: ExchangeAdapter, symbol: string | null) {
   return state;
 }
 
-export function useKlines(adapter: ExchangeAdapter, symbol: string | null, interval = "5m") {
+export function useKlines(adapter: PerpsAdapter, symbol: string | null, interval = "5m") {
   const [state, setState] = useState<FetchState<AdapterCandle[]>>({ data: null, loading: true, error: null });
 
   const fetchData = useCallback(async () => {
@@ -82,8 +83,8 @@ export function useKlines(adapter: ExchangeAdapter, symbol: string | null, inter
   return state;
 }
 
-export function useAccount(adapter: ExchangeAdapter, walletAddress: string | null) {
-  const [state, setState] = useState<FetchState<{ positions: AdapterPosition[]; orders: AdapterOrder[] }>>({
+export function useAccount(adapter: PerpsAdapter, walletAddress: string | null) {
+  const [state, setState] = useState<FetchState<{ positions: PerpsPosition[]; orders: PerpsOrder[] }>>({
     data: null,
     loading: !!walletAddress,
     error: null,

@@ -1,16 +1,8 @@
-import type {
-  ExchangeAdapter,
-  AdapterMarket,
-  AdapterOrderbook,
-  AdapterCandle,
-  AdapterPosition,
-  AdapterOrder,
-  PlaceOrderInput,
-  PlaceOrderResult,
-} from "./types";
+import type { PerpsAdapter, PerpsMarket, PlacePerpsOrderInput, PerpsOrderResult, PerpsPosition, PerpsOrder } from "./perps-adapter";
+import type { AdapterCandle } from "./shared-types";
 import { TARGET_MARKETS } from "@/lib/markets";
 
-/** Best-guess normalizer for Hibachi's kline shape — see candlestick-chart.tsx for the same logic. */
+/** Best-guess normalizer for Hibachi's kline shape — flagged since unverified against a live key. */
 function normalizeKlines(raw: unknown): AdapterCandle[] {
   const arr = Array.isArray(raw) ? raw : (raw as { klines?: unknown[] })?.klines;
   if (!Array.isArray(arr)) return [];
@@ -34,13 +26,12 @@ function normalizeKlines(raw: unknown): AdapterCandle[] {
     .filter((c): c is AdapterCandle => c !== null);
 }
 
-export const hibachiAdapter: ExchangeAdapter = {
+export const hibachiAdapter: PerpsAdapter = {
   id: "hibachi",
   displayName: "Hibachi",
-  kind: "api",
-  supports: ["spot", "perps"],
+  isLive: true, // reachable, but see charter-terminal.md — currently returning empty bodies pending their team's response
 
-  async getMarkets(kind) {
+  async getMarkets(): Promise<PerpsMarket[]> {
     const res = await fetch("/api/hibachi/exchange-info");
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load Hibachi markets");
@@ -51,19 +42,19 @@ export const hibachiAdapter: ExchangeAdapter = {
         .map((c: { symbol: string }) => c.symbol)
     );
 
-    const out: AdapterMarket[] = TARGET_MARKETS.map((m) => {
-      const symbol = kind === "spot" ? m.spotSymbol : m.perpSymbol;
-      return { symbol, base: m.base, quote: m.quote, kind, isLive: live.has(symbol) };
-    });
-    return out;
+    return TARGET_MARKETS.map((m) => ({
+      symbol: m.perpSymbol,
+      base: m.base,
+      quote: m.quote,
+      isLive: live.has(m.perpSymbol),
+    }));
   },
 
   async getOrderbook(symbol) {
     const res = await fetch(`/api/hibachi/orderbook?symbol=${encodeURIComponent(symbol)}`);
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load orderbook");
-    const toLevels = (rows: [string, string][]): AdapterOrderbook["bids"] =>
-      rows.map(([price, size]) => ({ price, size }));
+    const toLevels = (rows: [string, string][]) => rows.map(([price, size]) => ({ price, size }));
     return { bids: toLevels(json.bids ?? []), asks: toLevels(json.asks ?? []) };
   },
 
@@ -74,7 +65,7 @@ export const hibachiAdapter: ExchangeAdapter = {
     return normalizeKlines(json);
   },
 
-  async getPositions(): Promise<AdapterPosition[]> {
+  async getPositions(): Promise<PerpsPosition[]> {
     const res = await fetch("/api/hibachi/account");
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load account");
@@ -88,7 +79,7 @@ export const hibachiAdapter: ExchangeAdapter = {
     }));
   },
 
-  async getOpenOrders(): Promise<AdapterOrder[]> {
+  async getOpenOrders(): Promise<PerpsOrder[]> {
     const res = await fetch("/api/hibachi/account");
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load account");
@@ -97,15 +88,14 @@ export const hibachiAdapter: ExchangeAdapter = {
       id: String(o.orderId ?? o.id ?? ""),
       symbol: String(o.symbol ?? ""),
       side: o.side === "BID" ? "buy" : "sell",
+      type: o.price !== undefined ? "limit" : "market",
       price: o.price !== undefined ? String(o.price) : undefined,
       quantity: String(o.quantity ?? "0"),
       status: String(o.status ?? "open"),
     }));
   },
 
-  async placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
-    // contractId must be resolved from a live getMarkets() call by the caller;
-    // the Hibachi route accepts it directly since it needs the numeric contract id.
+  async placeOrder(input: PlacePerpsOrderInput): Promise<PerpsOrderResult> {
     const res = await fetch("/api/hibachi/order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -122,7 +112,7 @@ export const hibachiAdapter: ExchangeAdapter = {
     return { ok: true, orderId: json.orderId };
   },
 
-  async cancelOrder(orderId: string): Promise<PlaceOrderResult> {
+  async cancelOrder(orderId: string): Promise<PerpsOrderResult> {
     const res = await fetch(`/api/hibachi/order?orderId=${encodeURIComponent(orderId)}`, { method: "DELETE" });
     const json = await res.json();
     if (!res.ok) return { ok: false, error: json.error ?? "Cancel failed" };

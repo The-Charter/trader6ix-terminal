@@ -1,0 +1,8 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = []
+solc_version = "0.8.24"
+
+[rpc_endpoints]
+arc_testnet = "${ARC_TESTNET_RPC_URL}"

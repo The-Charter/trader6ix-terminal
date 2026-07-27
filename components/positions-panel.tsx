@@ -1,7 +1,7 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import type { ExchangeAdapter } from "@/lib/adapters/types";
+import type { PerpsAdapter } from "@/lib/adapters/perps-adapter";
 import { useAccount } from "@/lib/hooks";
 import { useState } from "react";
 
@@ -44,7 +44,7 @@ function DataTable({ rows }: { rows: unknown[] }) {
   );
 }
 
-export function PositionsPanel({ adapter }: { adapter: ExchangeAdapter }) {
+export function PositionsPanel({ adapter }: { adapter: PerpsAdapter }) {
   const { authenticated, user } = usePrivy();
   const walletAddress = user?.wallet?.address ?? null;
   const { data, loading, error } = useAccount(adapter, authenticated ? walletAddress : null);
