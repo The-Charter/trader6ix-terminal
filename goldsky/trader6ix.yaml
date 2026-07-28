@@ -1,0 +1,38 @@
+# Goldsky "instant subgraph" config — no custom AssemblyScript mappings needed,
+# Goldsky auto-generates entities from the ABI events listed below.
+#
+# Contract addresses are the CONFIRMED official ones from docs.arc.io/arc/references/contract-addresses:
+#   USDC: 0x3600000000000000000000000000000000000000
+#   EURC: 0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a
+#
+# ⚠️ ONE THING TO VERIFY BEFORE DEPLOYING: the `chain` value below is a
+# best-guess ("arc-testnet"). Goldsky's docs confirm they index Arc, but I
+# couldn't pull their exact internal chain-slug from here. Confirm it in one
+# of two ways before running `goldsky subgraph deploy`:
+#   1. Run `goldsky subgraph init` interactively — it'll show you a picker
+#      of supported chains; find Arc's exact listed name there, or
+#   2. Check https://docs.goldsky.com/chains/arc directly in your browser.
+# Then fix the `chain:` lines below to match exactly — everything else here
+# is confirmed-correct and doesn't need changes.
+#
+# Deploy with:
+#   goldsky login
+#   goldsky subgraph deploy trader6ix-arc-tokens/1.0.0 --from-abi trader6ix.yaml
+
+version: "1"
+name: "Transfer"
+
+abis:
+  ERC20:
+    path: ./abis/erc20.json
+
+instances:
+  - abi: ERC20
+    address: "0x3600000000000000000000000000000000000000" # USDC
+    chain: arc-testnet # ⚠️ verify — see note above
+    startBlock: 0 # TODO: set to USDC contract's actual deploy block once known, to avoid a full-history backfill
+
+  - abi: ERC20
+    address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" # EURC
+    chain: arc-testnet # ⚠️ verify — see note above
+    startBlock: 0 # TODO: same as above
