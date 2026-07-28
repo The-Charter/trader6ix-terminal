@@ -19,27 +19,27 @@ export default function PerpsPage() {
     <div className="flex min-h-screen flex-col">
       <AppHeader />
 
-      <div className="flex flex-wrap items-center gap-3 border-b border-zinc-800 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
         <VenueSelector adapters={PERPS_ADAPTERS} selectedId={adapterId} onSelect={setAdapterId} />
         <MarketSelector adapter={adapter} selected={symbol} onSelect={setSymbol} />
-        <span className="text-xs text-zinc-500">Perpetual</span>
+        <span className="text-xs text-ink-3">Perpetual</span>
       </div>
 
-      <div className="grid flex-1 grid-cols-1 gap-px bg-zinc-800 lg:grid-cols-[1fr_280px_320px]">
-        <div className="order-1 flex flex-col bg-zinc-950 lg:order-none">
+      <div className="grid flex-1 grid-cols-1 gap-px bg-surface-2 lg:grid-cols-[1fr_280px_320px]">
+        <div className="order-1 flex flex-col bg-surface-0 lg:order-none">
           <div className="h-[280px] p-3 sm:h-[360px]">
             <CandlestickChart adapter={adapter} symbol={symbol || null} />
           </div>
-          <div className="border-t border-zinc-800">
+          <div className="border-t border-border">
             <PositionsPanel adapter={adapter} />
           </div>
         </div>
 
-        <div className="order-3 bg-zinc-950 lg:order-none">
+        <div className="order-3 bg-surface-0 lg:order-none">
           <OrderbookPanel adapter={adapter} symbol={symbol || null} />
         </div>
 
-        <div className="order-2 bg-zinc-950 lg:order-none">
+        <div className="order-2 bg-surface-0 lg:order-none">
           <TradeTicket adapter={adapter} symbol={symbol || null} />
         </div>
       </div>

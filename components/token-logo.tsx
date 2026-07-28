@@ -51,8 +51,8 @@ export function MarketLogos({
 }) {
   return (
     <span className="relative inline-flex" style={{ width: size * 1.5, height: size }}>
-      <TokenLogo symbol={base} size={size} className="absolute left-0 z-10 ring-2 ring-zinc-950" />
-      <TokenLogo symbol={quote} size={size} className="absolute left-[40%] ring-2 ring-zinc-950" />
+      <TokenLogo symbol={base} size={size} className="absolute left-0 z-10 ring-2 ring-surface-0" />
+      <TokenLogo symbol={quote} size={size} className="absolute left-[40%] ring-2 ring-surface-0" />
     </span>
   );
 }

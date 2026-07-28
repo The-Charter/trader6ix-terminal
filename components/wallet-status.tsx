@@ -11,14 +11,14 @@ export function WalletStatus() {
   const address = user?.wallet?.address;
 
   if (!ready) {
-    return <div className="h-9 w-32 animate-pulse rounded-md bg-zinc-800" />;
+    return <div className="h-9 w-32 animate-pulse rounded-md bg-surface-2" />;
   }
 
   if (!authenticated) {
     return (
       <button
         onClick={login}
-        className="rounded-md bg-cyan-400 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-cyan-300"
+        className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-zinc-950 hover:opacity-90"
       >
         Connect Wallet
       </button>
@@ -28,7 +28,7 @@ export function WalletStatus() {
   return (
     <button
       onClick={logout}
-      className="flex items-center gap-2 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm font-mono text-zinc-200 hover:border-zinc-600"
+      className="flex items-center gap-2 rounded-md border border-border bg-surface-1 px-3 py-2 text-sm font-mono text-ink hover:border-ink-2"
       title="Click to disconnect"
     >
       <span className="h-2 w-2 rounded-full bg-bull" />

@@ -13,7 +13,7 @@ function Row({ price, size, side, maxSize }: { price: string; size: string; side
         style={{ width: `${widthPct}%` }}
       />
       <span className={side === "bid" ? "text-bull" : "text-bear"}>{price}</span>
-      <span className="text-zinc-400">{size}</span>
+      <span className="text-ink-2">{size}</span>
     </div>
   );
 }
@@ -22,19 +22,19 @@ export function OrderbookPanel({ adapter, symbol }: { adapter: PerpsAdapter; sym
   const { data, loading, error } = useOrderbook(adapter, symbol);
 
   if (!symbol) {
-    return <div className="p-4 text-sm text-zinc-500">Select a market to view its order book.</div>;
+    return <div className="p-4 text-sm text-ink-3">Select a market to view its order book.</div>;
   }
 
   if (error) {
-    return <div className="p-4 text-sm text-red-400">Order book unavailable — {error}</div>;
+    return <div className="p-4 text-sm text-bear">Order book unavailable — {error}</div>;
   }
 
   if (loading && !data) {
-    return <div className="p-4 text-sm text-zinc-500">Loading order book from {adapter.displayName}…</div>;
+    return <div className="p-4 text-sm text-ink-3">Loading order book from {adapter.displayName}…</div>;
   }
 
   if (!data || (data.bids.length === 0 && data.asks.length === 0)) {
-    return <div className="p-4 text-sm text-zinc-500">No open orders on this market right now.</div>;
+    return <div className="p-4 text-sm text-ink-3">No open orders on this market right now.</div>;
   }
 
   const maxSize = Math.max(
@@ -45,7 +45,7 @@ export function OrderbookPanel({ adapter, symbol }: { adapter: PerpsAdapter; sym
 
   return (
     <div className="flex flex-col text-xs">
-      <div className="flex justify-between px-3 py-1 text-zinc-500">
+      <div className="flex justify-between px-3 py-1 text-ink-3">
         <span>Price</span>
         <span>Size</span>
       </div>
@@ -54,7 +54,7 @@ export function OrderbookPanel({ adapter, symbol }: { adapter: PerpsAdapter; sym
           <Row key={`a-${i}`} price={a.price} size={a.size} side="ask" maxSize={maxSize} />
         ))}
       </div>
-      <div className="my-1 border-t border-zinc-800" />
+      <div className="my-1 border-t border-border" />
       <div>
         {data.bids.slice(0, 12).map((b, i) => (
           <Row key={`b-${i}`} price={b.price} size={b.size} side="bid" maxSize={maxSize} />

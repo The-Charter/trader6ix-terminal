@@ -18,7 +18,7 @@ export function VenueSelector({
   if (adapters.length <= 1) {
     const only = adapters[0];
     return (
-      <span className="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-400">
+      <span className="rounded-md border border-border bg-surface-1 px-3 py-2 text-sm text-ink-2">
         Venue: {only?.displayName ?? "None connected"}
       </span>
     );
@@ -28,7 +28,7 @@ export function VenueSelector({
     <select
       value={selectedId}
       onChange={(e) => onSelect(e.target.value)}
-      className="rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-200"
+      className="rounded-md border border-border bg-surface-1 px-3 py-2 text-sm text-ink"
     >
       {adapters.map((a) => (
         <option key={a.id} value={a.id}>

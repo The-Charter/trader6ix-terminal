@@ -7,16 +7,16 @@ export function CandlestickChart({ adapter, symbol }: { adapter: PerpsAdapter; s
   const { data: candles, loading, error } = useKlines(adapter, symbol);
 
   if (!symbol) {
-    return <div className="flex h-full items-center justify-center text-sm text-zinc-500">Select a market to view its chart.</div>;
+    return <div className="flex h-full items-center justify-center text-sm text-ink-3">Select a market to view its chart.</div>;
   }
   if (error) {
-    return <div className="flex h-full items-center justify-center text-sm text-red-400">Chart unavailable — {error}</div>;
+    return <div className="flex h-full items-center justify-center text-sm text-bear">Chart unavailable — {error}</div>;
   }
   if (loading && (!candles || candles.length === 0)) {
-    return <div className="flex h-full items-center justify-center text-sm text-zinc-500">Loading chart from {adapter.displayName}…</div>;
+    return <div className="flex h-full items-center justify-center text-sm text-ink-3">Loading chart from {adapter.displayName}…</div>;
   }
   if (!candles || candles.length === 0) {
-    return <div className="flex h-full items-center justify-center text-sm text-zinc-500">No trade history yet for this market.</div>;
+    return <div className="flex h-full items-center justify-center text-sm text-ink-3">No trade history yet for this market.</div>;
   }
 
   const min = Math.min(...candles.map((c) => c.low));

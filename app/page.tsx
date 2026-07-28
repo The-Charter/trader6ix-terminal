@@ -56,13 +56,13 @@ export default function LandingPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 grid grid-cols-2 text-cyan-400">
+      <div className="pointer-events-none absolute inset-0 grid grid-cols-2 text-accent">
         <CandlestickWatermark />
         <OrderbookWatermark />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 pt-24 text-center">
-        <span className="mb-4 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-mono uppercase tracking-wide text-amber-300">
+        <span className="mb-4 rounded-full border border-warn/40 bg-warn/10 px-3 py-1 text-xs font-mono uppercase tracking-wide text-warn">
           Arc Testnet — no real funds, no real value
         </span>
 
@@ -70,7 +70,7 @@ export default function LandingPage() {
         <img src="/logo.jpg" alt="Trader6ix" className="mb-4 h-20 w-auto rounded-lg sm:h-24" />
 
         <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">Trader6ix</h1>
-        <p className="mt-4 max-w-xl text-lg text-zinc-400">
+        <p className="mt-4 max-w-xl text-lg text-ink-2">
           Spot and perpetuals trading on Arc, powered by Hibachi&rsquo;s orderbook. Connect a wallet,
           grab testnet USDC, start trading.
         </p>
@@ -79,7 +79,7 @@ export default function LandingPage() {
           <button
             onClick={login}
             disabled={!ready || authenticated}
-            className="rounded-lg bg-cyan-400 px-6 py-3 font-medium text-zinc-950 transition hover:bg-cyan-300 disabled:opacity-60"
+            className="rounded-lg bg-accent px-6 py-3 font-medium text-zinc-950 transition hover:opacity-90 disabled:opacity-60"
           >
             {authenticated ? "Wallet Connected" : "Connect Wallet"}
           </button>
@@ -88,7 +88,7 @@ export default function LandingPage() {
             href={FAUCET_URL}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg border border-zinc-700 px-6 py-3 font-medium text-zinc-200 transition hover:border-zinc-500"
+            className="rounded-lg border border-ink-3 px-6 py-3 font-medium text-ink transition hover:border-ink-2"
           >
             Get Testnet USDC ↗
           </a>
@@ -97,13 +97,13 @@ export default function LandingPage() {
         <div className="mt-10 flex gap-3">
           <Link
             href="/spot"
-            className="rounded-md border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-600"
+            className="rounded-md border border-border bg-surface-1 px-4 py-2 text-sm font-medium text-ink hover:border-ink-2"
           >
             Trade Spot →
           </Link>
           <Link
             href="/perps"
-            className="rounded-md border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-600"
+            className="rounded-md border border-border bg-surface-1 px-4 py-2 text-sm font-medium text-ink hover:border-ink-2"
           >
             Trade Perps →
           </Link>

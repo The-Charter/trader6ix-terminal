@@ -47,54 +47,54 @@ export function TradeTicket({
 
   return (
     <div className="flex flex-col gap-3 p-4">
-      <div className="grid grid-cols-2 gap-1 rounded-md bg-zinc-900 p-1">
+      <div className="grid grid-cols-2 gap-1 rounded-md bg-surface-1 p-1">
         <button
           onClick={() => setSide("buy")}
-          className={`rounded py-1.5 text-sm font-medium ${side === "buy" ? "bg-bull/20 text-bull" : "text-zinc-400"}`}
+          className={`rounded py-1.5 text-sm font-medium ${side === "buy" ? "bg-bull/20 text-bull" : "text-ink-2"}`}
         >
           Buy
         </button>
         <button
           onClick={() => setSide("sell")}
-          className={`rounded py-1.5 text-sm font-medium ${side === "sell" ? "bg-bear/20 text-bear" : "text-zinc-400"}`}
+          className={`rounded py-1.5 text-sm font-medium ${side === "sell" ? "bg-bear/20 text-bear" : "text-ink-2"}`}
         >
           Sell
         </button>
       </div>
 
-      <div className="flex gap-3 text-xs text-zinc-400">
-        <button onClick={() => setOrderType("limit")} className={orderType === "limit" ? "text-zinc-100" : ""}>
+      <div className="flex gap-3 text-xs text-ink-2">
+        <button onClick={() => setOrderType("limit")} className={orderType === "limit" ? "text-ink" : ""}>
           Limit
         </button>
-        <button onClick={() => setOrderType("market")} className={orderType === "market" ? "text-zinc-100" : ""}>
+        <button onClick={() => setOrderType("market")} className={orderType === "market" ? "text-ink" : ""}>
           Market
         </button>
       </div>
 
       {orderType === "limit" && (
-        <label className="flex flex-col gap-1 text-xs text-zinc-500">
+        <label className="flex flex-col gap-1 text-xs text-ink-3">
           Price
           <input
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             placeholder="0.00"
             inputMode="decimal"
-            className={`rounded-md border bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-cyan-400 ${
-              price && !priceValid ? "border-red-500/50" : "border-zinc-800"
+            className={`rounded-md border bg-surface-0 px-3 py-2 font-mono text-sm text-ink outline-none focus:border-accent ${
+              price && !priceValid ? "border-bear/50" : "border-border"
             }`}
           />
         </label>
       )}
 
-      <label className="flex flex-col gap-1 text-xs text-zinc-500">
+      <label className="flex flex-col gap-1 text-xs text-ink-3">
         Quantity
         <input
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           placeholder="0.00"
           inputMode="decimal"
-          className={`rounded-md border bg-zinc-950 px-3 py-2 font-mono text-sm text-zinc-100 outline-none focus:border-cyan-400 ${
-            quantity && !quantityValid ? "border-red-500/50" : "border-zinc-800"
+          className={`rounded-md border bg-surface-0 px-3 py-2 font-mono text-sm text-ink outline-none focus:border-accent ${
+            quantity && !quantityValid ? "border-bear/50" : "border-border"
           }`}
         />
       </label>
@@ -102,7 +102,7 @@ export function TradeTicket({
       {!authenticated ? (
         <button
           onClick={login}
-          className="rounded-md bg-cyan-400 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-cyan-300"
+          className="rounded-md bg-accent py-2.5 text-sm font-semibold text-zinc-950 hover:opacity-90"
         >
           Connect Wallet to Trade
         </button>
@@ -118,9 +118,9 @@ export function TradeTicket({
         </button>
       )}
 
-      {result && <p className={`text-xs ${result.ok ? "text-bull" : "text-red-400"}`}>{result.message}</p>}
+      {result && <p className={`text-xs ${result.ok ? "text-bull" : "text-bear"}`}>{result.message}</p>}
 
-      <p className="text-[11px] text-zinc-500">
+      <p className="text-[11px] text-ink-3">
         Routed via {adapter.displayName} — perpetual contract. Positions accrue funding and are subject to
         liquidation. Testnet only.
       </p>
