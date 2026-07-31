@@ -8,15 +8,24 @@ import { stableFxAdapter } from "./stablefx-adapter";
 import { curveAdapter } from "./curve-adapter";
 import { goldskyDataAdapter } from "./goldsky-data-adapter";
 
+import { mockPerpsAdapter } from "./mock/mock-perps-adapter";
+import { mockSpotAdapter } from "./mock/mock-spot-adapter";
+import { mockFxAdapter } from "./mock/mock-fx-adapter";
+
 /**
- * The single place every venue in Trader6ix gets registered, organized by
- * the four adapter domains. Adding a new venue: write its adapter file
- * (implementing PerpsAdapter/FXAdapter/SpotAdapter/DataAdapter), add it to
- * the matching array below — nothing else in the app changes.
+ * DEMO_MODE controls which concrete adapter powers each category. In demo
+ * mode, the UI runs entirely against simulated data (clearly marked as such
+ * everywhere it surfaces) so the product can be shown end-to-end even while
+ * Hibachi/Curve/StableFX are still being finalized. Flip
+ * NEXT_PUBLIC_DEMO_MODE=false once the real integrations are trustworthy —
+ * no other code changes needed, since every component only ever talks to the
+ * adapter interface, never to a specific venue.
  */
-export const PERPS_ADAPTERS: PerpsAdapter[] = [hibachiAdapter];
-export const FX_ADAPTERS: FXAdapter[] = [stableFxAdapter];
-export const SPOT_ADAPTERS: SpotAdapter[] = [curveAdapter];
+export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== "false"; // defaults to true
+
+export const PERPS_ADAPTERS: PerpsAdapter[] = DEMO_MODE ? [mockPerpsAdapter, hibachiAdapter] : [hibachiAdapter];
+export const FX_ADAPTERS: FXAdapter[] = DEMO_MODE ? [mockFxAdapter, stableFxAdapter] : [stableFxAdapter];
+export const SPOT_ADAPTERS: SpotAdapter[] = DEMO_MODE ? [mockSpotAdapter, curveAdapter] : [curveAdapter];
 export const DATA_ADAPTERS: DataAdapter[] = [goldskyDataAdapter];
 
 export function getPerpsAdapter(id: string) {

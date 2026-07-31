@@ -52,7 +52,13 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
     try {
       const res = await adapter.swap({ base: "EURC", quote: "USDC", side, amount }, walletAddress);
       if (!res.ok) throw new Error(res.error ?? "Swap failed");
-      setResult({ ok: true, message: `Swap submitted — tx ${res.txHash?.slice(0, 10)}…` });
+      const isDemo = adapter.id.startsWith("mock-");
+      setResult({
+        ok: true,
+        message: isDemo
+          ? "Demo transaction — no real funds were moved."
+          : `Swap submitted — tx ${res.txHash?.slice(0, 10)}…`,
+      });
       setAmount("");
       setQuote(null);
     } catch (err) {
