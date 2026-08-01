@@ -13,21 +13,25 @@ export function AppHeader() {
     { href: "/spot", label: "Spot" },
     { href: "/perps", label: "Perps" },
     { href: "/fx", label: "FX" },
+    { href: "/portfolio", label: "Portfolio" },
+    { href: "/history", label: "History" },
+    { href: "/watchlist", label: "Watchlist" },
+    { href: "/alerts", label: "Alerts" },
   ];
 
   return (
     <header className="flex items-center justify-between border-b border-border px-3 py-3 sm:px-4">
-      <div className="flex items-center gap-3 sm:gap-6">
-        <Link href="/" className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-6">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.jpg" alt="Trader6ix" className="h-8 w-auto rounded" />
         </Link>
-        <nav className="flex gap-1">
+        <nav className="flex min-w-0 gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {nav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-md px-2 py-1.5 text-sm font-medium sm:px-3 ${
+              className={`shrink-0 rounded-md px-2 py-1.5 text-sm font-medium sm:px-3 ${
                 pathname?.startsWith(item.href) ? "bg-surface-2 text-ink" : "text-ink-2 hover:text-ink"
               }`}
             >
@@ -35,7 +39,7 @@ export function AppHeader() {
             </Link>
           ))}
         </nav>
-        <span className="hidden rounded-full border border-warn/40 bg-warn/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-warn sm:inline-block">
+        <span className="hidden shrink-0 rounded-full border border-warn/40 bg-warn/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-warn sm:inline-block">
           Testnet
         </span>
         {DEMO_MODE && (

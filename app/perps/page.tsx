@@ -9,6 +9,7 @@ import { CandlestickChart } from "@/components/candlestick-chart";
 import { TradeTicket } from "@/components/trade-ticket";
 import { PositionsPanel } from "@/components/positions-panel";
 import { PERPS_ADAPTERS, DEFAULT_PERPS_ADAPTER_ID, getPerpsAdapter } from "@/lib/adapters/registry";
+import { AIInsightPanel } from "@/components/ai-insight-panel";
 
 export default function PerpsPage() {
   const [adapterId, setAdapterId] = useState(DEFAULT_PERPS_ADAPTER_ID);
@@ -39,8 +40,13 @@ export default function PerpsPage() {
           <OrderbookPanel adapter={adapter} symbol={symbol || null} />
         </div>
 
-        <div className="order-2 bg-surface-0 lg:order-none">
+        <div className="order-2 flex flex-col gap-3 bg-surface-0 p-3 lg:order-none lg:p-0">
           <TradeTicket adapter={adapter} symbol={symbol || null} />
+          {symbol && (
+            <div className="lg:px-0">
+              <AIInsightPanel symbol={symbol} />
+            </div>
+          )}
         </div>
       </div>
     </div>

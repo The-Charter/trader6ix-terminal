@@ -11,6 +11,7 @@ import { goldskyDataAdapter } from "./goldsky-data-adapter";
 import { mockPerpsAdapter } from "./mock/mock-perps-adapter";
 import { mockSpotAdapter } from "./mock/mock-spot-adapter";
 import { mockFxAdapter } from "./mock/mock-fx-adapter";
+import { mockDataAdapter } from "./mock/mock-data-adapter";
 
 /**
  * DEMO_MODE controls which concrete adapter powers each category. In demo
@@ -26,7 +27,7 @@ export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== "false"; // defau
 export const PERPS_ADAPTERS: PerpsAdapter[] = DEMO_MODE ? [mockPerpsAdapter, hibachiAdapter] : [hibachiAdapter];
 export const FX_ADAPTERS: FXAdapter[] = DEMO_MODE ? [mockFxAdapter, stableFxAdapter] : [stableFxAdapter];
 export const SPOT_ADAPTERS: SpotAdapter[] = DEMO_MODE ? [mockSpotAdapter, curveAdapter] : [curveAdapter];
-export const DATA_ADAPTERS: DataAdapter[] = [goldskyDataAdapter];
+export const DATA_ADAPTERS: DataAdapter[] = DEMO_MODE ? [mockDataAdapter, goldskyDataAdapter] : [goldskyDataAdapter];
 
 export function getPerpsAdapter(id: string) {
   return PERPS_ADAPTERS.find((a) => a.id === id);
@@ -44,3 +45,4 @@ export function getDataAdapter(id: string) {
 export const DEFAULT_PERPS_ADAPTER_ID = PERPS_ADAPTERS[0].id;
 export const DEFAULT_FX_ADAPTER_ID = FX_ADAPTERS[0].id;
 export const DEFAULT_SPOT_ADAPTER_ID = SPOT_ADAPTERS[0].id;
+export const DEFAULT_DATA_ADAPTER_ID = DATA_ADAPTERS[0].id;
