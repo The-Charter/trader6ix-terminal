@@ -2,6 +2,7 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 import Link from "next/link";
+import { MobileApp } from "@/components/mobile/MobileApp";
 
 const FAUCET_URL = process.env.NEXT_PUBLIC_FAUCET_URL ?? "https://faucet.circle.com";
 
@@ -51,7 +52,20 @@ function OrderbookWatermark() {
   );
 }
 
-export default function LandingPage() {
+export default function RootPage() {
+  return (
+    <>
+      <div className="hidden lg:block">
+        <DesktopLanding />
+      </div>
+      <div className="lg:hidden">
+        <MobileApp />
+      </div>
+    </>
+  );
+}
+
+function DesktopLanding() {
   const { login, authenticated, ready } = usePrivy();
 
   return (
