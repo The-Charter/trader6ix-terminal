@@ -108,5 +108,5 @@ export function useAccount(adapter: PerpsAdapter, walletAddress: string | null) 
   }, [fetchData]);
   useInterval(fetchData, 5000);
 
-  return state;
+  return { ...state, refetch: fetchData };
 }

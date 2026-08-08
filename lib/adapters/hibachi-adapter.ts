@@ -118,4 +118,25 @@ export const hibachiAdapter: PerpsAdapter = {
     if (!res.ok) return { ok: false, error: json.error ?? "Cancel failed" };
     return { ok: true };
   },
+
+  async closePosition(symbol: string): Promise<PerpsOrderResult> {
+    // Hibachi's docs don't (as far as we've confirmed) expose a dedicated
+    // close-position endpoint — the standard way to close a perp position on
+    // venues like this is to place an opposite-side market order for the
+    // same size. We fetch the live position first rather than assume size/side.
+    const accountRes = await fetch("/api/hibachi/account");
+    const accountJson = await accountRes.json();
+    if (!accountRes.ok) return { ok: false, error: accountJson.error ?? "Failed to load position" };
+
+    const position = (accountJson.account?.positions ?? []).find((p: Record<string, unknown>) => p.symbol === symbol);
+    if (!position) return { ok: false, error: "No open position for that symbol." };
+
+    const quantity = Math.abs(Number(position.quantity ?? 0));
+    const closingSide = Number(position.quantity ?? 0) >= 0 ? "sell" : "buy";
+
+    return this.placeOrder(
+      { symbol, side: closingSide, type: "market", quantity: String(quantity) },
+      ""
+    );
+  },
 };

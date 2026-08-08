@@ -3,15 +3,19 @@ import type { SpotAdapter, SpotPool, SwapQuote, SwapQuoteInput, SwapResult } fro
 import { CURVE_POOL_ABI, ERC20_MIN_ABI } from "./curve-abi";
 
 /**
- * Curve Finance on Arc testnet. Pool address provided by the user (unverified
- * from this environment — no RPC access from the build sandbox — worth
- * confirming it's a labeled/verified Curve pool on testnet.arcscan.app before
- * trusting it with real value).
+ * Curve Finance on Arc testnet. Pool address history:
+ *   - 0xFF5Cb29241F002fFeD2eAa224e3e996D24A6E8d1 — provided by user, a real
+ *     swap attempted against it failed (CALL_EXCEPTION/missing revert data),
+ *     unconfirmed whether it's Curve or something else (possibly Tower
+ *     Exchange's router, Arc's native aggregator).
+ *   - 0x2D84D79C852f6842AbE0304b70bBaA1506AdD457 — current candidate, sourced
+ *     from a third party NOT on the Trader6ix or Curve team. Treat as
+ *     "worth testing," not "trusted" — verify independently before real value.
  *
- * Uses Curve's StableSwap-NG ABI (uint256 token indices), the current
- * implementation Curve deploys on new chains. If calls revert, this pool may
- * be a legacy StableSwap deployment using int128 indices instead — that would
- * need a small ABI swap (int128 i/j instead of uint256), not a rebuild.
+ * Curve StableSwap pools use a standard, well-documented ABI (get_dy /
+ * exchange) identical across every chain Curve is deployed on — so once we
+ * have a genuinely confirmed pool address this is a fast, low-risk
+ * integration, unlike Hibachi's undocumented behavior.
  */
 
 const POOL_ADDRESS = process.env.NEXT_PUBLIC_CURVE_USDC_EURC_POOL ?? "";

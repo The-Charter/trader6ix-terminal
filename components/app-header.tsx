@@ -17,6 +17,7 @@ export function AppHeader() {
     { href: "/history", label: "History" },
     { href: "/watchlist", label: "Watchlist" },
     { href: "/alerts", label: "Alerts" },
+    { href: "/tools", label: "Tools" },
   ];
 
   return (

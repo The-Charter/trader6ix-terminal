@@ -65,6 +65,7 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
 
   const [adapterId, setAdapterId] = useState(defaultId);
   const [symbol, setSymbol] = useState<string>("");
+  const [prefill, setPrefill] = useState<any>(undefined);
   const [tab, setTab] = useState<Tab>(product === "perps" ? "markets" : "chart");
   const [chipOpen, setChipOpen] = useState(false);
 
@@ -107,10 +108,19 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
             }}
           />
         )}
-        {tab === "chart" && <MobileChartTab product={product} adapter={adapter as any} symbol={symbol} />}
+        {tab === "chart" && <MobileChartTab product={product} adapter={adapter as any} symbol={symbol} prefill={prefill} />}
         {tab === "positions" && <MobilePositionsTab product={product} adapter={adapter as any} />}
         {tab === "history" && <MobileHistoryTab />}
-        {tab === "tools" && <MobileToolsTab symbol={symbol} product={product} />}
+        {tab === "tools" && (
+          <MobileToolsTab
+            symbol={symbol}
+            product={product}
+            onUsePositionSize={(p) => {
+              setPrefill(p);
+              setTab("chart");
+            }}
+          />
+        )}
       </div>
 
       {/* Bottom tab nav */}

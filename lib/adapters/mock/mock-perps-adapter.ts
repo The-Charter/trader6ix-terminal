@@ -93,7 +93,7 @@ export const mockPerpsAdapter: PerpsAdapter = {
       const entry = parseFloat(p.entryPrice);
       const size = parseFloat(p.size);
       const pnl = p.side === "long" ? (price - entry) * size : (entry - price) * size;
-      return { ...p, unrealizedPnl: pnl.toFixed(2) };
+      return { ...p, markPrice: price.toFixed(2), unrealizedPnl: pnl.toFixed(2) };
     });
   },
 
@@ -107,7 +107,7 @@ export const mockPerpsAdapter: PerpsAdapter = {
     const price = input.price ? parseFloat(input.price) : currentPrice(input.symbol);
     const leverage = input.leverage ?? 1;
 
-    // Market orders fill immediately in the demo; limit orders sit as open orders.
+    // Market orders fill immediately in the demo; limit/stop orders sit as open orders.
     if (input.type === "market") {
       positions.push({
         symbol: input.symbol,
@@ -118,6 +118,8 @@ export const mockPerpsAdapter: PerpsAdapter = {
         liquidationPrice:
           input.side === "buy" ? (price * (1 - 0.9 / leverage)).toFixed(2) : (price * (1 + 0.9 / leverage)).toFixed(2),
         marginUsed: ((parseFloat(input.quantity) * price) / leverage).toFixed(2),
+        stopLoss: input.stopLoss,
+        takeProfit: input.takeProfit,
       });
     } else {
       orders.push({
@@ -138,9 +140,10 @@ export const mockPerpsAdapter: PerpsAdapter = {
     orders = orders.filter((o) => o.id !== orderId);
     return { ok: true };
   },
-};
 
-/** Lets the demo UI close a position without going through the full adapter interface (not part of PerpsAdapter — demo-only convenience). */
-export function closeMockPosition(symbol: string) {
-  positions = positions.filter((p) => p.symbol !== symbol);
-}
+  async closePosition(symbol: string): Promise<PerpsOrderResult> {
+    const existed = positions.some((p) => p.symbol === symbol);
+    positions = positions.filter((p) => p.symbol !== symbol);
+    return existed ? { ok: true } : { ok: false, error: "No open position for that symbol." };
+  },
+};

@@ -13,17 +13,20 @@ export interface PerpsPosition {
   side: "long" | "short";
   size: string;
   entryPrice: string;
+  markPrice?: string;
   leverage?: number;
   liquidationPrice?: string;
   unrealizedPnl?: string;
   marginUsed?: string;
+  stopLoss?: string;
+  takeProfit?: string;
 }
 
 export interface PerpsOrder {
   id: string;
   symbol: string;
   side: "buy" | "sell";
-  type: "market" | "limit";
+  type: "market" | "limit" | "stop";
   price?: string;
   quantity: string;
   status: string;
@@ -32,10 +35,12 @@ export interface PerpsOrder {
 export interface PlacePerpsOrderInput {
   symbol: string;
   side: "buy" | "sell";
-  type: "market" | "limit";
+  type: "market" | "limit" | "stop";
   quantity: string;
-  price?: string; // required for limit orders
+  price?: string; // required for limit/stop orders — limit price or stop trigger price
   leverage?: number;
+  stopLoss?: string;
+  takeProfit?: string;
 }
 
 export interface PerpsOrderResult {
@@ -62,4 +67,6 @@ export interface PerpsAdapter {
   getOpenOrders(walletAddress: string): Promise<PerpsOrder[]>;
   placeOrder(input: PlacePerpsOrderInput, walletAddress: string): Promise<PerpsOrderResult>;
   cancelOrder(orderId: string, walletAddress: string): Promise<PerpsOrderResult>;
+  /** Closes an open position outright (as distinct from cancelling a pending order). */
+  closePosition(symbol: string, walletAddress: string): Promise<PerpsOrderResult>;
 }

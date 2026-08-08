@@ -1,14 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MobileProduct } from "../MobileApp";
 import { CandlestickChart } from "@/components/candlestick-chart";
 import { TradeTicket } from "@/components/trade-ticket";
 import { SwapTicket } from "@/components/swap-ticket";
 import { FxTicket } from "@/components/fx-ticket";
 
-export function MobileChartTab({ product, adapter, symbol }: { product: MobileProduct; adapter: any; symbol: string }) {
+export function MobileChartTab({
+  product,
+  adapter,
+  symbol,
+  prefill,
+}: {
+  product: MobileProduct;
+  adapter: any;
+  symbol: string;
+  prefill?: any;
+}) {
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (prefill) setSheetOpen(true);
+  }, [prefill?.token]);
 
   if (product === "spot") {
     return (
@@ -43,7 +57,7 @@ export function MobileChartTab({ product, adapter, symbol }: { product: MobilePr
 
       {sheetOpen && (
         <div className="border-b border-border">
-          <TradeTicket adapter={adapter} symbol={symbol || null} />
+          <TradeTicket adapter={adapter} symbol={symbol || null} prefill={prefill} />
         </div>
       )}
 
