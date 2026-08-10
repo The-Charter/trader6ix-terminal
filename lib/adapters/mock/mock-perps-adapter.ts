@@ -34,18 +34,31 @@ function currentPrice(symbol: string): number {
   return base + drift;
 }
 
-function generateCandles(symbol: string): AdapterCandle[] {
+const INTERVAL_MS: Record<string, number> = {
+  "1m": 60_000,
+  "5m": 5 * 60_000,
+  "15m": 15 * 60_000,
+  "1h": 60 * 60_000,
+  "4h": 4 * 60 * 60_000,
+  "1d": 24 * 60 * 60_000,
+  "1w": 7 * 24 * 60 * 60_000,
+};
+
+function generateCandles(symbol: string, interval = "5m"): AdapterCandle[] {
   const base = DEMO_MARKETS[symbol]?.price ?? 100;
+  const stepMs = INTERVAL_MS[interval] ?? INTERVAL_MS["5m"];
+  // Wider timeframes get proportionally more volatility per candle, same as real markets.
+  const volatilityScale = Math.sqrt(stepMs / INTERVAL_MS["5m"]);
   const candles: AdapterCandle[] = [];
   let price = base * 0.99;
   const now = Date.now();
   for (let i = 0; i < 60; i++) {
     const open = price;
-    const move = (Math.random() - 0.48) * base * 0.003;
+    const move = (Math.random() - 0.48) * base * 0.003 * volatilityScale;
     const close = open + move;
-    const high = Math.max(open, close) + Math.random() * base * 0.001;
-    const low = Math.min(open, close) - Math.random() * base * 0.001;
-    candles.push({ time: now - (60 - i) * 60000, open, high, low, close });
+    const high = Math.max(open, close) + Math.random() * base * 0.001 * volatilityScale;
+    const low = Math.min(open, close) - Math.random() * base * 0.001 * volatilityScale;
+    candles.push({ time: now - (60 - i) * stepMs, open, high, low, close });
     price = close;
   }
   return candles;
@@ -83,8 +96,8 @@ export const mockPerpsAdapter: PerpsAdapter = {
     return generateOrderbook(symbol);
   },
 
-  async getKlines(symbol: string) {
-    return generateCandles(symbol);
+  async getKlines(symbol: string, interval: string) {
+    return generateCandles(symbol, interval);
   },
 
   async getPositions(): Promise<PerpsPosition[]> {

@@ -6,6 +6,8 @@ import { CandlestickChart } from "@/components/candlestick-chart";
 import { TradeTicket } from "@/components/trade-ticket";
 import { SwapTicket } from "@/components/swap-ticket";
 import { FxTicket } from "@/components/fx-ticket";
+import { useOrderbook } from "@/lib/hooks";
+import { getInstrumentSpec } from "@/lib/instrument-specs";
 
 export function MobileChartTab({
   product,
@@ -41,6 +43,11 @@ export function MobileChartTab({
   }
 
   // perps
+  const { data: orderbook } = useOrderbook(adapter, symbol || null);
+  const spec = symbol ? getInstrumentSpec(symbol) : null;
+  const bestBid = orderbook?.bids?.[0]?.price;
+  const bestAsk = orderbook?.asks?.[0]?.price;
+
   return (
     <div className="flex flex-col">
       <div className="h-[300px] px-2 pt-2">
@@ -49,10 +56,18 @@ export function MobileChartTab({
 
       <button
         onClick={() => setSheetOpen((o) => !o)}
-        className="flex items-center justify-center gap-2 border-y border-border bg-surface-1 py-2.5 text-xs font-medium text-ink-2"
+        className="flex items-center justify-between gap-2 border-y border-border bg-surface-1 px-4 py-2.5 text-xs font-medium"
       >
-        <span className={`transition-transform ${sheetOpen ? "rotate-180" : ""}`}>▲</span>
-        Trade
+        <span className="flex items-center gap-2 text-ink-2">
+          <span className={`transition-transform ${sheetOpen ? "rotate-180" : ""}`}>▲</span>
+          Trade
+        </span>
+        {bestBid && bestAsk && spec && (
+          <span className="flex gap-3 font-mono">
+            <span className="text-bear">Sell {parseFloat(bestBid).toFixed(spec.pricePrecision)}</span>
+            <span className="text-bull">Buy {parseFloat(bestAsk).toFixed(spec.pricePrecision)}</span>
+          </span>
+        )}
       </button>
 
       {sheetOpen && (

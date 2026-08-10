@@ -90,10 +90,15 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
         <span className="font-mono text-xs font-semibold uppercase tracking-widest text-accent">{PRODUCT_LABEL[product]}</span>
         <button
           onClick={cycleAdapter}
-          className="flex items-center gap-1.5 rounded-full border border-border bg-surface-1 px-2.5 py-1"
+          className="flex items-center gap-2 rounded-full border border-border bg-surface-1 px-2.5 py-1"
         >
           <span className={`h-1.5 w-1.5 rounded-full ${adapter.isLive ? "bg-bull" : "bg-warn"}`} />
-          <span className="text-[11px] font-medium text-ink">{adapter.displayName}</span>
+          <span className="text-left leading-tight">
+            <span className="block text-[11px] font-semibold text-ink">{adapter.displayName}</span>
+            <span className="block text-[9px] text-ink-3">
+              {adapter.id.startsWith("mock-") ? "Simulated" : "Arc Network"}
+            </span>
+          </span>
         </button>
       </div>
 
@@ -132,11 +137,20 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
             className="flex flex-1 flex-col items-center justify-center gap-1"
           >
             <div
-              className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-                tab === t ? "bg-accent/15 text-accent" : "text-ink-3"
-              }`}
+              className="flex h-9 w-9 items-center justify-center rounded-xl transition-all"
+              style={
+                tab === t
+                  ? {
+                      background: "linear-gradient(145deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 60%)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      boxShadow:
+                        "0 2px 12px rgba(0,212,255,0.35), 0 0 0 1px rgba(0,212,255,0.12), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -1px 0 rgba(0,0,0,0.1)",
+                      backdropFilter: "blur(8px)",
+                    }
+                  : undefined
+              }
             >
-              <span className="h-5 w-5">{TAB_ICONS[t]}</span>
+              <span className={`h-5 w-5 ${tab === t ? "text-accent" : "text-ink-3"}`}>{TAB_ICONS[t]}</span>
             </div>
             <span className={`text-[9px] font-medium capitalize ${tab === t ? "text-accent" : "text-ink-3"}`}>{t}</span>
           </button>
