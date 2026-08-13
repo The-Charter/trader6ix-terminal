@@ -6,9 +6,8 @@ import type { MobileProduct } from "./MobileApp";
 const FAUCET_URL = process.env.NEXT_PUBLIC_FAUCET_URL ?? "https://faucet.circle.com";
 
 const OPTIONS: { id: MobileProduct; label: string; description: string }[] = [
-  { id: "perps", label: "Perpetuals", description: "Leveraged crypto futures" },
-  { id: "spot", label: "Spot", description: "Direct token swaps" },
-  { id: "fx", label: "Stablecoin FX", description: "USDC, EURC & more" },
+  { id: "perps", label: "Perpetuals", description: "Crypto & FX leveraged futures" },
+  { id: "spot", label: "Spot", description: "Crypto & FX token swaps" },
 ];
 
 export function MobileLanding({ onSelect }: { onSelect: (product: MobileProduct) => void }) {

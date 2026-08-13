@@ -6,6 +6,7 @@ export interface PerpsMarket {
   quote: string;
   isLive: boolean;
   maxLeverage?: number;
+  assetClass: "crypto" | "fx";
 }
 
 export interface PerpsPosition {

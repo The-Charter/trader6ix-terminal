@@ -11,11 +11,13 @@ import { getInstrumentSpec } from "@/lib/instrument-specs";
 
 export function MobileChartTab({
   product,
+  spotCategory,
   adapter,
   symbol,
   prefill,
 }: {
   product: MobileProduct;
+  spotCategory?: "crypto" | "fx";
   adapter: any;
   symbol: string;
   prefill?: any;
@@ -26,18 +28,18 @@ export function MobileChartTab({
     if (prefill) setSheetOpen(true);
   }, [prefill?.token]);
 
-  if (product === "spot") {
+  if (product === "spot" && spotCategory === "fx") {
     return (
       <div className="px-4 py-6">
-        <SwapTicket adapter={adapter} />
+        <FxTicket adapter={adapter} />
       </div>
     );
   }
 
-  if (product === "fx") {
+  if (product === "spot") {
     return (
       <div className="px-4 py-6">
-        <FxTicket adapter={adapter} />
+        <SwapTicket adapter={adapter} />
       </div>
     );
   }
@@ -48,15 +50,19 @@ export function MobileChartTab({
   const bestBid = orderbook?.bids?.[0]?.price;
   const bestAsk = orderbook?.asks?.[0]?.price;
 
+  if (!symbol) {
+    return <p className="px-4 py-6 text-center text-sm text-ink-3">Pick a market from the Markets tab first.</p>;
+  }
+
   return (
-    <div className="flex flex-col">
-      <div className="h-[300px] px-2 pt-2">
-        <CandlestickChart adapter={adapter} symbol={symbol || null} />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="min-h-0 flex-1 px-2 pt-2">
+        <CandlestickChart adapter={adapter} symbol={symbol} />
       </div>
 
       <button
         onClick={() => setSheetOpen((o) => !o)}
-        className="flex items-center justify-between gap-2 border-y border-border bg-surface-1 px-4 py-2.5 text-xs font-medium"
+        className="flex shrink-0 items-center justify-between gap-2 border-y border-border bg-surface-1 px-4 py-2.5 text-xs font-medium"
       >
         <span className="flex items-center gap-2 text-ink-2">
           <span className={`transition-transform ${sheetOpen ? "rotate-180" : ""}`}>▲</span>
@@ -71,13 +77,9 @@ export function MobileChartTab({
       </button>
 
       {sheetOpen && (
-        <div className="border-b border-border">
-          <TradeTicket adapter={adapter} symbol={symbol || null} prefill={prefill} />
+        <div className="max-h-[60vh] shrink-0 overflow-y-auto border-b border-border">
+          <TradeTicket adapter={adapter} symbol={symbol} prefill={prefill} />
         </div>
-      )}
-
-      {!symbol && (
-        <p className="px-4 py-6 text-center text-sm text-ink-3">Pick a market from the Markets tab first.</p>
       )}
     </div>
   );

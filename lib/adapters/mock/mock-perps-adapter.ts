@@ -16,10 +16,12 @@ import type { AdapterOrderbook, AdapterCandle } from "../shared-types";
  * "demo-", etc.) so nothing here could be mistaken for a real fill.
  */
 
-const DEMO_MARKETS: Record<string, { base: string; price: number }> = {
-  "BTC-PERP": { base: "BTC", price: 103_420 },
-  "ETH-PERP": { base: "ETH", price: 3_841 },
-  "SOL-PERP": { base: "SOL", price: 182.4 },
+const DEMO_MARKETS: Record<string, { base: string; price: number; assetClass: "crypto" | "fx" }> = {
+  "BTC-PERP": { base: "BTC", price: 103_420, assetClass: "crypto" },
+  "ETH-PERP": { base: "ETH", price: 3_841, assetClass: "crypto" },
+  "SOL-PERP": { base: "SOL", price: 182.4, assetClass: "crypto" },
+  "EUR/USD-PERP": { base: "EUR", price: 1.0854, assetClass: "fx" },
+  "GBP/USD-PERP": { base: "GBP", price: 1.2718, assetClass: "fx" },
 };
 
 // Simple in-memory session state — resets on page reload, exactly like a demo should.
@@ -89,6 +91,7 @@ export const mockPerpsAdapter: PerpsAdapter = {
       quote: "USD",
       isLive: true,
       maxLeverage: 20,
+      assetClass: m.assetClass,
     }));
   },
 

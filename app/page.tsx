@@ -85,8 +85,7 @@ function DesktopLanding() {
 
         <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">Trader6ix</h1>
         <p className="mt-4 max-w-xl text-lg text-ink-2">
-          Spot and perpetuals trading on Arc, powered by Hibachi&rsquo;s orderbook. Connect a wallet,
-          grab testnet USDC, start trading.
+          Spot and perpetuals trading on Arc. Connect a wallet, grab testnet USDC, start trading.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">

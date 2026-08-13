@@ -1,6 +1,15 @@
 import type { PerpsAdapter, PerpsMarket, PlacePerpsOrderInput, PerpsOrderResult, PerpsPosition, PerpsOrder } from "./perps-adapter";
 import type { AdapterCandle } from "./shared-types";
-import { TARGET_MARKETS } from "@/lib/markets";
+
+// Known fiat/metal tickers — anything else is treated as crypto. Hibachi
+// doesn't (as far as our docs research found) expose an explicit asset-class
+// field per contract, so this is a symbol-pattern heuristic, not a confirmed
+// classification from their API.
+const FX_BASE_CODES = new Set(["EUR", "GBP", "AUD", "NZD", "USD", "CAD", "CHF", "JPY", "XAG", "XAU"]);
+
+function classifyAssetClass(base: string): "crypto" | "fx" {
+  return FX_BASE_CODES.has(base.toUpperCase()) ? "fx" : "crypto";
+}
 
 /** Best-guess normalizer for Hibachi's kline shape — flagged since unverified against a live key. */
 function normalizeKlines(raw: unknown): AdapterCandle[] {
@@ -36,18 +45,24 @@ export const hibachiAdapter: PerpsAdapter = {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load Hibachi markets");
 
-    const live = new Set(
-      (json.futureContracts ?? [])
-        .filter((c: { status: string }) => c.status === "LIVE")
-        .map((c: { symbol: string }) => c.symbol)
-    );
+    const contracts: { symbol: string; status: string; underlyingSymbol?: string; settlementSymbol?: string }[] =
+      json.futureContracts ?? [];
 
-    return TARGET_MARKETS.map((m) => ({
-      symbol: m.perpSymbol,
-      base: m.base,
-      quote: m.quote,
-      isLive: live.has(m.perpSymbol),
-    }));
+    // Surface every live contract Hibachi actually reports — not just our
+    // crypto target list — so real FX perps (EUR/USD-P, GBP/USD-P, XAG/USD-P,
+    // etc.) show up too, since Hibachi's own API is the source of truth for
+    // what's actually tradable, not a hardcoded whitelist on our side.
+    return contracts.map((c) => {
+      const [base, quoteWithSuffix] = c.symbol.split("/");
+      const quote = (quoteWithSuffix ?? "").replace(/-P$/, "");
+      return {
+        symbol: c.symbol,
+        base: base ?? c.symbol,
+        quote: quote || "USD",
+        isLive: c.status === "LIVE",
+        assetClass: classifyAssetClass(base ?? ""),
+      };
+    });
   },
 
   async getOrderbook(symbol) {

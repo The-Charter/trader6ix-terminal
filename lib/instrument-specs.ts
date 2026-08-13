@@ -53,6 +53,26 @@ export const INSTRUMENT_SPECS: Record<string, InstrumentSpec> = {
     quantityStep: 0.1,
     maxLeverage: 20,
   },
+  "EUR/USD-PERP": {
+    symbol: "EUR/USD-PERP",
+    assetClass: "fx",
+    quoteCurrency: "USD",
+    baseCurrency: "EUR",
+    pipSize: 0.0001,
+    pricePrecision: 5,
+    quantityStep: 1000,
+    maxLeverage: 50,
+  },
+  "GBP/USD-PERP": {
+    symbol: "GBP/USD-PERP",
+    assetClass: "fx",
+    quoteCurrency: "USD",
+    baseCurrency: "GBP",
+    pipSize: 0.0001,
+    pricePrecision: 5,
+    quantityStep: 1000,
+    maxLeverage: 50,
+  },
 };
 
 export function getInstrumentSpec(symbol: string): InstrumentSpec {

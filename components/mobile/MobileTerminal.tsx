@@ -56,18 +56,24 @@ const TAB_ICONS: Record<Tab, JSX.Element> = {
   ),
 };
 
-const PRODUCT_LABEL: Record<MobileProduct, string> = { perps: "Perps", spot: "Spot", fx: "FX" };
+const PRODUCT_LABEL: Record<MobileProduct, string> = { perps: "Perps", spot: "Spot" };
 
 export function MobileTerminal({ product, onBack }: { product: MobileProduct; onBack: () => void }) {
-  const adapters = product === "perps" ? PERPS_ADAPTERS : product === "spot" ? SPOT_ADAPTERS : FX_ADAPTERS;
+  const [spotCategory, setSpotCategory] = useState<"crypto" | "fx">("crypto");
+
+  const adapters =
+    product === "perps" ? PERPS_ADAPTERS : spotCategory === "crypto" ? SPOT_ADAPTERS : FX_ADAPTERS;
   const defaultId =
-    product === "perps" ? DEFAULT_PERPS_ADAPTER_ID : product === "spot" ? DEFAULT_SPOT_ADAPTER_ID : DEFAULT_FX_ADAPTER_ID;
+    product === "perps"
+      ? DEFAULT_PERPS_ADAPTER_ID
+      : spotCategory === "crypto"
+        ? DEFAULT_SPOT_ADAPTER_ID
+        : DEFAULT_FX_ADAPTER_ID;
 
   const [adapterId, setAdapterId] = useState(defaultId);
   const [symbol, setSymbol] = useState<string>("");
   const [prefill, setPrefill] = useState<any>(undefined);
   const [tab, setTab] = useState<Tab>(product === "perps" ? "markets" : "chart");
-  const [chipOpen, setChipOpen] = useState(false);
 
   const adapter = adapters.find((a) => a.id === adapterId) ?? adapters[0];
 
@@ -75,15 +81,20 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
     const idx = adapters.findIndex((a) => a.id === adapterId);
     const next = adapters[(idx + 1) % adapters.length];
     setAdapterId(next.id);
-    setChipOpen(false);
+  }
+
+  function handleSpotCategoryChange(cat: "crypto" | "fx") {
+    setSpotCategory(cat);
+    const nextAdapters = cat === "crypto" ? SPOT_ADAPTERS : FX_ADAPTERS;
+    setAdapterId(nextAdapters[0].id);
   }
 
   const tabs: Tab[] = product === "perps" ? ["markets", "chart", "positions", "history", "tools"] : ["chart", "positions", "history", "tools"];
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-0">
+    <div className="flex h-screen flex-col overflow-hidden bg-surface-0">
       {/* Top header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2.5">
         <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-ink-2">
           ‹
         </button>
@@ -102,34 +113,56 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
         </button>
       </div>
 
+      {/* Spot sub-category: Crypto Spot vs FX Spot */}
+      {product === "spot" && (
+        <div className="flex shrink-0 gap-1 border-b border-border px-4 py-2">
+          {(["crypto", "fx"] as const).map((c) => (
+            <button
+              key={c}
+              onClick={() => handleSpotCategoryChange(c)}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                spotCategory === c ? "bg-surface-2 text-ink" : "text-ink-3"
+              }`}
+            >
+              {c === "crypto" ? "Crypto Spot" : "FX Spot"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Content */}
-      <div className="flex-1 overflow-y-auto pb-16">
-        {tab === "markets" && product === "perps" && (
-          <MobileMarketsTab
-            adapter={adapter as any}
-            onSelect={(s) => {
-              setSymbol(s);
-              setTab("chart");
-            }}
-          />
-        )}
-        {tab === "chart" && <MobileChartTab product={product} adapter={adapter as any} symbol={symbol} prefill={prefill} />}
-        {tab === "positions" && <MobilePositionsTab product={product} adapter={adapter as any} />}
-        {tab === "history" && <MobileHistoryTab />}
-        {tab === "tools" && (
-          <MobileToolsTab
-            symbol={symbol}
-            product={product}
-            onUsePositionSize={(p) => {
-              setPrefill(p);
-              setTab("chart");
-            }}
-          />
-        )}
-      </div>
+      {tab === "chart" ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <MobileChartTab product={product} spotCategory={spotCategory} adapter={adapter as any} symbol={symbol} prefill={prefill} />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto">
+          {tab === "markets" && product === "perps" && (
+            <MobileMarketsTab
+              adapter={adapter as any}
+              onSelect={(s) => {
+                setSymbol(s);
+                setTab("chart");
+              }}
+            />
+          )}
+          {tab === "positions" && <MobilePositionsTab product={product} adapter={adapter as any} />}
+          {tab === "history" && <MobileHistoryTab />}
+          {tab === "tools" && (
+            <MobileToolsTab
+              symbol={symbol}
+              product={product}
+              onUsePositionSize={(p) => {
+                setPrefill(p);
+                setTab("chart");
+              }}
+            />
+          )}
+        </div>
+      )}
 
       {/* Bottom tab nav */}
-      <div className="fixed bottom-0 left-0 right-0 mx-auto flex h-16 max-w-md border-t border-border bg-surface-1">
+      <div className="flex h-16 shrink-0 border-t border-border bg-surface-1">
         {tabs.map((t) => (
           <button
             key={t}
