@@ -92,9 +92,12 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
   const tabs: Tab[] = product === "perps" ? ["markets", "chart", "positions", "history", "tools"] : ["chart", "positions", "history", "tools"];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-surface-0">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-surface-0">
       {/* Top header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2.5">
+      <div
+        className="flex shrink-0 items-center justify-between border-b border-border px-4 py-2.5"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <button onClick={onBack} className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-ink-2">
           ‹
         </button>
@@ -162,7 +165,10 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
       )}
 
       {/* Bottom tab nav */}
-      <div className="flex h-16 shrink-0 border-t border-border bg-surface-1">
+      <div
+        className="flex min-h-[64px] shrink-0 border-t border-border bg-surface-1"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         {tabs.map((t) => (
           <button
             key={t}

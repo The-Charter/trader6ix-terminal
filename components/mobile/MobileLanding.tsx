@@ -14,7 +14,13 @@ export function MobileLanding({ onSelect }: { onSelect: (product: MobileProduct)
   const { login, authenticated, ready } = usePrivy();
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-0 px-5 pb-10 pt-8">
+    <div
+      className="flex min-h-[100dvh] flex-col bg-surface-0 px-5 pb-10 pt-8"
+      style={{
+        paddingTop: "calc(2rem + env(safe-area-inset-top))",
+        paddingBottom: "calc(2.5rem + env(safe-area-inset-bottom))",
+      }}
+    >
       <div className="flex flex-col items-center text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo.jpg" alt="Trader6ix" className="h-16 w-auto rounded-lg" />
