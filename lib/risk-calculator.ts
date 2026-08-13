@@ -15,9 +15,11 @@ export interface RiskCalcInput {
 export interface RiskCalcResult {
   riskAmount: number;
   positionSize: number; // in units of the base asset
+  lots?: number; // FX only — positionSize / contractSize (e.g. 100,000 units = 1.00 standard lot)
   notional: number;
   impliedLeverage: number;
   marginRequired: number;
+  marginIsMinimum: boolean; // true when marginRequired reflects the instrument's max leverage (risk% mode has no chosen leverage, so this is the floor, not a firm number)
   stopDistance: number;
   stopDistanceInPips: number;
   pipValue: number;
@@ -56,10 +58,20 @@ export function calculateRisk(input: RiskCalcInput, takeProfit?: number): RiskCa
   positionSize = Math.round(positionSize / spec.quantityStep) * spec.quantityStep;
 
   const notional = positionSize * input.entry;
-  const marginRequired = spec.maxLeverage > 0 ? notional / spec.maxLeverage : notional;
   const impliedLeverage = input.balance > 0 ? notional / input.balance : 0;
+
+  // Margin required: in leverage mode you explicitly chose a leverage, so
+  // margin = notional / that leverage — a firm number. In risk% mode, no
+  // leverage was chosen, so we show the minimum margin possible (at the
+  // instrument's max allowed leverage) and flag it as a floor, not a promise —
+  // a trader using less leverage than max would need more margin than this.
+  const marginIsMinimum = input.mode === "lots";
+  const effectiveLeverageForMargin = input.mode === "leverage" ? input.leverage ?? 1 : spec.maxLeverage;
+  const marginRequired = effectiveLeverageForMargin > 0 ? notional / effectiveLeverageForMargin : notional;
+
   const pipValue = stopDistanceInPips > 0 ? riskAmount / stopDistanceInPips : 0;
   const potentialLoss = positionSize * stopDistance;
+  const lots = spec.contractSize ? positionSize / spec.contractSize : undefined;
 
   let potentialProfitAtTakeProfit: number | undefined;
   let riskRewardRatio: number | undefined;
@@ -72,9 +84,11 @@ export function calculateRisk(input: RiskCalcInput, takeProfit?: number): RiskCa
   return {
     riskAmount,
     positionSize,
+    lots,
     notional,
     impliedLeverage,
     marginRequired,
+    marginIsMinimum,
     stopDistance,
     stopDistanceInPips,
     pipValue,

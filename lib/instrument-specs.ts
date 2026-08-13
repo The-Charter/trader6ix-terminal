@@ -20,6 +20,8 @@ export interface InstrumentSpec {
   /** Smallest order-size increment. */
   quantityStep: number;
   maxLeverage: number;
+  /** Units per standard lot — only meaningful for FX (100,000 is the FX convention). Omitted for crypto, which has no "lot" concept. */
+  contractSize?: number;
 }
 
 export const INSTRUMENT_SPECS: Record<string, InstrumentSpec> = {
@@ -62,6 +64,7 @@ export const INSTRUMENT_SPECS: Record<string, InstrumentSpec> = {
     pricePrecision: 5,
     quantityStep: 1000,
     maxLeverage: 50,
+    contractSize: 100_000,
   },
   "GBP/USD-PERP": {
     symbol: "GBP/USD-PERP",
@@ -72,6 +75,7 @@ export const INSTRUMENT_SPECS: Record<string, InstrumentSpec> = {
     pricePrecision: 5,
     quantityStep: 1000,
     maxLeverage: 50,
+    contractSize: 100_000,
   },
 };
 

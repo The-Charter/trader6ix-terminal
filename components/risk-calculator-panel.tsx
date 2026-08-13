@@ -91,10 +91,20 @@ export function RiskCalculatorPanel({
       {result ? (
         <div className="mt-3 divide-y divide-surface-2 rounded-md bg-surface-2 text-xs">
           <Row label="Risk amount" value={`$${result.riskAmount.toFixed(2)}`} />
-          <Row label="Position size" value={`${result.positionSize} ${spec.baseCurrency}`} />
+          <Row
+            label="Position size"
+            value={
+              result.lots !== undefined
+                ? `${result.lots.toFixed(2)} lots (${result.positionSize.toLocaleString()} ${spec.baseCurrency})`
+                : `${result.positionSize} ${spec.baseCurrency}`
+            }
+          />
           <Row label="Notional value" value={`$${result.notional.toFixed(2)}`} />
           <Row label="Implied leverage" value={`${result.impliedLeverage.toFixed(1)}×`} warn />
-          <Row label="Margin required" value={`$${result.marginRequired.toFixed(2)}`} />
+          <Row
+            label={result.marginIsMinimum ? "Min. margin (at max leverage)" : "Margin required"}
+            value={`$${result.marginRequired.toFixed(2)}`}
+          />
           <Row label="Potential loss" value={`-$${result.potentialLoss.toFixed(2)}`} bear />
           {result.potentialProfitAtTakeProfit !== undefined && (
             <Row label="Potential profit" value={`+$${result.potentialProfitAtTakeProfit.toFixed(2)}`} bull />
