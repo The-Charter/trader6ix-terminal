@@ -15,7 +15,7 @@
 export interface TowerQuoteRequest {
   inputToken: string; // contract address
   outputToken: string; // contract address
-  amount: string; // atomic units, as a string (avoid float precision loss)
+  inputAmount: string; // atomic units, as a string (avoid float precision loss) — CONFIRMED field name via live 400 error response
   slippage: number; // e.g. 0.005 for 0.5%
   chainId: number;
 }
@@ -47,7 +47,7 @@ export interface TowerBuildTxRequest {
   quoteId?: string;
   inputToken: string;
   outputToken: string;
-  amount: string;
+  amount: string; // TODO: /swap/quote confirmed the field is "inputAmount" not "amount" — build-tx likely follows the same convention but this is UNCONFIRMED until we actually reach this endpoint in testing
   minOutputAmount: string;
   slippage: number;
   userAddress: string;

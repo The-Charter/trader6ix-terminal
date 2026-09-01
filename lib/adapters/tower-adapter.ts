@@ -36,7 +36,7 @@ async function requestQuote(input: SwapQuoteInput) {
     body: JSON.stringify({
       inputToken: TOKEN_ADDRESSES[fromSymbol],
       outputToken: TOKEN_ADDRESSES[toSymbol],
-      amount: amountAtomic,
+      inputAmount: amountAtomic,
       slippage: DEFAULT_SLIPPAGE,
       chainId: ARC_CHAIN_ID,
     }),
