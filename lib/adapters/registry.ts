@@ -6,6 +6,7 @@ import type { DataAdapter } from "./data-adapter";
 import { hibachiAdapter } from "./hibachi-adapter";
 import { stableFxAdapter } from "./stablefx-adapter";
 import { curveAdapter } from "./curve-adapter";
+import { towerAdapter } from "./tower-adapter";
 import { goldskyDataAdapter } from "./goldsky-data-adapter";
 
 import { mockPerpsAdapter } from "./mock/mock-perps-adapter";
@@ -26,7 +27,7 @@ export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== "false"; // defau
 
 export const PERPS_ADAPTERS: PerpsAdapter[] = DEMO_MODE ? [mockPerpsAdapter, hibachiAdapter] : [hibachiAdapter];
 export const FX_ADAPTERS: FXAdapter[] = DEMO_MODE ? [mockFxAdapter, stableFxAdapter] : [stableFxAdapter];
-export const SPOT_ADAPTERS: SpotAdapter[] = DEMO_MODE ? [mockSpotAdapter, curveAdapter] : [curveAdapter];
+export const SPOT_ADAPTERS: SpotAdapter[] = DEMO_MODE ? [mockSpotAdapter, towerAdapter, curveAdapter] : [towerAdapter, curveAdapter];
 export const DATA_ADAPTERS: DataAdapter[] = DEMO_MODE ? [mockDataAdapter, goldskyDataAdapter] : [goldskyDataAdapter];
 
 export function getPerpsAdapter(id: string) {
