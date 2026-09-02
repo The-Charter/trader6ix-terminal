@@ -43,6 +43,16 @@ async function requestQuote(input: SwapQuoteInput) {
   });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? "Failed to get Tower quote");
+
+  // Tower's response schema is still being reverse-engineered from real
+  // requests — surface the raw shape rather than letting a missing/renamed
+  // field crash downstream inside ethers with an unhelpful error.
+  if (json.outputAmount === undefined || json.outputAmount === null) {
+    throw new Error(
+      `Tower quote response is missing "outputAmount" — raw response: ${JSON.stringify(json).slice(0, 500)}`
+    );
+  }
+
   return { quote: json, fromSymbol, toSymbol, decimalsIn };
 }
 
