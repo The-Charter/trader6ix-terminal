@@ -20,19 +20,53 @@ export interface TowerQuoteRequest {
   chainId: number;
 }
 
-export interface TowerQuoteResponse {
+export interface TowerRouteHop {
+  dexId: string;
+  dexName: string;
+  dexRouter: string;
+  path: string[];
+  feeTier?: number;
+}
+
+export interface TowerRoute {
+  type: string;
+  hops: TowerRouteHop[];
+}
+
+/**
+ * CONFIRMED shape via a live response (2026-09-01):
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "inputToken": "0x...", "outputToken": "0x...",
+ *     "inputAmount": "1000000000000000000",   // NOTE: normalized to 18 decimals
+ *     "outputAmount": "790630000000000000",   // regardless of the token's real decimals
+ *     "minOut": "786676850000000000",         // NOTE: "minOut", not "minOutputAmount"
+ *     "route": { "type": "single", "hops": [{ "dexId": "synthra", ... }] }
+ *   }
+ * }
+ * Fields beyond what's shown above (price, priceImpact, fee, quoteId, expiresAt)
+ * were cut off in the response we captured — handled defensively as optional
+ * below rather than assumed.
+ */
+export interface TowerQuoteResponseData {
   inputToken: string;
   outputToken: string;
-  inputAmount: string;
-  outputAmount: string;
-  minOutputAmount: string;
-  price: string;
-  priceImpact: number;
+  inputAmount: string; // 18-decimal normalized, not the token's native decimals
+  outputAmount: string; // 18-decimal normalized
+  minOut: string; // 18-decimal normalized
+  route?: TowerRoute;
+  price?: string;
+  priceImpact?: number;
   fee?: string;
-  route?: string;
   quoteId?: string;
   expiresAt?: number;
-  chainId: number;
+}
+
+export interface TowerQuoteResponse {
+  success: boolean;
+  data: TowerQuoteResponseData;
+  error?: string;
 }
 
 export interface TowerTxPayload {

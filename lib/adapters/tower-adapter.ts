@@ -44,16 +44,15 @@ async function requestQuote(input: SwapQuoteInput) {
   const json = await res.json();
   if (!res.ok) throw new Error(json.error ?? "Failed to get Tower quote");
 
-  // Tower's response schema is still being reverse-engineered from real
-  // requests — surface the raw shape rather than letting a missing/renamed
-  // field crash downstream inside ethers with an unhelpful error.
-  if (json.outputAmount === undefined || json.outputAmount === null) {
+  // CONFIRMED shape: { success: boolean, data: {...} } — not flat fields.
+  const data = json.data;
+  if (!data || data.outputAmount === undefined || data.outputAmount === null) {
     throw new Error(
-      `Tower quote response is missing "outputAmount" — raw response: ${JSON.stringify(json).slice(0, 500)}`
+      `Tower quote response is missing "data.outputAmount" — raw response: ${JSON.stringify(json).slice(0, 500)}`
     );
   }
 
-  return { quote: json, fromSymbol, toSymbol, decimalsIn };
+  return { data, fromSymbol, toSymbol, decimalsIn };
 }
 
 export const towerAdapter: SpotAdapter = {
@@ -71,13 +70,16 @@ export const towerAdapter: SpotAdapter = {
 
   async getSwapQuote(input: SwapQuoteInput): Promise<SwapQuote> {
     if (!ENABLED) throw new Error("Tower adapter is not configured — TOWER_API_KEY is not set.");
-    const { quote, toSymbol } = await requestQuote(input);
-    const decimalsOut = DECIMALS[toSymbol] ?? 6;
+    const { data } = await requestQuote(input);
+    // CONFIRMED: Tower normalizes response amounts to 18 decimals internally,
+    // regardless of the token's actual on-chain decimals (verified: 1 USDC
+    // sent as 6-decimal atomic units was echoed back as 1e18, i.e. rescaled
+    // to 18-decimal representation of the same real quantity).
     return {
       amountIn: input.amount,
-      amountOut: ethers.formatUnits(quote.outputAmount, decimalsOut),
-      priceImpactPct: quote.priceImpact ?? 0,
-      poolAddress: quote.route ?? "tower-aggregated",
+      amountOut: ethers.formatUnits(data.outputAmount, 18),
+      priceImpactPct: data.priceImpact ?? 0,
+      poolAddress: data.route?.hops?.[0]?.dexName ?? "tower-aggregated",
     };
   },
 
@@ -88,17 +90,22 @@ export const towerAdapter: SpotAdapter = {
     }
 
     try {
-      const { quote, fromSymbol, toSymbol } = await requestQuote(input);
+      const { data, fromSymbol, toSymbol } = await requestQuote(input);
 
       const buildRes = await fetch("/api/tower/build-tx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          quoteId: quote.quoteId,
+          quoteId: data.quoteId,
           inputToken: TOKEN_ADDRESSES[fromSymbol],
           outputToken: TOKEN_ADDRESSES[toSymbol],
-          amount: quote.inputAmount,
-          minOutputAmount: quote.minOutputAmount,
+          // Echoing back Tower's own quote values rather than recomputing —
+          // unconfirmed whether build-tx wants "amount" or "inputAmount"
+          // (same rename risk flagged in lib/tower/types.ts), and whether it
+          // wants these 18-decimal-normalized values or native-decimal ones.
+          // If this step errors, the raw response will tell us which.
+          amount: data.inputAmount,
+          minOutputAmount: data.minOut,
           slippage: DEFAULT_SLIPPAGE,
           userAddress: walletAddress,
           chainId: ARC_CHAIN_ID,
@@ -107,10 +114,20 @@ export const towerAdapter: SpotAdapter = {
       const buildJson = await buildRes.json();
       if (!buildRes.ok) throw new Error(buildJson.error ?? "Failed to build Tower transaction");
 
-      if (buildJson.chainId !== ARC_CHAIN_ID) {
+      // build-tx is untested against Tower's real API — surface the raw
+      // shape if the fields we expect aren't there, same as we had to for
+      // the quote response, rather than crash deeper in the signing flow.
+      const buildData = buildJson.data ?? buildJson; // may or may not be wrapped like quote was
+      if (!buildData.swap || !buildData.swap.to || !buildData.swap.data) {
+        throw new Error(
+          `Tower build-tx response is missing expected "swap" transaction fields — raw response: ${JSON.stringify(buildJson).slice(0, 500)}`
+        );
+      }
+
+      if (buildData.chainId !== ARC_CHAIN_ID) {
         return {
           ok: false,
-          error: `Tower built this transaction for chain ${buildJson.chainId}, but Trader6ix is configured for Arc (${ARC_CHAIN_ID}). Refusing to sign — please switch networks or contact support.`,
+          error: `Tower built this transaction for chain ${buildData.chainId}, but Trader6ix is configured for Arc (${ARC_CHAIN_ID}). Refusing to sign — please switch networks or contact support.`,
         };
       }
 
@@ -123,12 +140,12 @@ export const towerAdapter: SpotAdapter = {
 
       // Approval step, only if Tower says one is required — use their exact
       // approval payload rather than crafting our own unlimited-allowance approve().
-      if (buildJson.approval) {
+      if (buildData.approval) {
         try {
           const approvalTx = await signer.sendTransaction({
-            to: buildJson.approval.to,
-            data: buildJson.approval.data,
-            value: buildJson.approval.value ? BigInt(buildJson.approval.value) : 0n,
+            to: buildData.approval.to,
+            data: buildData.approval.data,
+            value: buildData.approval.value ? BigInt(buildData.approval.value) : 0n,
           });
           await approvalTx.wait();
         } catch (err: any) {
@@ -141,9 +158,9 @@ export const towerAdapter: SpotAdapter = {
 
       try {
         const swapTx = await signer.sendTransaction({
-          to: buildJson.swap.to,
-          data: buildJson.swap.data,
-          value: buildJson.swap.value ? BigInt(buildJson.swap.value) : 0n,
+          to: buildData.swap.to,
+          data: buildData.swap.data,
+          value: buildData.swap.value ? BigInt(buildData.swap.value) : 0n,
         });
         const receipt = await swapTx.wait();
         return { ok: true, txHash: receipt?.hash };
