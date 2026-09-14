@@ -90,25 +90,15 @@ export const towerAdapter: SpotAdapter = {
     }
 
     try {
-      const { data, fromSymbol, toSymbol } = await requestQuote(input);
+      const { data } = await requestQuote(input);
 
       const buildRes = await fetch("/api/tower/build-tx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          quoteId: data.quoteId,
-          inputToken: TOKEN_ADDRESSES[fromSymbol],
-          outputToken: TOKEN_ADDRESSES[toSymbol],
-          // Echoing back Tower's own quote values rather than recomputing —
-          // unconfirmed whether build-tx wants "amount" or "inputAmount"
-          // (same rename risk flagged in lib/tower/types.ts), and whether it
-          // wants these 18-decimal-normalized values or native-decimal ones.
-          // If this step errors, the raw response will tell us which.
-          amount: data.inputAmount,
-          minOutputAmount: data.minOut,
-          slippage: DEFAULT_SLIPPAGE,
+          // Tower requires the complete quote returned by /swap/quote.
+          quote: data,
           userAddress: walletAddress,
-          chainId: ARC_CHAIN_ID,
         }),
       });
       const buildJson = await buildRes.json();
@@ -124,10 +114,17 @@ export const towerAdapter: SpotAdapter = {
         );
       }
 
-      if (buildData.chainId !== ARC_CHAIN_ID) {
+      // Tower commonly places chainId on the transaction payload rather than
+      // on the response wrapper. Accept either shape, but never sign a
+      // response whose target chain cannot be established.
+      const towerChainId = Number(buildData.chainId ?? buildData.swap.chainId);
+      if (!Number.isInteger(towerChainId)) {
+        return { ok: false, error: "Tower build-tx response did not specify a transaction chain ID. Refusing to sign." };
+      }
+      if (towerChainId !== ARC_CHAIN_ID) {
         return {
           ok: false,
-          error: `Tower built this transaction for chain ${buildData.chainId}, but Trader6ix is configured for Arc (${ARC_CHAIN_ID}). Refusing to sign — please switch networks or contact support.`,
+          error: `Tower built this transaction for chain ${towerChainId}, but Trader6ix is configured for Arc (${ARC_CHAIN_ID}). Refusing to sign — please switch networks or contact support.`,
         };
       }
 

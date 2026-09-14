@@ -78,20 +78,15 @@ export interface TowerTxPayload {
 }
 
 export interface TowerBuildTxRequest {
-  quoteId?: string;
-  inputToken: string;
-  outputToken: string;
-  amount: string; // TODO: /swap/quote confirmed the field is "inputAmount" not "amount" — build-tx likely follows the same convention but this is UNCONFIRMED until we actually reach this endpoint in testing
-  minOutputAmount: string;
-  slippage: number;
+  quote: TowerQuoteResponseData;
   userAddress: string;
-  chainId: number;
 }
 
 export interface TowerBuildTxResponse {
   approval: TowerTxPayload | null;
   swap: TowerTxPayload;
-  chainId: number;
+  /** Some responses also include this at the wrapper level. */
+  chainId?: number;
 }
 
 export interface TowerErrorResponse {
