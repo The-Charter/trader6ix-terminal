@@ -5,12 +5,10 @@ import type { DataAdapter } from "./data-adapter";
 
 import { hibachiAdapter } from "./hibachi-adapter";
 import { stableFxAdapter } from "./stablefx-adapter";
-import { curveAdapter } from "./curve-adapter";
 import { towerAdapter } from "./tower-adapter";
 import { goldskyDataAdapter } from "./goldsky-data-adapter";
 
 import { mockPerpsAdapter } from "./mock/mock-perps-adapter";
-import { mockSpotAdapter } from "./mock/mock-spot-adapter";
 import { mockFxAdapter } from "./mock/mock-fx-adapter";
 import { mockDataAdapter } from "./mock/mock-data-adapter";
 
@@ -27,7 +25,9 @@ export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== "false"; // defau
 
 export const PERPS_ADAPTERS: PerpsAdapter[] = DEMO_MODE ? [mockPerpsAdapter, hibachiAdapter] : [hibachiAdapter];
 export const FX_ADAPTERS: FXAdapter[] = DEMO_MODE ? [mockFxAdapter, stableFxAdapter] : [stableFxAdapter];
-export const SPOT_ADAPTERS: SpotAdapter[] = DEMO_MODE ? [mockSpotAdapter, towerAdapter, curveAdapter] : [towerAdapter, curveAdapter];
+// Keep this selector-backed list even with one venue so future integrations
+// can be added without changing the Spot interface.
+export const SPOT_ADAPTERS: SpotAdapter[] = [towerAdapter];
 export const DATA_ADAPTERS: DataAdapter[] = DEMO_MODE ? [mockDataAdapter, goldskyDataAdapter] : [goldskyDataAdapter];
 
 export function getPerpsAdapter(id: string) {

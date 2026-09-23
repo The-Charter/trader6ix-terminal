@@ -5,10 +5,8 @@ import type { MobileProduct } from "./MobileApp";
 import {
   PERPS_ADAPTERS,
   SPOT_ADAPTERS,
-  FX_ADAPTERS,
   DEFAULT_PERPS_ADAPTER_ID,
   DEFAULT_SPOT_ADAPTER_ID,
-  DEFAULT_FX_ADAPTER_ID,
 } from "@/lib/adapters/registry";
 import { MobileMarketsTab } from "./tabs/MobileMarketsTab";
 import { MobileChartTab } from "./tabs/MobileChartTab";
@@ -59,16 +57,8 @@ const TAB_ICONS: Record<Tab, JSX.Element> = {
 const PRODUCT_LABEL: Record<MobileProduct, string> = { perps: "Perps", spot: "Spot" };
 
 export function MobileTerminal({ product, onBack }: { product: MobileProduct; onBack: () => void }) {
-  const [spotCategory, setSpotCategory] = useState<"crypto" | "fx">("crypto");
-
-  const adapters =
-    product === "perps" ? PERPS_ADAPTERS : spotCategory === "crypto" ? SPOT_ADAPTERS : FX_ADAPTERS;
-  const defaultId =
-    product === "perps"
-      ? DEFAULT_PERPS_ADAPTER_ID
-      : spotCategory === "crypto"
-        ? DEFAULT_SPOT_ADAPTER_ID
-        : DEFAULT_FX_ADAPTER_ID;
+  const adapters = product === "perps" ? PERPS_ADAPTERS : SPOT_ADAPTERS;
+  const defaultId = product === "perps" ? DEFAULT_PERPS_ADAPTER_ID : DEFAULT_SPOT_ADAPTER_ID;
 
   const [adapterId, setAdapterId] = useState(defaultId);
   const [symbol, setSymbol] = useState<string>("");
@@ -81,12 +71,6 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
     const idx = adapters.findIndex((a) => a.id === adapterId);
     const next = adapters[(idx + 1) % adapters.length];
     setAdapterId(next.id);
-  }
-
-  function handleSpotCategoryChange(cat: "crypto" | "fx") {
-    setSpotCategory(cat);
-    const nextAdapters = cat === "crypto" ? SPOT_ADAPTERS : FX_ADAPTERS;
-    setAdapterId(nextAdapters[0].id);
   }
 
   const tabs: Tab[] = product === "perps" ? ["markets", "chart", "positions", "history", "tools"] : ["chart", "positions", "history", "tools"];
@@ -116,27 +100,10 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
         </button>
       </div>
 
-      {/* Spot sub-category: Crypto Spot vs FX Spot */}
-      {product === "spot" && (
-        <div className="flex shrink-0 gap-1 border-b border-border px-4 py-2">
-          {(["crypto", "fx"] as const).map((c) => (
-            <button
-              key={c}
-              onClick={() => handleSpotCategoryChange(c)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                spotCategory === c ? "bg-surface-2 text-ink" : "text-ink-3"
-              }`}
-            >
-              {c === "crypto" ? "Crypto Spot" : "FX Spot"}
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* Content */}
       {tab === "chart" ? (
         <div className="flex min-h-0 flex-1 flex-col">
-          <MobileChartTab product={product} spotCategory={spotCategory} adapter={adapter as any} symbol={symbol} prefill={prefill} />
+          <MobileChartTab product={product} adapter={adapter as any} symbol={symbol} prefill={prefill} />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
@@ -150,7 +117,7 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
             />
           )}
           {tab === "positions" && <MobilePositionsTab product={product} adapter={adapter as any} />}
-          {tab === "history" && <MobileHistoryTab />}
+          {tab === "history" && <MobileHistoryTab scope={product} />}
           {tab === "tools" && (
             <MobileToolsTab
               symbol={symbol}

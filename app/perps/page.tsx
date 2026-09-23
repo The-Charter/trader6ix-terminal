@@ -11,6 +11,7 @@ import { PositionsPanel } from "@/components/positions-panel";
 import { RiskCalculatorPanel } from "@/components/risk-calculator-panel";
 import { PERPS_ADAPTERS, DEFAULT_PERPS_ADAPTER_ID, getPerpsAdapter } from "@/lib/adapters/registry";
 import { AIInsightPanel } from "@/components/ai-insight-panel";
+import { ActivityPanel } from "@/components/activity-panel";
 import { demoPrice } from "@/lib/demo-market-data";
 
 export default function PerpsPage() {
@@ -47,6 +48,9 @@ export default function PerpsPage() {
           </div>
           <div className="border-t border-border">
             <PositionsPanel adapter={adapter} />
+          </div>
+          <div className="border-t border-border p-3">
+            <ActivityPanel scope="perps" />
           </div>
         </div>
 

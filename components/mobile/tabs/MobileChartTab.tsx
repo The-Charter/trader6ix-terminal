@@ -5,19 +5,16 @@ import type { MobileProduct } from "../MobileApp";
 import { CandlestickChart } from "@/components/candlestick-chart";
 import { TradeTicket } from "@/components/trade-ticket";
 import { SwapTicket } from "@/components/swap-ticket";
-import { FxTicket } from "@/components/fx-ticket";
 import { useOrderbook } from "@/lib/hooks";
 import { getInstrumentSpec } from "@/lib/instrument-specs";
 
 export function MobileChartTab({
   product,
-  spotCategory,
   adapter,
   symbol,
   prefill,
 }: {
   product: MobileProduct;
-  spotCategory?: "crypto" | "fx";
   adapter: any;
   symbol: string;
   prefill?: any;
@@ -27,14 +24,6 @@ export function MobileChartTab({
   useEffect(() => {
     if (prefill) setSheetOpen(true);
   }, [prefill?.token]);
-
-  if (product === "spot" && spotCategory === "fx") {
-    return (
-      <div className="px-4 py-6">
-        <FxTicket adapter={adapter} />
-      </div>
-    );
-  }
 
   if (product === "spot") {
     return (

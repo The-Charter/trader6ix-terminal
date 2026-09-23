@@ -1,19 +1,26 @@
 "use client";
 
+import { ethers } from "ethers";
 import { useState, useEffect, useCallback } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import type { SpotAdapter } from "@/lib/adapters/spot-adapter";
 import { TokenLogo } from "@/components/token-logo";
+import { TOWER_TOKENS, type TowerTokenSymbol } from "@/lib/tower/tokens";
+
+const ERC20_BALANCE_ABI = ["function balanceOf(address account) view returns (uint256)"];
 
 export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
   const { authenticated, login, user } = usePrivy();
   const walletAddress = user?.wallet?.address ?? null;
 
-  const [side, setSide] = useState<"buy" | "sell">("sell"); // sell EURC for USDC by default
+  const [fromSymbol, setFromSymbol] = useState<TowerTokenSymbol>("EURC");
+  const [toSymbol, setToSymbol] = useState<TowerTokenSymbol>("USDC");
   const [amount, setAmount] = useState("");
   const [quote, setQuote] = useState<{ amountOut: string } | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [balances, setBalances] = useState<Partial<Record<TowerTokenSymbol, string>>>({});
+  const [balancesLoading, setBalancesLoading] = useState(false);
   const [swapping, setSwapping] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [completedSwap, setCompletedSwap] = useState<{
@@ -24,10 +31,38 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
     txHash: string;
   } | null>(null);
 
-  const from = side === "sell" ? "EURC" : "USDC";
-  const to = side === "sell" ? "USDC" : "EURC";
+  const from = fromSymbol;
+  const to = toSymbol;
   const amountNum = parseFloat(amount);
   const amountValid = amount.trim() !== "" && Number.isFinite(amountNum) && amountNum > 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBalances() {
+      if (!walletAddress || typeof window === "undefined" || !(window as any).ethereum) {
+        setBalances({});
+        return;
+      }
+      setBalancesLoading(true);
+      try {
+        const provider = new ethers.BrowserProvider((window as any).ethereum);
+        const values = await Promise.all(
+          TOWER_TOKENS.map(async (token) => {
+            const contract = new ethers.Contract(token.address, ERC20_BALANCE_ABI, provider);
+            const balance = await contract.balanceOf(walletAddress);
+            return [token.symbol, ethers.formatUnits(balance, token.decimals)] as const;
+          })
+        );
+        if (!cancelled) setBalances(Object.fromEntries(values));
+      } catch {
+        if (!cancelled) setBalances({});
+      } finally {
+        if (!cancelled) setBalancesLoading(false);
+      }
+    }
+    loadBalances();
+    return () => { cancelled = true; };
+  }, [walletAddress]);
 
   const fetchQuote = useCallback(async () => {
     if (!amountValid) {
@@ -37,7 +72,7 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
     setQuoting(true);
     setQuoteError(null);
     try {
-      const q = await adapter.getSwapQuote({ base: "EURC", quote: "USDC", side, amount });
+      const q = await adapter.getSwapQuote({ base: fromSymbol, quote: toSymbol, side: "sell", amount });
       setQuote({ amountOut: q.amountOut });
     } catch (err) {
       setQuoteError(err instanceof Error ? err.message : "Failed to get quote");
@@ -45,7 +80,7 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
     } finally {
       setQuoting(false);
     }
-  }, [adapter, side, amount, amountValid]);
+  }, [adapter, fromSymbol, toSymbol, amount, amountValid]);
 
   useEffect(() => {
     const t = setTimeout(fetchQuote, 400); // debounce
@@ -58,7 +93,7 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
     setResult(null);
     setCompletedSwap(null);
     try {
-      const res = await adapter.swap({ base: "EURC", quote: "USDC", side, amount }, walletAddress);
+      const res = await adapter.swap({ base: fromSymbol, quote: toSymbol, side: "sell", amount }, walletAddress);
       if (!res.ok) throw new Error(res.error ?? "Swap failed");
       const isDemo = adapter.id.startsWith("mock-");
       setResult({
@@ -89,9 +124,22 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
     <>
       <div className="mx-auto flex w-full max-w-sm flex-col gap-3 rounded-lg border border-border bg-surface-1 p-5">
       <div className="flex items-center justify-between rounded-md bg-surface-2 px-3 py-2">
-        <span className="flex items-center gap-2 text-sm text-ink">
-          <TokenLogo symbol={from as any} size={20} /> {from}
-        </span>
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <TokenLogo symbol={from as any} size={20} />
+          <select
+            value={from}
+            onChange={(event) => {
+              const symbol = event.target.value as TowerTokenSymbol;
+              setFromSymbol(symbol);
+              if (symbol === toSymbol) setToSymbol(fromSymbol);
+              setAmount("");
+              setQuote(null);
+            }}
+            className="bg-transparent font-medium outline-none"
+          >
+            {TOWER_TOKENS.map((token) => <option key={token.symbol} value={token.symbol} disabled={token.symbol === to}>{token.symbol}</option>)}
+          </select>
+        </label>
         <input
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -100,10 +148,14 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
           className="w-28 bg-transparent text-right font-mono text-sm text-ink outline-none"
         />
       </div>
+      <p className="mt-[-8px] text-right text-[11px] text-ink-3">
+        Balance: {balances[fromSymbol] ? Number(balances[fromSymbol]).toLocaleString(undefined, { maximumFractionDigits: 4 }) : balancesLoading ? "Loading..." : "--"}
+      </p>
 
       <button
         onClick={() => {
-          setSide((s) => (s === "sell" ? "buy" : "sell"));
+          setFromSymbol(toSymbol);
+          setToSymbol(fromSymbol);
           setAmount("");
           setQuote(null);
         }}
@@ -113,14 +165,30 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
       </button>
 
       <div className="flex items-center justify-between rounded-md bg-surface-2 px-3 py-2">
-        <span className="flex items-center gap-2 text-sm text-ink">
-          <TokenLogo symbol={to as any} size={20} /> {to}
-        </span>
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <TokenLogo symbol={to as any} size={20} />
+          <select
+            value={to}
+            onChange={(event) => {
+              const symbol = event.target.value as TowerTokenSymbol;
+              setToSymbol(symbol);
+              if (symbol === fromSymbol) setFromSymbol(toSymbol);
+              setAmount("");
+              setQuote(null);
+            }}
+            className="bg-transparent font-medium outline-none"
+          >
+            {TOWER_TOKENS.map((token) => <option key={token.symbol} value={token.symbol} disabled={token.symbol === from}>{token.symbol}</option>)}
+          </select>
+        </label>
         <span className="font-mono text-sm text-ink-2">
           {quoting ? "…" : quote ? Number(quote.amountOut).toFixed(4) : "0.00"}
         </span>
       </div>
 
+      <p className="mt-[-8px] text-right text-[11px] text-ink-3">
+        Balance: {balances[toSymbol] ? Number(balances[toSymbol]).toLocaleString(undefined, { maximumFractionDigits: 4 }) : balancesLoading ? "Loading..." : "--"}
+      </p>
       {quoteError && <p className="text-xs text-bear">{quoteError}</p>}
 
       {!authenticated ? (
@@ -194,12 +262,12 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
             </dl>
 
             <a
-              href={`https://testnet.arcscan.app/tx/${completedSwap.txHash}`}
+              href={`https://explorer.arc.io/tx/${completedSwap.txHash}`}
               target="_blank"
               rel="noreferrer"
               className="mt-5 block rounded-md bg-accent px-4 py-2.5 text-center text-sm font-semibold text-zinc-950 hover:opacity-90"
             >
-              View transaction on ArcScan
+              View transaction on Arc Explorer
             </a>
           </div>
         </div>

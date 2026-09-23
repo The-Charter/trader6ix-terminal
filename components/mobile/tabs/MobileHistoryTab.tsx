@@ -5,7 +5,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { DATA_ADAPTERS } from "@/lib/adapters/registry";
 import type { IndexedTransaction } from "@/lib/adapters/data-adapter";
 
-export function MobileHistoryTab() {
+export function MobileHistoryTab({ scope }: { scope: "spot" | "perps" }) {
   const { authenticated, login, user } = usePrivy();
   const walletAddress = user?.wallet?.address ?? null;
   const adapter = DATA_ADAPTERS[0];
@@ -18,9 +18,12 @@ export function MobileHistoryTab() {
     setLoading(true);
     adapter
       .getTransactionHistory(walletAddress)
-      .then(setTransactions)
+      .then((items) => setTransactions(items.filter((item) => {
+        const matchesScope = scope === "spot" ? item.type === "swap" || item.type === "fx_settlement" : item.type === "perp_order";
+        return matchesScope && (scope !== "spot" || !adapter.id.startsWith("mock-"));
+      })))
       .finally(() => setLoading(false));
-  }, [authenticated, walletAddress, adapter]);
+  }, [authenticated, walletAddress, adapter, scope]);
 
   if (!authenticated) {
     return (
@@ -34,7 +37,7 @@ export function MobileHistoryTab() {
   }
 
   if (loading) return <p className="px-4 py-8 text-center text-sm text-ink-3">Loading…</p>;
-  if (transactions.length === 0) return <p className="px-4 py-8 text-center text-sm text-ink-3">No activity yet.</p>;
+  if (transactions.length === 0) return <p className="px-4 py-8 text-center text-sm text-ink-3">No {scope} activity yet.</p>;
 
   return (
     <div className="divide-y divide-border">

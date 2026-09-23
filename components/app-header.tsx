@@ -12,12 +12,7 @@ export function AppHeader() {
   const nav = [
     { href: "/spot", label: "Spot" },
     { href: "/perps", label: "Perps" },
-    { href: "/fx", label: "FX" },
     { href: "/portfolio", label: "Portfolio" },
-    { href: "/history", label: "History" },
-    { href: "/watchlist", label: "Watchlist" },
-    { href: "/alerts", label: "Alerts" },
-    { href: "/tools", label: "Tools" },
   ];
 
   return (
@@ -43,7 +38,7 @@ export function AppHeader() {
         <span className="hidden shrink-0 rounded-full border border-warn/40 bg-warn/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-warn sm:inline-block">
           Testnet
         </span>
-        {DEMO_MODE && (
+        {DEMO_MODE && !pathname?.startsWith("/spot") && (
           <span className="hidden rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-accent sm:inline-block">
             Demo Mode
           </span>

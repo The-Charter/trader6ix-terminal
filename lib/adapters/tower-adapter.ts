@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import type { SpotAdapter, SpotPool, SwapQuote, SwapQuoteInput, SwapResult } from "./spot-adapter";
+import { getTowerToken } from "@/lib/tower/tokens";
 
 /**
  * Tower Exchange — Arc's native stablecoin swap aggregator. Implemented as a
@@ -17,25 +18,21 @@ const ENABLED = process.env.NEXT_PUBLIC_TOWER_ENABLED !== "false"; // on by defa
 const ARC_CHAIN_ID = Number(process.env.NEXT_PUBLIC_ARC_CHAIN_ID ?? 5042002);
 
 // Confirmed official Arc testnet addresses (docs.arc.io/arc/references/contract-addresses)
-const TOKEN_ADDRESSES: Record<string, string> = {
-  USDC: "0x3600000000000000000000000000000000000000",
-  EURC: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
-};
-const DECIMALS: Record<string, number> = { USDC: 6, EURC: 6 };
 const DEFAULT_SLIPPAGE = 0.005; // 0.5% — TODO: make user-configurable in the trade ticket
 
 async function requestQuote(input: SwapQuoteInput) {
   const fromSymbol = input.side === "sell" ? input.base : input.quote;
   const toSymbol = input.side === "sell" ? input.quote : input.base;
-  const decimalsIn = DECIMALS[fromSymbol] ?? 6;
-  const amountAtomic = ethers.parseUnits(input.amount, decimalsIn).toString();
+  const inputToken = getTowerToken(fromSymbol);
+  const outputToken = getTowerToken(toSymbol);
+  const amountAtomic = ethers.parseUnits(input.amount, inputToken.decimals).toString();
 
   const res = await fetch("/api/tower/quote", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      inputToken: TOKEN_ADDRESSES[fromSymbol],
-      outputToken: TOKEN_ADDRESSES[toSymbol],
+      inputToken: inputToken.address,
+      outputToken: outputToken.address,
       inputAmount: amountAtomic,
       slippage: DEFAULT_SLIPPAGE,
       chainId: ARC_CHAIN_ID,
@@ -52,7 +49,7 @@ async function requestQuote(input: SwapQuoteInput) {
     );
   }
 
-  return { data, fromSymbol, toSymbol, decimalsIn };
+  return { data, fromSymbol, toSymbol };
 }
 
 export const towerAdapter: SpotAdapter = {
