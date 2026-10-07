@@ -1,62 +1,74 @@
 # Goldsky setup — Trader6ix
 
-This indexes USDC and EURC Transfer/Approval events on Arc testnet, which
-powers wallet balances and transaction history via the `DataAdapter`
-(`lib/adapters/goldsky-data-adapter.ts`). It does NOT touch trade execution —
-that stays on Hibachi/StableFX/Curve regardless of Goldsky's status.
+Indexes USDC and EURC `Transfer` events on Arc Testnet to power wallet balances
+and transaction history via the `DataAdapter`
+(`src/adapters/goldsky-data-adapter.ts`). It does not touch trade execution.
 
-## 1. Install the CLI and log in
+## 1. Install the CLI
 
-```bash
+Windows:
+
+```
 npm install -g @goldskycom/cli
+```
+
+macOS / Linux:
+
+```
+curl https://goldsky.com | sh
+```
+
+## 2. Log in
+
+Interactive (opens a browser):
+
+```
 goldsky login
 ```
 
-This opens a browser to authenticate against the account you already created.
+Headless / CI (create an API key at https://app.goldsky.com/dashboard/settings):
 
-## 2. Verify the Arc chain slug
+```
+goldsky login --token <API_KEY>
+```
 
-Before deploying, confirm the exact chain identifier Goldsky expects — either:
-- run `goldsky subgraph init` and look for Arc in the interactive chain picker, or
-- check https://docs.goldsky.com/chains/arc directly
+## 3. Deploy the instant subgraph
 
-Update the two `chain:` lines in `trader6ix.yaml` if it's not `arc-testnet`.
-
-## 3. Deploy
-
-```bash
+```
 cd goldsky
 goldsky subgraph deploy trader6ix-arc-tokens/1.0.0 --from-abi trader6ix.yaml
 ```
 
-This prints a GraphQL endpoint that looks like:
+The command prints a GraphQL endpoint such as:
+
 ```
 https://api.goldsky.com/api/public/project_.../subgraphs/trader6ix-arc-tokens/1.0.0/gn
 ```
 
+If the deploy reports an unknown chain, correct the `chain:` value in
+`trader6ix.yaml` (Arc Testnet). Arc chain IDs: Mainnet `5042`, Testnet `5042002`.
+
 ## 4. Wire it into the app
 
-Add that URL to Vercel's environment variables (and `.env.local` for local dev):
+Set in `.env.local` (and in Vercel's environment variables):
+
 ```
-NEXT_PUBLIC_GOLDSKY_GRAPHQL_URL=<the endpoint from step 3>
+NEXT_PUBLIC_GOLDSKY_GRAPHQL_URL=<endpoint from step 3>
 ```
 
-Once that's set, `goldskyDataAdapter.isLive` flips to `true` automatically —
-no code changes needed.
+`goldskyDataAdapter.isLive` then flips to `true` automatically — no other code
+changes are needed for the adapter to be selected.
 
-## What's still a placeholder after this
+## 5. Confirm the schema
 
-The GraphQL queries in `goldsky-data-adapter.ts` (portfolio, transaction
-history, trade history) use field/entity names that match what our UI needs,
-but Goldsky's actual auto-generated schema for this instant-subgraph config
-will use its own entity names (typically something like `transfers` or
-`transferEvents`, derived from the event name). Once you have a real
-endpoint, open its GraphiQL explorer (linked in the deploy output) to see the
-actual schema, and I'll adjust the queries in `goldsky-data-adapter.ts` to
-match — that's a quick fix once we can see real field names, not a rebuild.
+Open the endpoint's GraphiQL explorer (linked in the deploy output) and check the
+auto-generated entity name for the ERC-20 `Transfer` event, then update the
+queries in `src/adapters/goldsky-data-adapter.ts` to match that schema.
 
-## Later: StableFX and Curve events
+## Notes
 
-Once we have a Curve pool address and/or StableFX credentials, add their
-contract addresses and ABIs the same way — new `instances` entries in this
-same config, or a second subgraph if you want them versioned separately.
+- `startBlock: 0` in `trader6ix.yaml` indexes from genesis. Set it to the USDC /
+  EURC contract deploy block to avoid a full-history backfill.
+- To add more data later (Curve swaps, StableFX settlements), add new
+  `instances` entries to the same config, or a second subgraph if you want them
+  versioned separately.

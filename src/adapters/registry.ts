@@ -6,6 +6,7 @@ import type { DataAdapter } from "./data-adapter";
 import { hibachiAdapter } from "./hibachi-adapter";
 import { stableFxAdapter } from "./stablefx-adapter";
 import { towerAdapter } from "./tower-adapter";
+import { arcExplorerDataAdapter } from "./arc-explorer-data-adapter";
 import { goldskyDataAdapter } from "./goldsky-data-adapter";
 
 /**
@@ -19,7 +20,7 @@ import { goldskyDataAdapter } from "./goldsky-data-adapter";
 export const PERPS_ADAPTERS: PerpsAdapter[] = [hibachiAdapter];
 export const FX_ADAPTERS: FXAdapter[] = [stableFxAdapter];
 export const SPOT_ADAPTERS: SpotAdapter[] = [towerAdapter];
-export const DATA_ADAPTERS: DataAdapter[] = [goldskyDataAdapter];
+export const DATA_ADAPTERS: DataAdapter[] = [arcExplorerDataAdapter, goldskyDataAdapter];
 
 export function getPerpsAdapter(id: string) {
   return PERPS_ADAPTERS.find((a) => a.id === id);
