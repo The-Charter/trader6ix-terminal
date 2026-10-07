@@ -1,6 +1,5 @@
 import "server-only";
 import { getTowerPrices } from "@/server/tower/client";
-import { SPOT_PRICE_SYMBOLS } from "@/lib/prices";
 
 const CACHE_TTL_MS = 60_000;
 const cache = new Map<string, { at: number; data: Record<string, number> }>();
@@ -8,26 +7,22 @@ const cache = new Map<string, { at: number; data: Record<string, number> }>();
 /**
  * USD prices for the Spot (Tower) tokens, cached for 60s. Tower's /prices
  * response is a flat, mixed map: token symbols map to a number, while provider
- * coin ids map to a { usd } object — only the token symbols are used.
+ * coin ids map to a { usd } object. Everything is returned, so any token Tower
+ * can price is available to the app by symbol.
  */
 export async function fetchSpotPrices(): Promise<Record<string, number>> {
-  const cacheKey = "spot";
-  const cached = cache.get(cacheKey);
+  const cached = cache.get("spot");
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.data;
 
-  const raw = await getTowerPrices();
-  const source = raw as Record<string, unknown>;
+  const source = (await getTowerPrices()) as Record<string, unknown>;
 
+  // Tower maps token symbols to a USD number and provider coin ids to a
+  // { usd } object; keep only the symbol -> number entries.
   const prices: Record<string, number> = {};
-  for (const symbol of SPOT_PRICE_SYMBOLS) {
-    const value = source[symbol];
-    if (typeof value === "number") {
-      prices[symbol] = value;
-    } else if (value && typeof value === "object" && typeof (value as { usd?: unknown }).usd === "number") {
-      prices[symbol] = (value as { usd: number }).usd;
-    }
+  for (const [symbol, value] of Object.entries(source)) {
+    if (typeof value === "number") prices[symbol] = value;
   }
 
-  cache.set(cacheKey, { at: Date.now(), data: prices });
+  cache.set("spot", { at: Date.now(), data: prices });
   return prices;
 }

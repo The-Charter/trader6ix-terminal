@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import type { PerpsAdapter, PerpsMarket, PerpsPosition, PerpsOrder } from "@/adapters/perps-adapter";
+import type { SpotAdapter, SpotToken } from "@/adapters/spot-adapter";
 import type { AdapterOrderbook, AdapterCandle } from "@/adapters/shared-types";
 import type { PriceMap } from "@/lib/prices";
 
@@ -126,6 +127,31 @@ export function usePrices() {
       setState({ data: null, loading: false, error: err instanceof Error ? err.message : "Unknown error" });
     }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+  useInterval(fetchData, 60000);
+
+  return state;
+}
+
+/** Token metadata for a Spot venue (the assets it can actually swap). */
+export function useSpotTokens(adapter: SpotAdapter) {
+  const [state, setState] = useState<FetchState<SpotToken[]>>({ data: null, loading: true, error: null });
+
+  const fetchData = useCallback(async () => {
+    if (!adapter.getTokens) {
+      setState({ data: null, loading: false, error: null });
+      return;
+    }
+    try {
+      const data = await adapter.getTokens();
+      setState({ data, loading: false, error: null });
+    } catch (err) {
+      setState({ data: null, loading: false, error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  }, [adapter]);
 
   useEffect(() => {
     fetchData();

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/app-header";
-import { SPOT_PRICE_SYMBOLS } from "@/lib/prices";
-
-const ALERT_SYMBOLS = [...SPOT_PRICE_SYMBOLS];
+import { SPOT_ADAPTERS } from "@/adapters/registry";
+import { useSpotTokens } from "@/lib/hooks";
 
 interface Alert {
   id: string;
@@ -17,9 +16,16 @@ const STORAGE_KEY = "trader6ix:alerts";
 
 export default function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [symbol, setSymbol] = useState("BTC");
+  const [symbol, setSymbol] = useState("USDC");
   const [condition, setCondition] = useState<"above" | "below">("above");
   const [price, setPrice] = useState("");
+  const { data: tokens } = useSpotTokens(SPOT_ADAPTERS[0]);
+  const symbols = useMemo(() => (tokens ?? []).map((token) => token.symbol), [tokens]);
+
+  useEffect(() => {
+    if (symbols.length === 0) return;
+    setSymbol((current) => (symbols.includes(current) ? current : symbols[0]));
+  }, [symbols]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -62,7 +68,7 @@ export default function AlertsPage() {
             onChange={(e) => setSymbol(e.target.value)}
             className="rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm text-ink"
           >
-            {ALERT_SYMBOLS.map((s) => (
+            {symbols.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
