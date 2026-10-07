@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/app-header";
-import { DEMO_ASSETS } from "@/lib/demo-market-data";
+
+const ALERT_SYMBOLS = ["BTC", "ETH", "SOL", "USDC", "EURC"];
 
 interface Alert {
   id: string;
@@ -60,9 +61,9 @@ export default function AlertsPage() {
             onChange={(e) => setSymbol(e.target.value)}
             className="rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm text-ink"
           >
-            {DEMO_ASSETS.map((a) => (
-              <option key={a.symbol} value={a.symbol}>
-                {a.symbol}
+            {ALERT_SYMBOLS.map((s) => (
+              <option key={s} value={s}>
+                {s}
               </option>
             ))}
           </select>

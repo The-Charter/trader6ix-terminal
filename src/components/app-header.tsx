@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { WalletStatus } from "@/components/wallet-status";
-import { DEMO_MODE } from "@/adapters/registry";
 
 const FAUCET_URL = process.env.NEXT_PUBLIC_FAUCET_URL ?? "https://faucet.circle.com";
 
@@ -38,11 +37,6 @@ export function AppHeader() {
         <span className="hidden shrink-0 rounded-full border border-warn/40 bg-warn/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-warn sm:inline-block">
           Testnet
         </span>
-        {DEMO_MODE && !pathname?.startsWith("/spot") && (
-          <span className="hidden rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-accent sm:inline-block">
-            Demo Mode
-          </span>
-        )}
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">

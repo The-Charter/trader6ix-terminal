@@ -93,9 +93,7 @@ export function MobileTerminal({ product, onBack }: { product: MobileProduct; on
           <span className={`h-1.5 w-1.5 rounded-full ${adapter.isLive ? "bg-bull" : "bg-warn"}`} />
           <span className="text-left leading-tight">
             <span className="block text-[11px] font-semibold text-ink">{adapter.displayName}</span>
-            <span className="block text-[9px] text-ink-3">
-              {adapter.id.startsWith("mock-") ? "Simulated" : "Arc Network"}
-            </span>
+            <span className="block text-[9px] text-ink-3">Arc Network</span>
           </span>
         </button>
       </div>

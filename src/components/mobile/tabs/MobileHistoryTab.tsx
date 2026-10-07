@@ -18,10 +18,9 @@ export function MobileHistoryTab({ scope }: { scope: "spot" | "perps" }) {
     setLoading(true);
     adapter
       .getTransactionHistory(walletAddress)
-      .then((items) => setTransactions(items.filter((item) => {
-        const matchesScope = scope === "spot" ? item.type === "swap" || item.type === "fx_settlement" : item.type === "perp_order";
-        return matchesScope && (scope !== "spot" || !adapter.id.startsWith("mock-"));
-      })))
+      .then((items) => setTransactions(items.filter((item) =>
+        scope === "spot" ? item.type === "swap" || item.type === "fx_settlement" : item.type === "perp_order"
+      )))
       .finally(() => setLoading(false));
   }, [authenticated, walletAddress, adapter, scope]);
 

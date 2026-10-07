@@ -40,12 +40,6 @@ export default function PortfolioPage() {
     <div className="flex min-h-screen flex-col">
       <AppHeader />
 
-      {!adapter.id.startsWith("mock-") ? null : (
-        <div className="border-b border-accent/20 bg-accent/5 px-4 py-2 text-center text-xs text-accent">
-          Demo data — will be powered by indexed onchain data (Goldsky) once that integration resumes.
-        </div>
-      )}
-
       <div className="mx-auto w-full max-w-3xl px-4 py-8">
         {!authenticated ? (
           <div className="flex flex-col items-center gap-3 py-20 text-center">

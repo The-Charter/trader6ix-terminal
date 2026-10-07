@@ -4,7 +4,6 @@ import { useState } from "react";
 import type { PerpsAdapter } from "@/adapters/perps-adapter";
 import { useMarkets } from "@/lib/hooks";
 import { TokenLogo } from "@/components/token-logo";
-import { demoPrice } from "@/lib/demo-market-data";
 
 export function MobileMarketsTab({ adapter, onSelect }: { adapter: PerpsAdapter; onSelect: (symbol: string) => void }) {
   const { data: markets, loading, error } = useMarkets(adapter);
@@ -48,7 +47,6 @@ export function MobileMarketsTab({ adapter, onSelect }: { adapter: PerpsAdapter;
 
       <div className="divide-y divide-border">
         {filtered.map((m) => {
-          const price = demoPrice(m.base);
           return (
             <button
               key={m.symbol}
@@ -64,9 +62,6 @@ export function MobileMarketsTab({ adapter, onSelect }: { adapter: PerpsAdapter;
                     {m.isLive ? (m.assetClass === "fx" ? "FX Perpetual" : "Crypto Perpetual") : "Unavailable"}
                   </span>
                 </span>
-              </span>
-              <span className="font-mono text-sm text-ink">
-                {m.assetClass === "fx" ? price.toFixed(4) : `$${price.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
               </span>
             </button>
           );

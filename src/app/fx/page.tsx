@@ -27,7 +27,6 @@ export default function FxPage() {
             <h1 className="text-2xl font-semibold text-ink">Stablecoin FX — not yet configured</h1>
             <p className="mt-3 text-sm text-ink-2">
               {adapter.displayName} requires Circle&apos;s institutional KYB/AML verification before it can go live.
-              Switch to Demo Stablecoin FX above to preview the experience.
             </p>
           </div>
         )}

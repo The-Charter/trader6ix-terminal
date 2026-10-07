@@ -104,13 +104,10 @@ export function TradeTicket({
         },
         walletAddress
       );
-      const isDemo = adapter.id.startsWith("mock-");
       if (!res.ok) throw new Error(res.error ?? "Order failed");
       setResult({
         ok: true,
-        message: isDemo
-          ? "Demo order filled — no real funds were moved."
-          : `Order submitted${res.orderId ? ` (id ${res.orderId})` : ""}.`,
+        message: `Order submitted${res.orderId ? ` (id ${res.orderId})` : ""}.`,
       });
       setQuantity("");
       setStopLoss("");

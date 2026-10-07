@@ -1,9 +1,8 @@
 /**
- * Per-instrument trading specs. Values here are for the demo perpetual
- * markets we actually run (BTC-PERP/ETH-PERP/SOL-PERP). When a real
- * PerpsAdapter market is selected, its own contract spec should come from
- * that venue's exchange-info response — this table is the fallback/demo
- * source, not a claim about any specific live venue's actual contract terms.
+ * Per-instrument trading specs (precision, leverage, lot size). This table is a
+ * fallback for display formatting; when a real PerpsAdapter market is selected,
+ * its own contract spec should come from that venue's exchange-info response.
+ * These are contract parameters, not live market data.
  */
 
 export type AssetClass = "crypto-perp" | "fx" | "metal";

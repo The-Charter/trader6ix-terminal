@@ -11,16 +11,16 @@ export function RiskCalculatorPanel({
   onUsePositionSize,
 }: {
   symbol: string;
-  currentPrice: number;
+  currentPrice?: number;
   onUsePositionSize: (prefill: TradeTicketPrefill) => void;
 }) {
   const [mode, setMode] = useState<"lots" | "leverage">("lots");
   const [balance, setBalance] = useState("5000");
   const [riskPct, setRiskPct] = useState("1");
   const [leverageInput, setLeverageInput] = useState("5");
-  const [entry, setEntry] = useState(String(currentPrice));
-  const [stopLoss, setStopLoss] = useState(String((currentPrice * 0.98).toFixed(2)));
-  const [takeProfit, setTakeProfit] = useState(String((currentPrice * 1.04).toFixed(2)));
+  const [entry, setEntry] = useState(currentPrice ? String(currentPrice) : "");
+  const [stopLoss, setStopLoss] = useState(currentPrice ? String((currentPrice * 0.98).toFixed(2)) : "");
+  const [takeProfit, setTakeProfit] = useState(currentPrice ? String((currentPrice * 1.04).toFixed(2)) : "");
 
   const spec = getInstrumentSpec(symbol);
 

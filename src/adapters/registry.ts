@@ -8,27 +8,18 @@ import { stableFxAdapter } from "./stablefx-adapter";
 import { towerAdapter } from "./tower-adapter";
 import { goldskyDataAdapter } from "./goldsky-data-adapter";
 
-import { mockPerpsAdapter } from "./mock/mock-perps-adapter";
-import { mockFxAdapter } from "./mock/mock-fx-adapter";
-import { mockDataAdapter } from "./mock/mock-data-adapter";
-
 /**
- * DEMO_MODE controls which concrete adapter powers each category. In demo
- * mode, the UI runs entirely against simulated data (clearly marked as such
- * everywhere it surfaces) so the product can be shown end-to-end even while
- * Hibachi/Curve/StableFX are still being finalized. Flip
- * NEXT_PUBLIC_DEMO_MODE=false once the real integrations are trustworthy —
- * no other code changes needed, since every component only ever talks to the
- * adapter interface, never to a specific venue.
+ * Concrete adapters per category. Every entry is a real venue integration — the
+ * UI only ever talks to the adapter interfaces, never to a specific venue.
+ *
+ * A venue that is not configured (missing credentials, or a paused integration)
+ * reports `isLive: false` from its adapter and the UI renders an unavailable
+ * state. No simulated data is ever substituted for real data.
  */
-export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== "false"; // defaults to true
-
-export const PERPS_ADAPTERS: PerpsAdapter[] = DEMO_MODE ? [mockPerpsAdapter, hibachiAdapter] : [hibachiAdapter];
-export const FX_ADAPTERS: FXAdapter[] = DEMO_MODE ? [mockFxAdapter, stableFxAdapter] : [stableFxAdapter];
-// Keep this selector-backed list even with one venue so future integrations
-// can be added without changing the Spot interface.
+export const PERPS_ADAPTERS: PerpsAdapter[] = [hibachiAdapter];
+export const FX_ADAPTERS: FXAdapter[] = [stableFxAdapter];
 export const SPOT_ADAPTERS: SpotAdapter[] = [towerAdapter];
-export const DATA_ADAPTERS: DataAdapter[] = DEMO_MODE ? [mockDataAdapter, goldskyDataAdapter] : [goldskyDataAdapter];
+export const DATA_ADAPTERS: DataAdapter[] = [goldskyDataAdapter];
 
 export function getPerpsAdapter(id: string) {
   return PERPS_ADAPTERS.find((a) => a.id === id);

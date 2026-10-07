@@ -10,9 +10,7 @@ import { TradeTicket, type TradeTicketPrefill } from "@/components/trade-ticket"
 import { PositionsPanel } from "@/components/positions-panel";
 import { RiskCalculatorPanel } from "@/components/risk-calculator-panel";
 import { PERPS_ADAPTERS, DEFAULT_PERPS_ADAPTER_ID, getPerpsAdapter } from "@/adapters/registry";
-import { AIInsightPanel } from "@/components/ai-insight-panel";
 import { ActivityPanel } from "@/components/activity-panel";
-import { demoPrice } from "@/lib/demo-market-data";
 
 export default function PerpsPage() {
   const [adapterId, setAdapterId] = useState(DEFAULT_PERPS_ADAPTER_ID);
@@ -20,8 +18,6 @@ export default function PerpsPage() {
   const [symbol, setSymbol] = useState<string>("");
   const [prefill, setPrefill] = useState<TradeTicketPrefill | undefined>(undefined);
   const [showCalculator, setShowCalculator] = useState(false);
-
-  const base = symbol.split("-")[0] || "BTC";
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -62,12 +58,7 @@ export default function PerpsPage() {
           <TradeTicket adapter={adapter} symbol={symbol || null} prefill={prefill} />
           {symbol && showCalculator && (
             <div className="lg:px-0">
-              <RiskCalculatorPanel symbol={symbol} currentPrice={demoPrice(base)} onUsePositionSize={setPrefill} />
-            </div>
-          )}
-          {symbol && (
-            <div className="lg:px-0">
-              <AIInsightPanel symbol={symbol} />
+              <RiskCalculatorPanel symbol={symbol} onUsePositionSize={setPrefill} />
             </div>
           )}
         </div>

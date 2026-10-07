@@ -22,10 +22,7 @@ export function ActivityPanel({ scope }: { scope: "spot" | "perps" }) {
     setLoading(true);
     adapter
       .getTransactionHistory(walletAddress)
-      .then((items) => setTransactions(items.filter((item) => {
-        if (!TYPE_FILTERS[scope].has(item.type)) return false;
-        return scope !== "spot" || !adapter.id.startsWith("mock-");
-      })))
+      .then((items) => setTransactions(items.filter((item) => TYPE_FILTERS[scope].has(item.type))))
       .catch(() => setTransactions([]))
       .finally(() => setLoading(false));
   }, [adapter, authenticated, walletAddress, scope]);

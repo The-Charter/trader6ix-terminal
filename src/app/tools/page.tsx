@@ -5,12 +5,9 @@ import { AppHeader } from "@/components/app-header";
 import { RiskCalculatorPanel } from "@/components/risk-calculator-panel";
 import { EconomicCalendarPanel } from "@/components/economic-calendar-panel";
 import { AIAgentTeaser } from "@/components/ai-agent-teaser";
-import { AIInsightPanel } from "@/components/ai-insight-panel";
-import { DEMO_ASSETS, demoPrice } from "@/lib/demo-market-data";
 
 export default function ToolsPage() {
   const [symbol, setSymbol] = useState("BTC-PERP");
-  const base = symbol.split("-")[0];
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -32,7 +29,7 @@ export default function ToolsPage() {
               ))}
             </select>
           </div>
-          <RiskCalculatorPanel symbol={symbol} currentPrice={demoPrice(base)} onUsePositionSize={() => undefined} />
+          <RiskCalculatorPanel symbol={symbol} onUsePositionSize={() => undefined} />
           <p className="text-xs text-ink-3">
             &quot;Use Position Size&quot; carries values into the order ticket from the Perps page — open a market
             there to see it applied live.
@@ -41,7 +38,6 @@ export default function ToolsPage() {
 
         <div className="flex flex-col gap-4">
           <EconomicCalendarPanel />
-          <AIInsightPanel symbol={symbol} />
         </div>
 
         <div className="flex flex-col gap-4">

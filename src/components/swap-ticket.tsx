@@ -199,14 +199,11 @@ export function SwapTicket({ adapter }: { adapter: SpotAdapter }) {
         walletAddress
       );
       if (!res.ok) throw new Error(res.error ?? "Swap failed");
-      const isDemo = adapter.id.startsWith("mock-");
       setResult({
         ok: true,
-        message: isDemo
-          ? "Demo transaction — no real funds were moved."
-          : `Swap submitted — tx ${res.txHash?.slice(0, 10)}…`,
+        message: `Swap submitted — tx ${res.txHash?.slice(0, 10)}…`,
       });
-      if (!isDemo && res.txHash) {
+      if (res.txHash) {
         setCompletedSwap({
           amountIn: amount,
           amountOut: quote.amountOut,

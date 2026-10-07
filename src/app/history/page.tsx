@@ -29,12 +29,6 @@ export default function HistoryPage() {
     <div className="flex min-h-screen flex-col">
       <AppHeader />
 
-      {adapter.id.startsWith("mock-") && (
-        <div className="border-b border-accent/20 bg-accent/5 px-4 py-2 text-center text-xs text-accent">
-          Demo activity feed — will be powered by indexed onchain data (Goldsky) once that integration resumes.
-        </div>
-      )}
-
       <div className="mx-auto w-full max-w-2xl px-4 py-8">
         <h1 className="mb-4 text-lg font-semibold text-ink">Activity</h1>
 

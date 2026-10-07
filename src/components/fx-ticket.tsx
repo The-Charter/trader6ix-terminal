@@ -19,7 +19,6 @@ export function FxTicket({ adapter }: { adapter: FXAdapter }) {
   const to = side === "sell" ? "EURC" : "USDC";
   const amountNum = parseFloat(amount);
   const amountValid = amount.trim() !== "" && Number.isFinite(amountNum) && amountNum > 0;
-  const isDemo = adapter.id.startsWith("mock-");
 
   async function handleGetQuote() {
     if (!amountValid) return;
@@ -43,7 +42,7 @@ export function FxTicket({ adapter }: { adapter: FXAdapter }) {
     try {
       const t = await adapter.acceptQuote(quote.quoteId, walletAddress);
       setTrade(t);
-      // Poll for settlement in demo mode (mock adapter settles after ~2s)
+      // Poll until the trade settles or fails.
       if (t.status !== "settled") {
         const poll = setInterval(async () => {
           const updated = await adapter.getTradeStatus(t.tradeId);
@@ -123,7 +122,7 @@ export function FxTicket({ adapter }: { adapter: FXAdapter }) {
           </p>
           {trade.status === "settled" && (
             <p className="mt-1 text-xs text-bull">
-              {isDemo ? "Demo settlement — no real funds were moved." : `Settled — tx ${trade.settlementTxHash?.slice(0, 10)}…`}
+              Settled — tx {trade.settlementTxHash?.slice(0, 10)}…
             </p>
           )}
         </div>
