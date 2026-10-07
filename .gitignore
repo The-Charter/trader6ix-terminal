@@ -6,3 +6,8 @@ out/
 .env*.local
 *.log
 .DS_Store
+
+# build artifacts
+tsconfig.tsbuildinfo
+contracts/cache/
+contracts/broadcast/
