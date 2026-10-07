@@ -164,3 +164,62 @@ export interface TowerErrorResponse {
   code?: string;
   status?: number;
 }
+
+/** Known Tower API error codes (docs.tower.exchange -> Errors & Troubleshooting). */
+export type TowerErrorCode =
+  | "INVALID_API_KEY"
+  | "UNAUTHORIZED"
+  | "SCOPE_FORBIDDEN"
+  | "INSUFFICIENT_LIQUIDITY"
+  | "NO_ROUTE_FOUND"
+  | "SLIPPAGE_EXCEEDED"
+  | "QUOTE_EXPIRED"
+  | "INVALID_TOKEN"
+  | "UNSUPPORTED_CHAIN"
+  | "RATE_LIMIT_EXCEEDED"
+  | "WALLET_NOT_FOUND"
+  | "UPSTREAM_ERROR";
+
+// ---- Market data and metadata ----
+
+export interface TowerToken {
+  symbol: string;
+  name: string;
+  decimals: number;
+  address: string;
+  isNativeGas: boolean;
+  chainId: number;
+  chainKey: string;
+  bridgeAddresses?: Record<string, string>;
+}
+
+export interface TowerTokensResponse {
+  success: boolean;
+  data: TowerToken[];
+}
+
+/**
+ * GET /prices is NOT wrapped in { success, data }. It returns a flat object with
+ * a MIXED shape, confirmed against the live API:
+ *   - token symbols map directly to a USD number   (for example "USDC": 1)
+ *   - provider coin ids map to a { usd } object     (for example "usd-coin": { "usd": 1 })
+ */
+export type TowerPriceEntry = number | { usd: number };
+export type TowerPricesResponse = Record<string, TowerPriceEntry>;
+
+export interface TowerDexRouter {
+  id: string;
+  name: string;
+  routerAddress?: string;
+  factoryAddress?: string;
+  quoterAddress?: string;
+  type: string;
+  chainId?: number;
+  enabled: boolean;
+  supportedTokens?: string[];
+}
+
+export interface TowerDexesResponse {
+  success: boolean;
+  data: TowerDexRouter[];
+}

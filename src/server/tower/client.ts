@@ -1,67 +1,107 @@
 import "server-only";
-import type { TowerQuoteRequest, TowerQuoteResponse, TowerBuildTxRequest, TowerBuildTxResponse } from "@/lib/tower/types";
+import type {
+  TowerQuoteRequest,
+  TowerQuoteResponse,
+  TowerBuildTxRequest,
+  TowerBuildTxResponse,
+  TowerTokensResponse,
+  TowerPricesResponse,
+  TowerDexesResponse,
+} from "@/lib/tower/types";
+import { TowerApiError, messageForTowerError } from "./errors";
 
 const API_BASE = process.env.TOWER_API_BASE_URL ?? "https://www.tower.exchange/api/public";
 
 function requireApiKey(): string {
   const key = process.env.TOWER_API_KEY;
   if (!key) {
-    throw new Error("Missing TOWER_API_KEY. Add it to your environment (server-side only, never NEXT_PUBLIC_).");
+    throw new TowerApiError(
+      "Missing TOWER_API_KEY. Add it to your environment (server-side only, never NEXT_PUBLIC_).",
+      500
+    );
   }
   return key;
 }
 
-async function towerFetch<T>(path: string, body: unknown): Promise<T> {
+interface TowerRequestOptions {
+  method?: "GET" | "POST";
+  body?: unknown;
+}
+
+interface TowerErrorPayload {
+  error?: unknown;
+  code?: unknown;
+}
+
+function parseErrorPayload(text: string): TowerErrorPayload | null {
+  try {
+    const parsed = JSON.parse(text);
+    return typeof parsed === "object" && parsed !== null ? (parsed as TowerErrorPayload) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function towerFetch<T>(path: string, options: TowerRequestOptions = {}): Promise<T> {
+  const { method = "GET", body } = options;
   const apiKey = requireApiKey();
 
-  let res: Response;
+  let response: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
-      method: "POST",
+    response = await fetch(`${API_BASE}${path}`, {
+      method,
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        Accept: "application/json",
+        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
       },
-      body: JSON.stringify(body),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
       cache: "no-store",
     });
   } catch (err) {
-    // Network-level failure (DNS, connection refused, etc.) — distinct from
-    // an HTTP error response, and worth surfacing differently.
-    throw new Error(`Could not reach Tower API — ${err instanceof Error ? err.message : "network error"}`);
+    throw new TowerApiError(
+      `Could not reach Tower API: ${err instanceof Error ? err.message : "network error"}`,
+      502
+    );
   }
 
-  const rawText = await res.text();
+  const rawText = await response.text();
 
-  if (res.status === 401) {
-    throw new Error("Tower API key is invalid, missing, or revoked (401).");
+  if (!response.ok) {
+    const payload = parseErrorPayload(rawText);
+    const code = typeof payload?.code === "string" ? payload.code : undefined;
+    const upstream = typeof payload?.error === "string" ? payload.error : rawText;
+    // Never include the Authorization header or the key in any message.
+    throw new TowerApiError(messageForTowerError(code, upstream, response.status), response.status, code);
   }
-  if (res.status === 403) {
-    throw new Error("Tower API key is missing a required permission/scope (403).");
-  }
-  if (res.status === 404) {
-    throw new Error("Tower reports insufficient liquidity or an unsupported route (404).");
-  }
-  if (!res.ok) {
-    // Deliberately not including the Authorization header or key in this
-    // message — only the response body, which is Tower's own text.
-    throw new Error(`Tower ${path} failed: ${res.status} — ${rawText.slice(0, 300) || "(empty body)"}`);
-  }
+
   if (!rawText) {
-    throw new Error(`Tower ${path} returned an empty body with status ${res.status}.`);
+    throw new TowerApiError(`Tower returned an empty body with status ${response.status}.`, 502);
   }
 
   try {
     return JSON.parse(rawText) as T;
   } catch {
-    throw new Error(`Tower ${path} returned non-JSON content: ${rawText.slice(0, 300)}`);
+    throw new TowerApiError(`Tower returned non-JSON content: ${rawText.slice(0, 300)}`, 502);
   }
 }
 
-export function getTowerQuote(req: TowerQuoteRequest): Promise<TowerQuoteResponse> {
-  return towerFetch<TowerQuoteResponse>("/swap/quote", req);
+export function getTowerQuote(request: TowerQuoteRequest): Promise<TowerQuoteResponse> {
+  return towerFetch<TowerQuoteResponse>("/swap/quote", { method: "POST", body: request });
 }
 
-export function buildTowerSwapTx(req: TowerBuildTxRequest): Promise<TowerBuildTxResponse> {
-  return towerFetch<TowerBuildTxResponse>("/swap/build-tx", req);
+export function buildTowerSwapTx(request: TowerBuildTxRequest): Promise<TowerBuildTxResponse> {
+  return towerFetch<TowerBuildTxResponse>("/swap/build-tx", { method: "POST", body: request });
+}
+
+export function getTowerTokens(): Promise<TowerTokensResponse> {
+  return towerFetch<TowerTokensResponse>("/tokens");
+}
+
+export function getTowerPrices(): Promise<TowerPricesResponse> {
+  return towerFetch<TowerPricesResponse>("/prices");
+}
+
+export function getTowerDexes(): Promise<TowerDexesResponse> {
+  return towerFetch<TowerDexesResponse>("/swap/dexes");
 }
