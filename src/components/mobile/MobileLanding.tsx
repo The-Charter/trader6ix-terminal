@@ -5,8 +5,8 @@ import type { MobileProduct } from "./MobileApp";
 
 const FAUCET_URL = process.env.NEXT_PUBLIC_FAUCET_URL ?? "https://faucet.circle.com";
 
-const OPTIONS: { id: MobileProduct; label: string; description: string }[] = [
-  { id: "perps", label: "Perpetuals", description: "Crypto & FX leveraged futures" },
+const OPTIONS: { id: MobileProduct; label: string; description: string; comingSoon?: boolean }[] = [
+  { id: "perps", label: "Perpetuals", description: "Crypto & FX leveraged futures", comingSoon: true },
   { id: "spot", label: "Spot", description: "Crypto & FX token swaps" },
 ];
 
@@ -36,9 +36,17 @@ export function MobileLanding({ onSelect }: { onSelect: (product: MobileProduct)
           <button
             key={opt.id}
             onClick={() => onSelect(opt.id)}
-            className="flex flex-col items-start rounded-xl border border-border bg-surface-1 px-4 py-4 text-left transition active:scale-[0.98] active:border-accent"
+            disabled={opt.comingSoon}
+            className="flex flex-col items-start rounded-xl border border-border bg-surface-1 px-4 py-4 text-left transition active:scale-[0.98] active:border-accent disabled:opacity-50"
           >
-            <span className="text-base font-semibold text-ink">{opt.label}</span>
+            <span className="flex w-full items-center justify-between gap-3">
+              <span className="text-base font-semibold text-ink">{opt.label}</span>
+              {opt.comingSoon && (
+                <span className="rounded-full border border-warn/40 bg-warn/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-warn">
+                  Coming soon
+                </span>
+              )}
+            </span>
             <span className="mt-0.5 text-xs text-ink-3">{opt.description}</span>
           </button>
         ))}

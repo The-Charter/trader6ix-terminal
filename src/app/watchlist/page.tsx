@@ -3,13 +3,20 @@
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/app-header";
 import { TokenLogo } from "@/components/token-logo";
+import { usePrices } from "@/lib/hooks";
+import { COINGECKO_IDS } from "@/lib/prices";
 
 const STORAGE_KEY = "trader6ix:watchlist";
 const DEFAULT_WATCHLIST = ["BTC", "ETH", "SOL"];
-const WATCHABLE_SYMBOLS = ["BTC", "ETH", "SOL", "USDC", "EURC"];
+const WATCHABLE_SYMBOLS = Object.keys(COINGECKO_IDS);
+
+function formatUsd(value: number): string {
+  return `$${value.toLocaleString(undefined, { maximumFractionDigits: value < 1 ? 4 : 2 })}`;
+}
 
 export default function WatchlistPage() {
   const [watchlist, setWatchlist] = useState<string[]>(DEFAULT_WATCHLIST);
+  const { data: prices, loading, error } = usePrices();
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -36,22 +43,37 @@ export default function WatchlistPage() {
 
       <div className="mx-auto w-full max-w-2xl px-4 py-8">
         <h1 className="mb-1 text-lg font-semibold text-ink">Watchlist</h1>
-        <p className="mb-4 text-xs text-ink-3">
-          Saved to this browser only. Live prices are not connected yet.
-        </p>
+        <p className="mb-4 text-xs text-ink-3">Saved to this browser only. Prices from CoinGecko.</p>
+        {error && <p className="mb-3 text-xs text-bear">Price feed unavailable: {error}</p>}
 
         <div className="divide-y divide-border rounded-lg border border-border bg-surface-1">
           {watchlist.length === 0 && <p className="px-4 py-6 text-center text-sm text-ink-3">No markets added yet.</p>}
-          {watchlist.map((symbol) => (
-            <div key={symbol} className="flex items-center justify-between px-4 py-3">
-              <span className="flex items-center gap-2 text-sm text-ink">
-                <TokenLogo symbol={symbol as any} size={22} /> {symbol}
-              </span>
-              <button onClick={() => toggle(symbol)} className="text-xs text-ink-3 hover:text-bear">
-                Remove
-              </button>
-            </div>
-          ))}
+          {watchlist.map((symbol) => {
+            const price = prices?.[symbol];
+            return (
+              <div key={symbol} className="flex items-center justify-between px-4 py-3">
+                <span className="flex items-center gap-2 text-sm text-ink">
+                  <TokenLogo symbol={symbol as any} size={22} /> {symbol}
+                </span>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="font-mono text-sm text-ink">
+                      {price ? formatUsd(price.usd) : loading ? "…" : "—"}
+                    </p>
+                    {price?.change24h !== null && price?.change24h !== undefined && (
+                      <p className={`text-xs ${price.change24h >= 0 ? "text-bull" : "text-bear"}`}>
+                        {price.change24h >= 0 ? "+" : ""}
+                        {price.change24h.toFixed(2)}%
+                      </p>
+                    )}
+                  </div>
+                  <button onClick={() => toggle(symbol)} className="text-xs text-ink-3 hover:text-bear">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         <h2 className="mb-2 mt-6 text-sm font-medium text-ink-2">Add a market</h2>

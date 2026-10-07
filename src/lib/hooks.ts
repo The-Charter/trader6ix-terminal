@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { PerpsAdapter, PerpsMarket, PerpsPosition, PerpsOrder } from "@/adapters/perps-adapter";
 import type { AdapterOrderbook, AdapterCandle } from "@/adapters/shared-types";
+import type { PriceMap } from "@/lib/prices";
 
 interface FetchState<T> {
   data: T | null;
@@ -109,4 +110,27 @@ export function useAccount(adapter: PerpsAdapter, walletAddress: string | null) 
   useInterval(fetchData, 5000);
 
   return { ...state, refetch: fetchData };
+}
+
+/** Live USD prices from the CoinGecko-backed price feed, refreshed every minute. */
+export function usePrices() {
+  const [state, setState] = useState<FetchState<PriceMap>>({ data: null, loading: true, error: null });
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch("/api/prices");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to load prices");
+      setState({ data: json.prices ?? {}, loading: false, error: null });
+    } catch (err) {
+      setState({ data: null, loading: false, error: err instanceof Error ? err.message : "Unknown error" });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+  useInterval(fetchData, 60000);
+
+  return state;
 }

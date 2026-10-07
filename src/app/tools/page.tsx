@@ -5,9 +5,12 @@ import { AppHeader } from "@/components/app-header";
 import { RiskCalculatorPanel } from "@/components/risk-calculator-panel";
 import { EconomicCalendarPanel } from "@/components/economic-calendar-panel";
 import { AIAgentTeaser } from "@/components/ai-agent-teaser";
+import { usePrices } from "@/lib/hooks";
 
 export default function ToolsPage() {
   const [symbol, setSymbol] = useState("BTC-PERP");
+  const base = symbol.split("-")[0];
+  const { data: prices } = usePrices();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -29,7 +32,7 @@ export default function ToolsPage() {
               ))}
             </select>
           </div>
-          <RiskCalculatorPanel symbol={symbol} onUsePositionSize={() => undefined} />
+          <RiskCalculatorPanel symbol={symbol} currentPrice={prices?.[base]?.usd} onUsePositionSize={() => undefined} />
           <p className="text-xs text-ink-3">
             &quot;Use Position Size&quot; carries values into the order ticket from the Perps page — open a market
             there to see it applied live.
