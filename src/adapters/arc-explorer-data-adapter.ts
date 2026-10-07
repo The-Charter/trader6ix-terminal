@@ -25,9 +25,10 @@ export const arcExplorerDataAdapter: DataAdapter = {
     return (json as IndexedTransaction[]).slice(0, limit);
   },
 
-  async getTradeHistory(): Promise<IndexedTrade[]> {
-    // Trade-level history (entry/exit with PnL) needs event decoding this
-    // explorer-backed adapter does not do yet. Balances and transfers are live.
-    return [];
+  async getTradeHistory(walletAddress: string, limit = 20): Promise<IndexedTrade[]> {
+    const res = await fetch(`/api/data/trades?address=${encodeURIComponent(walletAddress)}`);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Failed to load trades");
+    return (json as IndexedTrade[]).slice(0, limit);
   },
 };

@@ -3,6 +3,7 @@ import { formatUnits } from "ethers";
 import { getTokenBalances } from "@/server/arc-explorer/client";
 import { fetchUsdPrices } from "@/server/prices/coingecko";
 import { COINGECKO_IDS } from "@/lib/prices";
+import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { PortfolioSnapshot } from "@/adapters/data-adapter";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const balances = await getTokenBalances(address);
+    const balances = (await getTokenBalances(address)).filter((balance) => isTrustedArcToken(balance.address));
     const byId = await fetchUsdPrices(Object.values(COINGECKO_IDS)).catch(
       () => ({}) as Record<string, { usd: number }>
     );

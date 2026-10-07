@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { formatUnits } from "ethers";
 import { getTokenTransfers } from "@/server/arc-explorer/client";
+import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { IndexedTransaction } from "@/adapters/data-adapter";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const transfers = await getTokenTransfers(address);
+    const transfers = (await getTokenTransfers(address)).filter((transfer) => isTrustedArcToken(transfer.tokenAddress));
     const wallet = address.toLowerCase();
 
     const transactions: IndexedTransaction[] = transfers.map((transfer) => {
