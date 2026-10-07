@@ -112,7 +112,7 @@ export function useAccount(adapter: PerpsAdapter, walletAddress: string | null) 
   return { ...state, refetch: fetchData };
 }
 
-/** Live USD prices from the CoinGecko-backed price feed, refreshed every minute. */
+/** Live USD prices for the Spot tokens, refreshed every minute. */
 export function usePrices() {
   const [state, setState] = useState<FetchState<PriceMap>>({ data: null, loading: true, error: null });
 

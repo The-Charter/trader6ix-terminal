@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/app-header";
 import { TokenLogo } from "@/components/token-logo";
 import { usePrices } from "@/lib/hooks";
-import { COINGECKO_IDS } from "@/lib/prices";
+import { SPOT_PRICE_SYMBOLS } from "@/lib/prices";
 
 const STORAGE_KEY = "trader6ix:watchlist";
-const DEFAULT_WATCHLIST = ["BTC", "ETH", "SOL"];
-const WATCHABLE_SYMBOLS = Object.keys(COINGECKO_IDS);
+const DEFAULT_WATCHLIST = ["USDC", "EURC"];
+const WATCHABLE_SYMBOLS: string[] = [...SPOT_PRICE_SYMBOLS];
 
 function formatUsd(value: number): string {
   return `$${value.toLocaleString(undefined, { maximumFractionDigits: value < 1 ? 4 : 2 })}`;
@@ -20,12 +20,15 @@ export default function WatchlistPage() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setWatchlist(JSON.parse(stored));
-      } catch {
-        // ignore malformed storage, fall back to default
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        const valid = parsed.filter((symbol) => WATCHABLE_SYMBOLS.includes(symbol));
+        setWatchlist(valid.length > 0 ? valid : DEFAULT_WATCHLIST);
       }
+    } catch {
+      // ignore malformed storage, fall back to default
     }
   }, []);
 
@@ -43,7 +46,7 @@ export default function WatchlistPage() {
 
       <div className="mx-auto w-full max-w-2xl px-4 py-8">
         <h1 className="mb-1 text-lg font-semibold text-ink">Watchlist</h1>
-        <p className="mb-4 text-xs text-ink-3">Saved to this browser only. Prices from CoinGecko.</p>
+        <p className="mb-4 text-xs text-ink-3">Saved to this browser only. Prices from the Spot venue.</p>
         {error && <p className="mb-3 text-xs text-bear">Price feed unavailable: {error}</p>}
 
         <div className="divide-y divide-border rounded-lg border border-border bg-surface-1">
@@ -56,17 +59,9 @@ export default function WatchlistPage() {
                   <TokenLogo symbol={symbol as any} size={22} /> {symbol}
                 </span>
                 <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="font-mono text-sm text-ink">
-                      {price ? formatUsd(price.usd) : loading ? "…" : "—"}
-                    </p>
-                    {price?.change24h !== null && price?.change24h !== undefined && (
-                      <p className={`text-xs ${price.change24h >= 0 ? "text-bull" : "text-bear"}`}>
-                        {price.change24h >= 0 ? "+" : ""}
-                        {price.change24h.toFixed(2)}%
-                      </p>
-                    )}
-                  </div>
+                  <p className="font-mono text-sm text-ink">
+                    {price ? formatUsd(price.usd) : loading ? "…" : "—"}
+                  </p>
                   <button onClick={() => toggle(symbol)} className="text-xs text-ink-3 hover:text-bear">
                     Remove
                   </button>

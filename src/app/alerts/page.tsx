@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/app-header";
-import { COINGECKO_IDS } from "@/lib/prices";
+import { SPOT_PRICE_SYMBOLS } from "@/lib/prices";
 
-const ALERT_SYMBOLS = Object.keys(COINGECKO_IDS);
+const ALERT_SYMBOLS = [...SPOT_PRICE_SYMBOLS];
 
 interface Alert {
   id: string;

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { formatUnits } from "ethers";
 import { getTokenBalances } from "@/server/arc-explorer/client";
-import { fetchUsdPrices } from "@/server/prices/coingecko";
-import { COINGECKO_IDS } from "@/lib/prices";
+import { fetchSpotPrices } from "@/server/prices/spot";
 import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { PortfolioSnapshot } from "@/adapters/data-adapter";
 
@@ -18,20 +17,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const balances = (await getTokenBalances(address)).filter((balance) => isTrustedArcToken(balance.address));
-    const byId = await fetchUsdPrices(Object.values(COINGECKO_IDS)).catch(
-      () => ({}) as Record<string, { usd: number }>
-    );
-
-    const priceBySymbol: Record<string, number> = {};
-    for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
-      const price = byId[id];
-      if (price && typeof price.usd === "number") priceBySymbol[symbol] = price.usd;
-    }
+    const prices = await fetchSpotPrices().catch(() => ({}) as Record<string, number>);
 
     let totalUsdValue = 0;
     const mappedBalances = balances.map((balance) => {
       const amount = formatUnits(balance.rawValue, balance.decimals);
-      const price = priceBySymbol[balance.symbol];
+      const price = prices[balance.symbol];
       const usdValue = price !== undefined ? Number(amount) * price : undefined;
       if (usdValue !== undefined) totalUsdValue += usdValue;
       return {

@@ -5,19 +5,15 @@ export interface TokenPrice {
 
 export type PriceMap = Record<string, TokenPrice>;
 
-/** Symbols the app displays, mapped to their CoinGecko coin id. */
-export const COINGECKO_IDS: Record<string, string> = {
-  BTC: "bitcoin",
-  ETH: "ethereum",
-  SOL: "solana",
-  DOGE: "dogecoin",
-  LTC: "litecoin",
-  USDC: "usd-coin",
-  EURC: "euro-coin",
-  USDT: "tether",
-};
-
 export interface PricesResponse {
   prices: PriceMap;
   error?: string;
 }
+
+/**
+ * Tokens priced from the Spot venue (Tower). This is the set the app actually
+ * trades and values today. Perp-token prices are added when perps ships.
+ */
+export const SPOT_PRICE_SYMBOLS = ["USDC", "EURC", "USDT", "cirBTC", "cNGN", "QCAD"] as const;
+
+export type SpotPriceSymbol = (typeof SPOT_PRICE_SYMBOLS)[number];

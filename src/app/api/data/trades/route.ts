@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { formatUnits } from "ethers";
 import { getTokenTransfers, type ExplorerTokenTransfer } from "@/server/arc-explorer/client";
-import { fetchUsdPrices } from "@/server/prices/coingecko";
-import { COINGECKO_IDS } from "@/lib/prices";
+import { fetchSpotPrices } from "@/server/prices/spot";
 import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { IndexedTrade } from "@/adapters/data-adapter";
 
@@ -32,14 +31,7 @@ export async function GET(request: NextRequest) {
       byTransaction.set(transfer.txHash, group);
     }
 
-    const byId = await fetchUsdPrices(Object.values(COINGECKO_IDS)).catch(
-      () => ({}) as Record<string, { usd: number }>
-    );
-    const priceBySymbol: Record<string, number> = {};
-    for (const [symbol, id] of Object.entries(COINGECKO_IDS)) {
-      const price = byId[id];
-      if (price && typeof price.usd === "number") priceBySymbol[symbol] = price.usd;
-    }
+    const prices = await fetchSpotPrices().catch(() => ({}) as Record<string, number>);
 
     const trades: IndexedTrade[] = [];
     for (const group of byTransaction.values()) {
@@ -58,8 +50,8 @@ export async function GET(request: NextRequest) {
       const boughtAmount = Number(formatUnits(bought.rawValue, bought.decimals));
       if (soldAmount <= 0 || boughtAmount <= 0) continue;
 
-      const soldUsdPrice = priceBySymbol[sold.tokenSymbol];
-      const boughtUsdPrice = priceBySymbol[bought.tokenSymbol];
+      const soldUsdPrice = prices[sold.tokenSymbol];
+      const boughtUsdPrice = prices[bought.tokenSymbol];
       const pnl =
         soldUsdPrice !== undefined && boughtUsdPrice !== undefined
           ? boughtAmount * boughtUsdPrice - soldAmount * soldUsdPrice
