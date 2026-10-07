@@ -29,6 +29,7 @@ const TOWER_ERROR_MESSAGES: Record<string, string> = {
   NO_ROUTE_FOUND: "No swap route exists for this token pair.",
   SLIPPAGE_EXCEEDED: "The market moved beyond your slippage tolerance. Refresh the quote and try again.",
   QUOTE_EXPIRED: "This quote has expired. Request a fresh quote.",
+  QUOTE_STALE: "This quote expired or its route is no longer available. Please try again.",
   INVALID_TOKEN: "One of the selected tokens is not supported.",
   UNSUPPORTED_CHAIN: "This network is not supported.",
   RATE_LIMIT_EXCEEDED: "Too many requests. Please wait a moment and retry.",

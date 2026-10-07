@@ -79,11 +79,23 @@ async function towerFetch<T>(path: string, options: TowerRequestOptions = {}): P
     throw new TowerApiError(`Tower returned an empty body with status ${response.status}.`, 502);
   }
 
+  let parsed: T & { success?: boolean; error?: string; code?: string };
   try {
-    return JSON.parse(rawText) as T;
+    parsed = JSON.parse(rawText);
   } catch {
     throw new TowerApiError(`Tower returned non-JSON content: ${rawText.slice(0, 300)}`, 502);
   }
+
+  // Tower can return HTTP 200 with a failure payload ({ success: false }).
+  if (parsed && parsed.success === false) {
+    throw new TowerApiError(
+      messageForTowerError(parsed.code, parsed.error ?? "", response.status),
+      response.status,
+      parsed.code
+    );
+  }
+
+  return parsed;
 }
 
 export function getTowerQuote(request: TowerQuoteRequest): Promise<TowerQuoteResponse> {

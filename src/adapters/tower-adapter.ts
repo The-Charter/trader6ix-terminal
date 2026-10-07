@@ -21,6 +21,17 @@ const ARC_CHAIN_ID = Number(process.env.NEXT_PUBLIC_ARC_CHAIN_ID ?? 5042002);
 // own API default. TODO: make user-configurable in the trade ticket.
 const DEFAULT_SLIPPAGE_BPS = 50;
 
+// Tower's build-tx endpoint only builds swaps for its native DEX. Auto-routed
+// quotes (which may pick synthra / unitflow / xylonet-adapter) fail with
+// QUOTE_STALE, so the venue is pinned to a buildable one.
+const BUILDABLE_DEX_ID = "tower-dex";
+
+interface BuiltSwap {
+  approval: { to: string; data: string; value?: string } | null;
+  swap: { to: string; data: string; value?: string; chainId?: number };
+  chainId?: number;
+}
+
 async function requestQuote(input: SwapQuoteInput) {
   const fromSymbol = input.side === "sell" ? input.base : input.quote;
   const toSymbol = input.side === "sell" ? input.quote : input.base;
@@ -37,6 +48,7 @@ async function requestQuote(input: SwapQuoteInput) {
       inputAmount: amountAtomic,
       slippageTolerance: input.slippageBps ?? DEFAULT_SLIPPAGE_BPS,
       chainId: ARC_CHAIN_ID,
+      dexId: BUILDABLE_DEX_ID,
     }),
   });
   const json = await res.json();
@@ -123,29 +135,35 @@ export const towerAdapter: SpotAdapter = {
     }
 
     try {
-      const { data } = await requestQuote(input);
+      // Tower's build-tx is unreliable on testnet and intermittently returns
+      // QUOTE_STALE / "No valid route found" for a valid quote, so retry with a
+      // fresh quote several times before giving up.
+      const MAX_ATTEMPTS = 6;
+      let buildData: BuiltSwap | null = null;
+      let lastError = "Tower could not build the swap transaction.";
 
-      const buildRes = await fetch("/api/tower/build-tx", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          // Tower requires the complete quote returned by /swap/quote.
-          quote: data,
-          userAddress: walletAddress,
-        }),
-      });
-      const buildJson = await buildRes.json();
-      if (!buildRes.ok) throw new Error(buildJson.error ?? "Failed to build Tower transaction");
-
-      // build-tx is untested against Tower's real API — surface the raw
-      // shape if the fields we expect aren't there, same as we had to for
-      // the quote response, rather than crash deeper in the signing flow.
-      const buildData = buildJson.data ?? buildJson; // may or may not be wrapped like quote was
-      if (!buildData.swap || !buildData.swap.to || !buildData.swap.data) {
-        throw new Error(
-          `Tower build-tx response is missing expected "swap" transaction fields — raw response: ${JSON.stringify(buildJson).slice(0, 500)}`
-        );
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const { data } = await requestQuote(input);
+        const buildRes = await fetch("/api/tower/build-tx", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            // Tower requires the complete quote returned by /swap/quote.
+            quote: data,
+            userAddress: walletAddress,
+          }),
+        });
+        const buildJson = await buildRes.json();
+        const candidate = (buildJson.data ?? buildJson) as Partial<BuiltSwap>;
+        if (buildRes.ok && candidate.swap?.to && candidate.swap?.data) {
+          buildData = candidate as BuiltSwap;
+          break;
+        }
+        lastError = buildJson.error ?? "Tower could not build the swap transaction.";
+        if (attempt < MAX_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, 500));
       }
+
+      if (!buildData) return { ok: false, error: lastError };
 
       // Tower commonly places chainId on the transaction payload rather than
       // on the response wrapper. Accept either shape, but never sign a
