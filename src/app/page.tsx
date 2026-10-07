@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MobileApp } from "@/components/mobile/MobileApp";
 
@@ -53,6 +55,14 @@ function OrderbookWatermark() {
 }
 
 export default function RootPage() {
+  const { ready, authenticated } = usePrivy();
+  const router = useRouter();
+
+  // Once the wallet is connected from the landing, go straight to the portfolio.
+  useEffect(() => {
+    if (ready && authenticated) router.push("/portfolio");
+  }, [ready, authenticated, router]);
+
   return (
     <>
       <div className="hidden lg:block">

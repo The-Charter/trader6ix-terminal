@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { AppHeader } from "@/components/app-header";
 import { DATA_ADAPTERS } from "@/adapters/registry";
@@ -17,18 +17,31 @@ export default function PortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const load = useCallback(async () => {
+    if (!authenticated || !walletAddress) return;
+    try {
+      const [nextPortfolio, nextTrades] = await Promise.all([
+        adapter.getPortfolio(walletAddress),
+        adapter.getTradeHistory(walletAddress),
+      ]);
+      setPortfolio(nextPortfolio);
+      setTrades(nextTrades);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load portfolio");
+    } finally {
+      setLoading(false);
+    }
+  }, [adapter, authenticated, walletAddress]);
+
   useEffect(() => {
     if (!authenticated || !walletAddress) return;
     setLoading(true);
-    Promise.all([adapter.getPortfolio(walletAddress), adapter.getTradeHistory(walletAddress)])
-      .then(([p, t]) => {
-        setPortfolio(p);
-        setTrades(t);
-        setError(null);
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load portfolio"))
-      .finally(() => setLoading(false));
-  }, [authenticated, walletAddress, adapter]);
+    load();
+    // ArcScan can lag behind new balances; poll so the view self-heals.
+    const id = setInterval(load, 15000);
+    return () => clearInterval(id);
+  }, [load, authenticated, walletAddress]);
 
   const wins = trades.filter((t) => t.pnl && parseFloat(t.pnl) > 0).length;
   const closedTrades = trades.filter((t) => t.pnl !== undefined);
