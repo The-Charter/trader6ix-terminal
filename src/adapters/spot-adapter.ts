@@ -5,11 +5,21 @@ export interface SpotPool {
   isLive: boolean;
 }
 
+export interface SpotToken {
+  symbol: string;
+  name: string;
+  address: string;
+  decimals: number;
+  isNativeGas?: boolean;
+}
+
 export interface SwapQuoteInput {
   base: string;
   quote: string;
   side: "buy" | "sell";
   amount: string;
+  /** Optional slippage tolerance in basis points (50 = 0.5%). Venues may default this. */
+  slippageBps?: number;
 }
 
 export interface SwapQuote {
@@ -17,6 +27,8 @@ export interface SwapQuote {
   amountOut: string;
   priceImpactPct: number;
   poolAddress: string;
+  /** ISO timestamp when the quote expires, when the venue provides one. */
+  expiresAt?: string;
 }
 
 export interface SwapResult {
@@ -39,4 +51,9 @@ export interface SpotAdapter {
   getPools(): Promise<SpotPool[]>;
   getSwapQuote(input: SwapQuoteInput): Promise<SwapQuote>;
   swap(input: SwapQuoteInput, walletAddress: string): Promise<SwapResult>;
+
+  /** Optional: token metadata supported by this venue, when available. */
+  getTokens?(): Promise<SpotToken[]>;
+  /** Optional: USD price per token symbol, when available. */
+  getPrices?(): Promise<Record<string, number>>;
 }

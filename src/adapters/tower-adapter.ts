@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import type { SpotAdapter, SpotPool, SwapQuote, SwapQuoteInput, SwapResult } from "./spot-adapter";
+import type { SpotAdapter, SpotPool, SpotToken, SwapQuote, SwapQuoteInput, SwapResult } from "./spot-adapter";
 import { getTowerToken } from "@/lib/tower/tokens";
 
 /**
@@ -35,7 +35,7 @@ async function requestQuote(input: SwapQuoteInput) {
       inputToken: inputToken.address,
       outputToken: outputToken.address,
       inputAmount: amountAtomic,
-      slippageTolerance: DEFAULT_SLIPPAGE_BPS,
+      slippageTolerance: input.slippageBps ?? DEFAULT_SLIPPAGE_BPS,
       chainId: ARC_CHAIN_ID,
     }),
   });
@@ -66,6 +66,33 @@ export const towerAdapter: SpotAdapter = {
     return [{ base: "EURC", quote: "USDC", poolAddress: "tower-aggregated", isLive: true }];
   },
 
+  async getTokens(): Promise<SpotToken[]> {
+    const res = await fetch("/api/tower/tokens");
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Failed to load Tower tokens");
+    return (json.data ?? []).map((token: Record<string, unknown>): SpotToken => ({
+      symbol: String(token.symbol),
+      name: String(token.name ?? token.symbol),
+      address: String(token.address),
+      decimals: Number(token.decimals ?? 6),
+      isNativeGas: Boolean(token.isNativeGas),
+    }));
+  },
+
+  async getPrices(): Promise<Record<string, number>> {
+    const res = await fetch("/api/tower/prices");
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error ?? "Failed to load Tower prices");
+    // The live /prices response has a mixed shape: token symbols map directly to
+    // a USD number, while provider coin ids map to a { usd } object. Keep only
+    // the symbol -> number entries, which is what the UI needs.
+    const prices: Record<string, number> = {};
+    for (const [key, value] of Object.entries(json)) {
+      if (typeof value === "number") prices[key] = value;
+    }
+    return prices;
+  },
+
   async getSwapQuote(input: SwapQuoteInput): Promise<SwapQuote> {
     if (!ENABLED) throw new Error("Tower adapter is not configured — TOWER_API_KEY is not set.");
     const { data } = await requestQuote(input);
@@ -85,6 +112,7 @@ export const towerAdapter: SpotAdapter = {
         data.dexName ??
         data.route?.hops?.[0]?.dexId ??
         "tower-aggregated",
+      expiresAt: data.expiresAt,
     };
   },
 
