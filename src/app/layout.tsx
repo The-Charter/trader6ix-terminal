@@ -1,11 +1,23 @@
 import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/providers";
+import { Toaster } from "@/components/ui/sonner";
+import { THEME_BOOTSTRAP } from "@/lib/theme-bootstrap";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Trader6ix — Spot & Perps on Arc Testnet",
   description:
-    "Trader6ix is a testnet-only spot and perpetuals trading terminal on Arc.",
+    "Real-time trading intelligence, analytics, and portfolio performance tools from Trader6ix.",
+  openGraph: {
+    title: "Trader6ix — Spot & Perps on Arc Testnet",
+    description: "Trade smarter with Trader6ix analytics and portfolio tools.",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image" },
+  icons: {
+    icon: [{ url: "/favicon.png?v=2" }],
+    apple: [{ url: "/apple-touch-icon.png?v=2" }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -16,16 +28,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
       </head>
-      <body className="bg-surface-0 text-ink antialiased">
-        <Providers>{children}</Providers>
+      <body className="antialiased">
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

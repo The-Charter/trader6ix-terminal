@@ -1,6 +1,7 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
+import { PrivySessionSync } from "@/components/trader6ix/privy-session-sync";
 
 const ARC_TESTNET = {
   id: Number(process.env.NEXT_PUBLIC_ARC_CHAIN_ID ?? 5042002),
@@ -23,15 +24,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
   if (!appId) {
-    // Fails loudly in dev rather than silently rendering a broken connect button.
-    console.warn(
-      "NEXT_PUBLIC_PRIVY_APP_ID is not set — wallet connection will not work until it is."
-    );
+    // Render without Privy (rather than crashing prerender) when the app ID
+    // is missing; wallet connection stays disabled until it is configured.
+    if (typeof window !== "undefined") {
+      console.warn(
+        "NEXT_PUBLIC_PRIVY_APP_ID is not set — wallet connection will not work until it is."
+      );
+    }
+    return <>{children}</>;
   }
 
   return (
     <PrivyProvider
-      appId={appId ?? ""}
+      appId={appId}
       config={{
         loginMethods: ["wallet", "email"],
         appearance: { theme: "dark", accentColor: "#22D3EE" },
@@ -40,6 +45,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         embeddedWallets: { createOnLogin: "users-without-wallets" },
       }}
     >
+      <PrivySessionSync />
       {children}
     </PrivyProvider>
   );

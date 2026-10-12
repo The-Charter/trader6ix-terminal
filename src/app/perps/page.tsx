@@ -1,16 +1,11 @@
-"use client";
+import type { Metadata } from "next";
+import { PerpsPage } from "@/components/trader6ix/app-pages";
 
-import { AppHeader } from "@/components/app-header";
-import { ComingSoon } from "@/components/coming-soon";
+export const metadata: Metadata = {
+  title: "Perpetual Trading — Trader6ix",
+  description: "Trade BTC perpetuals with leverage, order book and TP/SL on Trader6ix.",
+};
 
-export default function PerpsPage() {
-  return (
-    <div className="flex min-h-screen flex-col">
-      <AppHeader />
-      <ComingSoon
-        title="Perpetual futures"
-        description="Leveraged perps are being connected to Hibachi and will be available shortly."
-      />
-    </div>
-  );
+export default function PerpsRoute() {
+  return <PerpsPage />;
 }
