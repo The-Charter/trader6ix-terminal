@@ -8,9 +8,9 @@ import pg from "pg";
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = join(here, "..", "src", "server", "migrations");
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error("Missing DATABASE_URL. Add it to .env.local before running migrations.");
+  console.error("Missing DATABASE_URL (or DIRECT_URL). Add it to .env.local before running migrations.");
   process.exit(1);
 }
 
