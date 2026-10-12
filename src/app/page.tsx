@@ -28,9 +28,11 @@ export default function HomePage() {
           <Reveal>
             <Features />
           </Reveal>
+          {/* Testimonials hidden for now.
           <Reveal>
             <Testimonials />
           </Reveal>
+          */}
           <Reveal>
             <FAQ />
           </Reveal>
