@@ -2,12 +2,9 @@
 
 import { usePrivy, useWallets, type User } from "@privy-io/react-auth";
 import type { Session } from "@/components/trader6ix/session";
+import { PRIVY_ENABLED } from "@/lib/privy-app";
 
-/**
- * Build-time constant: whether Privy auth is configured. Used to gate
- * `usePrivy()` calls — safe for hook order because it never changes at runtime.
- */
-export const PRIVY_ENABLED = !!process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+export { PRIVY_ENABLED };
 
 /**
  * `usePrivy()` outside a `PrivyProvider` throws, and the provider is only

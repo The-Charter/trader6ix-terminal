@@ -2,6 +2,7 @@
 
 import { PrivyProvider } from "@privy-io/react-auth";
 import { PrivySessionSync } from "@/components/trader6ix/privy-session-sync";
+import { PRIVY_APP_ID } from "@/lib/privy-app";
 import {
   ARC_CHAIN_ID,
   ARC_CHAIN_NAME,
@@ -33,7 +34,7 @@ const ARC_CHAIN = {
 } as const;
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+  const appId = PRIVY_APP_ID;
 
   if (!appId) {
     // Render without Privy (rather than crashing prerender) when the app ID

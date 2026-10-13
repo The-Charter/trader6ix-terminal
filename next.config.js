@@ -1,5 +1,26 @@
 /** @type {import('next').NextConfig} */
+/**
+ * Resolve the API origin at BUILD time.
+ *
+ * NEXT_PUBLIC_ values are inlined into the bundle at build time, and a missing
+ * one fails silently: the frontend then calls its own origin, where the API
+ * routes have no database or keys, and every request fails. Rather than relying
+ * on someone remembering to set the variable on the frontend host, it is
+ * resolved here:
+ *
+ *   - an explicit NEXT_PUBLIC_API_BASE_URL always wins
+ *   - otherwise, a build running on Netlify targets the Render API
+ *   - otherwise (local development, the API host itself) it stays same-origin,
+ *     so `npm run dev` still talks to the local API routes
+ */
+const resolvedApiBase =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (process.env.NETLIFY === "true" ? "https://trader6ix-api.onrender.com" : "");
+
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_API_BASE_URL: resolvedApiBase,
+  },
   images: {
     remotePatterns: [{ protocol: "https", hostname: "assets.coingecko.com" }],
   },

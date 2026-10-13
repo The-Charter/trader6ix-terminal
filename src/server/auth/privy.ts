@@ -1,5 +1,6 @@
 import "server-only";
 import { importSPKI, jwtVerify } from "jose";
+import { PRIVY_APP_ID } from "@/lib/privy-app";
 
 /** Whatever jose hands back for an imported SPKI key (ES256 → CryptoKey). */
 type VerificationKey = Awaited<ReturnType<typeof importSPKI>>;
@@ -49,11 +50,10 @@ export interface PrivyIdentity {
 }
 
 function appId(): string {
-  const id = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
-  if (!id || id.trim() === "") {
-    throw new Error("Missing NEXT_PUBLIC_PRIVY_APP_ID — cannot verify Privy access tokens.");
+  if (!PRIVY_APP_ID) {
+    throw new Error("Privy app id is not configured — cannot verify access tokens.");
   }
-  return id.trim();
+  return PRIVY_APP_ID;
 }
 
 function verificationKeyPem(): string {
