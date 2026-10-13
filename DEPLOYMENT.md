@@ -28,13 +28,12 @@ its **own** origin, where the API routes are dead, and every request 404s.
 
 ```
 NEXT_PUBLIC_API_BASE_URL=https://<your-api>.onrender.com   # the Render URL
-NEXT_PUBLIC_ARC_CHAIN_ID=5042
-NEXT_PUBLIC_ARC_RPC_URL=https://rpc.mainnet.arc.io
-NEXT_PUBLIC_ARC_EXPLORER_URL=https://explorer.arc.io
-NEXT_PUBLIC_FAUCET_URL=
 NEXT_PUBLIC_PRIVY_APP_ID=<same app as the API verifies>
-NEXT_PUBLIC_TOWER_ENABLED=true
 ```
+
+That is genuinely the whole list. Chain id, RPC, explorer, faucet and the Tower
+flag all have mainnet defaults in code, so setting them here would only duplicate
+the default.
 
 **No secrets go on Netlify.** That is a genuine benefit of the split: the Tower
 key, RPC key, database URL and Privy verification key exist only on Render.
@@ -86,18 +85,30 @@ Two rules decide everything below:
 
 ### Required for the app to work
 
+Anything not listed here has a working mainnet default compiled into the code
+(see `src/lib/arc-network.ts`), so it only needs setting to **override** it —
+for example to point at a different RPC provider, or to run against testnet.
+Leaving them unset is the intended deployment.
+
 | Variable | Kind | Notes |
 | --- | --- | --- |
-| `NEXT_PUBLIC_ARC_CHAIN_ID` | build | `5042` for mainnet |
-| `NEXT_PUBLIC_ARC_RPC_URL` | build | public endpoint, used by the browser for wallet chain config |
-| `NEXT_PUBLIC_ARC_EXPLORER_URL` | build | `https://explorer.arc.io` |
-| `NEXT_PUBLIC_FAUCET_URL` | build | leave **empty** on mainnet so the UI hides the faucet |
-| `NEXT_PUBLIC_PRIVY_APP_ID` | build | must match the app the verification key came from |
+| `NEXT_PUBLIC_PRIVY_APP_ID` | build | the only public value with no code default; must match the app the verification key came from |
 | `PRIVY_VERIFICATION_KEY` | **runtime, secret** | without it every authenticated route 401s (fail-closed by design) |
 | `DATABASE_URL` | **runtime, secret** | Supabase **transaction pooler**, port 6543 |
 | `TOWER_API_KEY` | **runtime, secret** | swaps cannot quote or build without it |
 | `ARC_RPC_URL` | **runtime, secret** | dedicated RPC (QuickNode etc.). Server-only so the API key stays off the client |
 | `ADMIN_PRIVY_DIDS` | runtime | comma-separated DIDs granted the admin role |
+| `NEXT_PUBLIC_API_BASE_URL` | build | **only** when frontend and API are on different origins (see the split-deployment section) |
+
+### Overrides — set only to change the default
+
+| Variable | Default in code |
+| --- | --- |
+| `NEXT_PUBLIC_ARC_CHAIN_ID` | `5042` (mainnet) |
+| `NEXT_PUBLIC_ARC_RPC_URL` | `https://rpc.mainnet.arc.io` |
+| `NEXT_PUBLIC_ARC_EXPLORER_URL` | `https://explorer.arc.io` |
+| `NEXT_PUBLIC_FAUCET_URL` | empty on mainnet (hides the faucet) |
+| `NEXT_PUBLIC_TOWER_ENABLED` | on unless set to `"false"` |
 
 ### Optional / not used yet
 
