@@ -1,0 +1,16 @@
+# Netlify build configuration.
+#
+# This repository is a single Next.js app, so Netlify builds the pages (and also
+# the API routes, which are unused here — the browser calls the API origin named
+# by NEXT_PUBLIC_API_BASE_URL). See DEPLOYMENT.md for the split-deployment setup.
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  # Next 14 needs Node >= 18.17. Pinned so a Netlify default change cannot break
+  # the build silently.
+  NODE_VERSION = "20"
+
+# The Next.js Runtime is auto-detected for Next projects; the publish directory
+# is managed by it and must not be overridden.
