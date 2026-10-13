@@ -3,8 +3,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEnvConfig } from "@next/env";
+import { createRequire } from "node:module";
 import pg from "pg";
+
+// @next/env is CommonJS; a named ESM import of it fails at runtime.
+const { loadEnvConfig } = createRequire(import.meta.url)("@next/env");
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = join(here, "..", "src", "server", "migrations");
@@ -14,7 +17,9 @@ const migrationsDir = join(here, "..", "src", "server", "migrations");
 // so the two can silently disagree about a connection string's password.
 loadEnvConfig(join(here, ".."));
 
-const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+// `||`, not `??`: an EMPTY DIRECT_URL is not nullish, so `??` would select it and
+// skip the populated DATABASE_URL entirely.
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
 if (!connectionString) {
   console.error("Missing DATABASE_URL (or DIRECT_URL). Add it to .env.local before running migrations.");
   process.exit(1);
