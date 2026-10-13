@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowRight, ChevronDown, Droplets, UserRound, Wallet } from "lucide-react";
+import { ArrowRight, ChevronDown, UserRound, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/trader6ix-logo.png.asset.json";
 import { images } from "@/assets/images";
@@ -121,7 +121,10 @@ export function SignInPage() {
     if (session) router.replace(AUTH_REDIRECT_PATH);
   }, [session, router]);
   const connectWallet = () => {
-    if (PRIVY_ENABLED && privy) privy.connectWallet();
+    // login(), not connectWallet(): connectWallet only LINKS another wallet to an
+    // already-authenticated user. Signing in needs login(), which authenticates
+    // (and creates the account on first use).
+    if (PRIVY_ENABLED && privy) privy.login();
   };
   const continueWithEmail = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -195,8 +198,8 @@ export function SignInPage() {
                   )}
                 </div>
                 <Button className="signup-submit" type="submit">
-                  <Droplets aria-hidden="true" />
-                  Get Testnet USDC
+                  <ArrowRight aria-hidden="true" />
+                  Continue with email
                 </Button>
               </form>
             </div>

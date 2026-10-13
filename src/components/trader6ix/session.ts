@@ -2,8 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 
-/** Where a finished sign-in lands. */
-export const AUTH_REDIRECT_PATH = "/perps" as const;
+/** Where a finished sign-in lands. Spot — Perps is still "coming soon". */
+export const AUTH_REDIRECT_PATH = "/spot" as const;
 
 const STORAGE_KEY = "trader6ix-session";
 

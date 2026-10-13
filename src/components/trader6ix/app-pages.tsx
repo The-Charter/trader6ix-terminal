@@ -224,7 +224,9 @@ function AppBar() {
             aria-haspopup="menu"
             onClick={() => {
               if (!session) {
-                if (privy) privy.connectWallet();
+                // login(), not connectWallet(): the latter only links an extra
+                // wallet to an already-authenticated user and never signs in.
+                if (privy) privy.login();
                 else router.push("/auth");
                 return;
               }
