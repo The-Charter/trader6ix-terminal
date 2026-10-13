@@ -1,7 +1,7 @@
 import "server-only";
 import { ethers } from "ethers";
-import { ARC_RPC_URL } from "@/lib/arc-network";
-import { ARC_BALANCE_TOKENS } from "@/lib/arc-tokens";
+import { ARC_RPC_URL, IS_ARC_MAINNET } from "@/lib/arc-network";
+import { ARC_BALANCE_TOKENS, ARC_TOKENS } from "@/lib/arc-tokens";
 
 /**
  * Arc data layer, read straight from the chain over JSON-RPC.
@@ -17,10 +17,6 @@ import { ARC_BALANCE_TOKENS } from "@/lib/arc-tokens";
  * cached briefly because the UI polls.
  */
 
-/** Largest log range the public Arc RPC accepts (verified: 5,000 ok, 10,000 rejected). */
-const MAX_LOG_RANGE = 5_000;
-/** How far back to page when a wallet has little history (4 pages ≈ 2.9 hours). */
-const HISTORY_PAGES = 4;
 /**
  * The public Arc RPC rate-limits `eth_getLogs` aggressively (JSON-RPC -32005).
  * Measured 2026-10: a burst of 6 in parallel yields only 2 successes, while the
@@ -88,12 +84,38 @@ const SERVER_RPC_URL = process.env.ARC_RPC_URL || ARC_RPC_URL;
 const USING_DEDICATED_RPC = Boolean(process.env.ARC_RPC_URL);
 
 /**
- * A dedicated provider (QuickNode/Alchemy/dRPC…) is not capped at two
- * concurrent `eth_getLogs`, so the scan can fan out instead of serialising.
- * The block range stays at the known-good 5,000 until a provider's own limit is
- * confirmed — raising it is a one-line change once measured.
+ * A dedicated provider is not capped at two concurrent `eth_getLogs`, so the
+ * scan fans out instead of serialising, and its documented range limit is
+ * larger. Both are measured, not assumed: QuickNode answers a 6-way burst 6/6
+ * (the public endpoint manages 2/6) and rejects ranges above 10,000 blocks with
+ * JSON-RPC -32614, while the public endpoint rejects anything above 5,000.
  */
 const LOG_FANOUT = USING_DEDICATED_RPC ? 4 : LOG_CONCURRENCY;
+/** Widest `eth_getLogs` range the active endpoint accepts. */
+const MAX_RANGE = USING_DEDICATED_RPC ? 10_000 : 5_000;
+/** Endpoint-dependent paging depth (~1.4h per page at 10k blocks, ~0.7h at 5k). */
+const HISTORY_PAGES = USING_DEDICATED_RPC ? 6 : 4;
+
+/**
+ * Provider URLs carry an API key and ethers puts the request URL inside some
+ * error objects, so anything logged from this module is redacted first. An
+ * endpoint key must never reach a log aggregator.
+ */
+const RPC_SECRET = (() => {
+  try {
+    const segments = new URL(SERVER_RPC_URL).pathname.split("/").filter(Boolean);
+    return segments.length > 0 ? segments[segments.length - 1] : "";
+  } catch {
+    return "";
+  }
+})();
+
+function redactRpc(text: string): string {
+  if (!USING_DEDICATED_RPC) return text;
+  let safe = text.split(SERVER_RPC_URL).join("<rpc-endpoint>");
+  if (RPC_SECRET.length > 6) safe = safe.split(RPC_SECRET).join("<redacted>");
+  return safe;
+}
 
 function getProvider(): ethers.JsonRpcProvider {
   if (!provider) {
@@ -123,7 +145,7 @@ async function getLogsWithRetry(filter: ethers.Filter): Promise<{ logs: ethers.L
     } catch (err) {
       const rateLimited = isRateLimited(err);
       if (!rateLimited) {
-        console.warn("getLogs failed:", err instanceof Error ? err.message : err);
+        console.warn("getLogs failed:", redactRpc(err instanceof Error ? err.message : String(err)));
         return { logs: [], failed: true };
       }
       if (attempt < LOG_RETRIES) {
@@ -198,7 +220,7 @@ export async function getTokenBalances(address: string): Promise<TokenBalancesRe
       unavailable += 1;
       console.warn(
         `balanceOf failed for ${token.symbol} (${token.address}):`,
-        err instanceof Error ? err.message : err
+        redactRpc(err instanceof Error ? err.message : String(err))
       );
     }
   }
@@ -310,6 +332,43 @@ async function resolveMethods(txHashes: string[]): Promise<Map<string, string | 
  * it has MAX_TRANSFERS logs, so a busy wallet costs one page (6 log queries)
  * rather than six.
  */
+/**
+ * Arc's native USDC system emitter (EIP-7708).
+ *
+ * It logs EVERY USDC movement — plain native sends, ERC-20 transfers, mints and
+ * burns — at 18 decimals. A plain native send emits nothing else, which is why
+ * reading only the ERC-20 contract silently misses them: a wallet was funded
+ * with 1 USDC by native send and the activity feed showed nothing at all.
+ *
+ * The ERC-20 contract at 0x3600…00 also logs its own 6-decimal Transfer for
+ * ERC-20 calls, so querying BOTH emitters double-counts every ERC-20 movement.
+ * USDC history therefore comes from this emitter alone. Mainnet has used it
+ * since genesis; testnet only after the Zero5 fork, so testnet keeps reading the
+ * ERC-20 contract until that is confirmed on-chain.
+ */
+const NATIVE_USDC_EMITTER = "0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE";
+
+interface HistorySource {
+  /** Emitter address to query. */
+  emitter: string;
+  /** The token's canonical ERC-20 address — what trust checks and the UI use. */
+  address: string;
+  symbol: string;
+  /** Decimals of the values THIS emitter returns (18 for the system log). */
+  decimals: number;
+}
+
+const HISTORY_SOURCES: HistorySource[] = ARC_TOKENS.map((token) =>
+  IS_ARC_MAINNET && token.symbol.toUpperCase() === "USDC"
+    ? { emitter: NATIVE_USDC_EMITTER, address: token.address, symbol: token.symbol, decimals: 18 }
+    : { emitter: token.address, address: token.address, symbol: token.symbol, decimals: token.decimals }
+);
+
+function sourceForEmitter(emitter: string): HistorySource | undefined {
+  const lower = emitter.toLowerCase();
+  return HISTORY_SOURCES.find((source) => source.emitter.toLowerCase() === lower);
+}
+
 async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
   const anchor = await head();
   const padded = ethers.zeroPadValue(wallet, 32);
@@ -319,13 +378,13 @@ async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
   let emptyPages = 0;
 
   for (let page = 0; page < HISTORY_PAGES; page++) {
-    const toBlock = anchor.blockNumber - page * MAX_LOG_RANGE;
+    const toBlock = anchor.blockNumber - page * MAX_RANGE;
     if (toBlock <= 0) break;
-    const fromBlock = Math.max(0, toBlock - MAX_LOG_RANGE + 1);
+    const fromBlock = Math.max(0, toBlock - MAX_RANGE + 1);
 
-    const filters = ARC_BALANCE_TOKENS.flatMap((token) => [
-      { address: token.address, topics: [TRANSFER_TOPIC, padded], fromBlock, toBlock },
-      { address: token.address, topics: [TRANSFER_TOPIC, null, padded], fromBlock, toBlock },
+    const filters = HISTORY_SOURCES.flatMap((source) => [
+      { address: source.emitter, topics: [TRANSFER_TOPIC, padded], fromBlock, toBlock },
+      { address: source.emitter, topics: [TRANSFER_TOPIC, null, padded], fromBlock, toBlock },
     ]);
 
     const before = logs.length;
@@ -362,6 +421,7 @@ async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
     const parsed = TRANSFER_IFACE.parseLog({ topics: [...log.topics], data: log.data });
     if (!parsed) return [];
     const timestamp = timestamps.get(log.blockNumber) ?? anchor.timestamp;
+    const source = sourceForEmitter(String(log.address));
     return [
       {
         txHash: log.transactionHash,
@@ -371,29 +431,20 @@ async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
         to: String(parsed.args[1]),
         method: methods.get(log.transactionHash),
         rawValue: String(parsed.args[2]),
-        decimals: decimalsFor(String(log.address)),
-        tokenSymbol: symbolFor(String(log.address)),
-        tokenAddress: String(log.address),
+        // Decimals belong to the EMITTER that produced the value: the system log
+        // reports 18-decimal amounts, the ERC-20 contract 6.
+        decimals: source?.decimals ?? 18,
+        tokenSymbol: source?.symbol ?? "UNKNOWN",
+        // Always report the canonical token address, never the system emitter,
+        // so trust checks and token lookups in the routes keep working.
+        tokenAddress: source?.address ?? String(log.address),
       },
     ];
   });
 }
 
-function tokenFor(address: string) {
-  const lower = address.toLowerCase();
-  return ARC_BALANCE_TOKENS.find((token) => token.address.toLowerCase() === lower);
-}
-
-function symbolFor(address: string): string {
-  return tokenFor(address)?.symbol ?? "UNKNOWN";
-}
-
-function decimalsFor(address: string): number {
-  return tokenFor(address)?.decimals ?? 18;
-}
-
 /**
- * Recent ERC-20 transfers for an address.
+ * Recent transfers for an address.
  *
  * Cached briefly, and de-duplicated while in flight: the portfolio page asks
  * for activity and trades simultaneously, and without this both would scan the
