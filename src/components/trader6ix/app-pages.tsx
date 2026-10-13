@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ethers } from "ethers";
 import { usePathname, useRouter } from "next/navigation";
 import {
   useEffect,
@@ -971,13 +972,186 @@ export function PortfolioPage() {
 }
 
 /* ---------- SPOT ---------- */
+interface SpotToken {
+  symbol: string;
+  address: string;
+  decimals: number;
+}
+
+interface SpotQuote {
+  outputAmount: string;
+  minOut: string;
+  venue: string;
+}
+
 export function SpotPage() {
-  const [tab, setTab] = useState("Swap");
-  const [flip, setFlip] = useState(false);
-  const [sell, setSell] = useState("10");
-  const a = { sym: "ETH", bal: "342,343.564 ETH", amt: sell },
-    b = { sym: "USDC", bal: "224.32 USDC", amt: "3424" };
-  const [top, bottom] = flip ? [b, a] : [a, b];
+  const session = useSession();
+  const address = session?.wallet ?? null;
+  const privy = usePrivyOptional();
+  const { portfolio } = usePortfolioData(address);
+
+  const chainId = Number(process.env.NEXT_PUBLIC_ARC_CHAIN_ID ?? 5042002);
+  const [tokens, setTokens] = useState<SpotToken[]>([]);
+  const [fromSym, setFromSym] = useState("USDC");
+  const [toSym, setToSym] = useState("EURC");
+  const [amount, setAmount] = useState("");
+  const [quote, setQuote] = useState<SpotQuote | null>(null);
+  const [quoting, setQuoting] = useState(false);
+  const [swapping, setSwapping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const fromToken = tokens.find((t) => t.symbol === fromSym);
+  const toToken = tokens.find((t) => t.symbol === toSym);
+
+  useEffect(() => {
+    fetch("/api/tower/tokens")
+      .then((res) => res.json())
+      .then((json) => {
+        if (Array.isArray(json.data)) setTokens(json.data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const balanceFor = (symbol: string) =>
+    portfolio?.balances.find((b) => b.symbol.toUpperCase() === symbol.toUpperCase())?.amount;
+
+  useEffect(() => {
+    const value = Number(amount);
+    if (!fromToken || !toToken || fromSym === toSym || !(value > 0)) {
+      setQuote(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setQuoting(true);
+      setError(null);
+      try {
+        const inputAmount = ethers.parseUnits(amount, fromToken.decimals).toString();
+        const res = await fetch("/api/tower/quote", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            inputToken: fromToken.address,
+            outputToken: toToken.address,
+            inputAmount,
+            slippageTolerance: 50,
+            chainId,
+            dexId: "tower-dex",
+          }),
+        });
+        const json = await res.json();
+        if (cancelled) return;
+        if (!res.ok || json.success === false) throw new Error(json.error ?? "Could not get a quote");
+        setQuote({
+          outputAmount: json.data.outputAmount,
+          minOut: json.data.minOut,
+          venue: json.data.route?.hops?.[0]?.dexName ?? json.data.route?.hops?.[0]?.dexId ?? "tower-dex",
+        });
+      } catch (err) {
+        if (!cancelled) {
+          setQuote(null);
+          setError(err instanceof Error ? err.message : "Could not get a quote");
+        }
+      } finally {
+        if (!cancelled) setQuoting(false);
+      }
+    }, 450);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [amount, fromSym, toSym, fromToken, toToken, chainId]);
+
+  const flip = () => {
+    setFromSym(toSym);
+    setToSym(fromSym);
+    setAmount("");
+    setQuote(null);
+  };
+
+  const runSwap = async () => {
+    if (!address || !fromToken || !toToken || !(Number(amount) > 0)) return;
+    if (!privy) {
+      setError("Connect a wallet to swap.");
+      return;
+    }
+    setSwapping(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const inputAmount = ethers.parseUnits(amount, fromToken.decimals).toString();
+
+      // Tower's build-tx is intermittent, so retry with a fresh quote.
+      let build:
+        | { approval?: { to: string; data: string; value?: string } | null; swap: { to: string; data: string; value?: string } }
+        | null = null;
+      let lastError = "Tower could not build the swap transaction.";
+      for (let attempt = 1; attempt <= 6 && !build; attempt++) {
+        const quoteRes = await fetch("/api/tower/quote", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            inputToken: fromToken.address,
+            outputToken: toToken.address,
+            inputAmount,
+            slippageTolerance: 50,
+            chainId,
+            dexId: "tower-dex",
+          }),
+        });
+        const quoteJson = await quoteRes.json();
+        if (quoteRes.ok && quoteJson.success !== false) {
+          const buildRes = await fetch("/api/tower/build-tx", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ quote: quoteJson.data, userAddress: address }),
+          });
+          const buildJson = await buildRes.json();
+          const candidate = buildJson.data ?? buildJson;
+          if (buildRes.ok && candidate?.swap?.to && candidate?.swap?.data) {
+            build = candidate;
+            break;
+          }
+          lastError = buildJson.error ?? lastError;
+        } else {
+          lastError = quoteJson.error ?? lastError;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      if (!build) throw new Error(lastError);
+
+      if (build.approval) {
+        await privy.sendTransaction({
+          to: build.approval.to,
+          data: build.approval.data,
+          value: BigInt(build.approval.value ?? "0"),
+          chainId,
+        });
+      }
+      const receipt = (await privy.sendTransaction({
+        to: build.swap.to,
+        data: build.swap.data,
+        value: BigInt(build.swap.value ?? "0"),
+        chainId,
+      })) as { transactionHash?: string; hash?: string };
+      const hash = receipt?.transactionHash ?? receipt?.hash;
+      setNotice(hash ? `Swap submitted — ${hash.slice(0, 12)}…` : "Swap submitted.");
+      setAmount("");
+      setQuote(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Swap failed");
+    } finally {
+      setSwapping(false);
+    }
+  };
+
+  const outAmount = quote ? Number(ethers.formatUnits(quote.outputAmount, 18)) : 0;
+  const minOut = quote ? Number(ethers.formatUnits(quote.minOut, 18)) : 0;
+  const rate = quote && Number(amount) > 0 ? outAmount / Number(amount) : 0;
+  const sellBalance = balanceFor(fromSym);
+  const buyBalance = balanceFor(toSym);
+
   return (
     <div className="app-page spot">
       <AppBar />
@@ -989,11 +1163,10 @@ export function SpotPage() {
               <button
                 key={t}
                 type="button"
-                className={tab === t ? "on" : ""}
+                className={t === "Swap" ? "on" : ""}
                 disabled={isSoon}
                 aria-disabled={isSoon}
                 title={isSoon ? "Coming soon" : undefined}
-                onClick={() => setTab(t)}
               >
                 {t}
                 {isSoon && <span className="spot-soon">Soon</span>}
@@ -1005,50 +1178,74 @@ export function SpotPage() {
           <p className="spot-label">SELL</p>
           <div className="spot-row">
             <div>
-              <button className="spot-token">
-                <TokenIcon symbol={top.sym} />
-                {top.sym}
-                <ChevronDown size={18} />
-              </button>
+              <select
+                className="spot-token"
+                value={fromSym}
+                onChange={(e) => {
+                  setFromSym(e.target.value);
+                  setQuote(null);
+                }}
+                aria-label="Sell token"
+              >
+                {tokens.map((t) => (
+                  <option key={t.symbol} value={t.symbol}>
+                    {t.symbol}
+                  </option>
+                ))}
+              </select>
               <p className="spot-bal">
-                <Wallet size={14} /> {top.bal}
+                <Wallet size={14} /> {sellBalance ? `${sellBalance} ${fromSym}` : `— ${fromSym}`}
               </p>
             </div>
             <input
               className="spot-amt"
-              value={top.amt}
-              onChange={(e) => setSell(e.target.value)}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
               aria-label="Sell amount"
               inputMode="decimal"
+              placeholder="0.00"
             />
           </div>
           <div className="spot-row">
-            <button className="spot-max">MAX</button>
-            <span className="spot-usd">
-              ~ $26,869.55 <ArrowUpDown size={14} />
-            </span>
+            <button
+              className="spot-max"
+              type="button"
+              onClick={() => {
+                if (sellBalance) setAmount(sellBalance);
+              }}
+            >
+              MAX
+            </button>
+            <span className="spot-usd">{quoting ? "Getting quote…" : quote ? quote.venue : ""}</span>
           </div>
         </div>
-        <button className="spot-flip" aria-label="Switch tokens" onClick={() => setFlip(!flip)}>
+        <button className="spot-flip" aria-label="Switch tokens" onClick={flip}>
           <ArrowDownUp size={22} />
         </button>
         <div className="spot-card">
           <p className="spot-label">BUY</p>
           <div className="spot-row">
             <div>
-              <button className="spot-token">
-                <TokenIcon symbol={bottom.sym} />
-                {bottom.sym}
-                <ChevronDown size={18} />
-              </button>
+              <select
+                className="spot-token"
+                value={toSym}
+                onChange={(e) => {
+                  setToSym(e.target.value);
+                  setQuote(null);
+                }}
+                aria-label="Buy token"
+              >
+                {tokens.map((t) => (
+                  <option key={t.symbol} value={t.symbol}>
+                    {t.symbol}
+                  </option>
+                ))}
+              </select>
               <p className="spot-bal">
-                <Wallet size={14} /> {bottom.bal}
+                <Wallet size={14} /> {buyBalance ? `${buyBalance} ${toSym}` : `— ${toSym}`}
               </p>
             </div>
-            <span className="spot-amt">{bottom.amt}</span>
-          </div>
-          <div className="spot-row end">
-            <span className="spot-usd">~ $26,869.55</span>
+            <span className="spot-amt">{quote ? outAmount.toFixed(6) : "0.00"}</span>
           </div>
         </div>
         <dl className="spot-details">
@@ -1056,34 +1253,37 @@ export function SpotPage() {
             <dt>
               Route <Info size={16} />
             </dt>
-            <dd>
-              <span className="spot-best">Best Rate</span> ~ 1 min <ChevronDown size={14} />
-            </dd>
+            <dd>{quote ? quote.venue : "—"}</dd>
           </div>
           <div>
             <dt>
               Minimum Received <Info size={16} />
             </dt>
-            <dd>
-              ~ 1 min <Pencil size={14} />
-            </dd>
+            <dd>{quote ? `${minOut.toFixed(6)} ${toSym}` : "—"}</dd>
           </div>
           <div>
             <dt>
               Rate <Info size={16} />
             </dt>
-            <dd>
-              ~ 1 min <Pencil size={14} />
-            </dd>
+            <dd>{quote ? `1 ${fromSym} = ${rate.toFixed(6)} ${toSym}` : "—"}</dd>
           </div>
           <div>
             <dt>
               Network Fee <Info size={16} />
             </dt>
-            <dd>0.000518 USDC ($0.1066)</dd>
+            <dd>—</dd>
           </div>
         </dl>
-        <button className="spot-swap">{tab}</button>
+        {error && <p className="pf-error">{error}</p>}
+        {notice && <p className="spot-ok">{notice}</p>}
+        <button
+          className="spot-swap"
+          type="button"
+          onClick={runSwap}
+          disabled={!address || !quote || swapping}
+        >
+          {!address ? "Connect wallet to swap" : swapping ? "Swapping…" : "Swap"}
+        </button>
       </main>
     </div>
   );
