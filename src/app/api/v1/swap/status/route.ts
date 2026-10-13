@@ -2,6 +2,7 @@ import { withApi } from "@/server/http/with-api";
 import { jsonOk } from "@/server/http/responses";
 import { badRequest } from "@/server/http/errors";
 import { getTransactionStatus } from "@/server/arc-rpc/client";
+import { corsPreflight } from "@/server/http/cors";
 
 export const dynamic = "force-dynamic";
 
@@ -23,3 +24,6 @@ export const GET = withApi(
   },
   { auth: true, rateLimit: { limit: 480 } }
 );
+
+/** Answers the CORS preflight; Next's own OPTIONS answer carries no CORS headers. */
+export const OPTIONS = corsPreflight;

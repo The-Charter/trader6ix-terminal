@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { getKlines } from "@/server/hibachi/client";
+import { corsPreflight } from "@/server/http/cors";
 
 export async function GET(req: NextRequest) {
   const symbol = req.nextUrl.searchParams.get("symbol");
@@ -18,3 +19,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
+/** Answers the CORS preflight; Next's own OPTIONS answer carries no CORS headers. */
+export const OPTIONS = corsPreflight;

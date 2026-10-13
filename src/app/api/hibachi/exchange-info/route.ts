@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 import { getExchangeInfo } from "@/server/hibachi/client";
+import { corsPreflight } from "@/server/http/cors";
 
 export async function GET() {
   try {
@@ -13,3 +14,6 @@ export async function GET() {
     );
   }
 }
+
+/** Answers the CORS preflight; Next's own OPTIONS answer carries no CORS headers. */
+export const OPTIONS = corsPreflight;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchSpotPrices } from "@/server/prices/spot";
 import type { PriceMap } from "@/lib/prices";
+import { corsPreflight } from "@/server/http/cors";
 
 export const dynamic = "force-dynamic";
 
@@ -17,3 +18,6 @@ export async function GET() {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 502 });
   }
 }
+
+/** Answers the CORS preflight; Next's own OPTIONS answer carries no CORS headers. */
+export const OPTIONS = corsPreflight;

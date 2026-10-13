@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getTowerDexes, getTowerTokens } from "@/server/tower/client";
 import { ARC_CHAIN_ID, IS_ARC_MAINNET } from "@/lib/arc-network";
 import { ARC_TOKENS } from "@/lib/arc-tokens";
+import { corsPreflight, corsRoute } from "@/server/http/cors";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ async function towerSupportedAddresses(): Promise<string[]> {
     .map((token) => token.address.toLowerCase());
 }
 
-export async function GET() {
+export const GET = corsRoute(async () => {
   const registered = new Set(ARC_TOKENS.map((token) => token.address.toLowerCase()));
 
   await towerSupportedAddresses()
@@ -65,4 +66,7 @@ export async function GET() {
     source: "registry",
     data: ARC_TOKENS.map((token) => ({ ...token, isNativeGas: false })),
   });
-}
+});
+
+/** Answers the CORS preflight; Next's own OPTIONS answer carries no CORS headers. */
+export const OPTIONS = corsPreflight;

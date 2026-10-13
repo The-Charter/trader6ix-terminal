@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ARC_CHAIN_ID, ARC_CHAIN_NAME } from "@/lib/arc-network";
+import { corsPreflight } from "@/server/http/cors";
 
 export const dynamic = "force-dynamic";
 
@@ -24,3 +25,6 @@ export async function GET() {
     { headers: { "cache-control": "no-store" } }
   );
 }
+
+/** Answers the CORS preflight; Next's own OPTIONS answer carries no CORS headers. */
+export const OPTIONS = corsPreflight;

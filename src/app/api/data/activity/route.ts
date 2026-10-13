@@ -6,6 +6,7 @@ import { badRequest } from "@/server/http/errors";
 import { getTokenTransfers, type TokenTransfer } from "@/server/arc-rpc/client";
 import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { IndexedTransaction } from "@/adapters/data-adapter";
+import { corsPreflight } from "@/server/http/cors";
 
 export const dynamic = "force-dynamic";
 
@@ -80,3 +81,6 @@ export const GET = withApi(
   },
   { auth: true, rateLimit: { limit: 60 } }
 );
+
+/** Answers the CORS preflight; Next's own OPTIONS answer carries no CORS headers. */
+export const OPTIONS = corsPreflight;
