@@ -123,40 +123,75 @@ async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Prom
   return results;
 }
 
-/** ERC-20 balances for the trusted token set. */
-export async function getTokenBalances(address: string): Promise<TokenBalance[]> {
+/** `eth_call` with backoff — the same quota that throttles getLogs also throttles reads. */
+async function callWithRetry(to: string, data: string): Promise<string> {
   const rpc = getProvider();
+
+  for (let attempt = 0; attempt <= LOG_RETRIES; attempt++) {
+    try {
+      return await rpc.call({ to, data });
+    } catch (err) {
+      if (attempt === LOG_RETRIES) throw err;
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)]));
+    }
+  }
+
+  throw new Error("unreachable");
+}
+
+export interface TokenBalancesResult {
+  balances: TokenBalance[];
+  /** How many assets could not be read — NOT how many are zero. */
+  unavailable: number;
+}
+
+/**
+ * ERC-20 balances for the trusted token set.
+ *
+ * Reads are sequential and retried: firing them alongside the log scan was
+ * enough to trip the RPC's rate limit, and the failure used to be swallowed
+ * into a zero — which the UI cannot tell apart from an empty wallet. An asset we
+ * could not read is now omitted and counted instead.
+ */
+export async function getTokenBalances(address: string): Promise<TokenBalancesResult> {
   const data = ERC20_IFACE.encodeFunctionData("balanceOf", [address]);
+  const balances: TokenBalance[] = [];
+  let unavailable = 0;
 
-  const balances = await Promise.all(
-    ARC_BALANCE_TOKENS.map(async (token) => {
-      try {
-        const raw = await rpc.call({ to: token.address, data });
-        const value = ERC20_IFACE.decodeFunctionResult("balanceOf", raw)[0] as bigint;
-        return { token, value };
-      } catch (err) {
-        // A reverting or absent contract must not take the whole portfolio down.
-        console.warn(
-          `balanceOf failed for ${token.symbol} (${token.address}):`,
-          err instanceof Error ? err.message : err
-        );
-        return { token, value: 0n };
-      }
-    })
-  );
+  for (const token of ARC_BALANCE_TOKENS) {
+    try {
+      const raw = await callWithRetry(token.address, data);
+      const value = ERC20_IFACE.decodeFunctionResult("balanceOf", raw)[0] as bigint;
+      balances.push({
+        address: token.address,
+        symbol: token.symbol,
+        name: token.name,
+        decimals: token.decimals,
+        rawValue: value.toString(),
+      });
+    } catch (err) {
+      unavailable += 1;
+      console.warn(
+        `balanceOf failed for ${token.symbol} (${token.address}):`,
+        err instanceof Error ? err.message : err
+      );
+    }
+  }
 
-  return balances.map(({ token, value }) => ({
-    address: token.address,
-    symbol: token.symbol,
-    name: token.name,
-    decimals: token.decimals,
-    rawValue: value.toString(),
-  }));
+  if (unavailable === ARC_BALANCE_TOKENS.length) {
+    // Reporting an empty portfolio here would be indistinguishable from a wallet
+    // that genuinely holds nothing.
+    throw new Error("Arc's RPC did not answer balance requests. Please retry shortly.");
+  }
+
+  return { balances, unavailable };
 }
 
 // --- caches -----------------------------------------------------------------
 
 const transferCache = new Map<string, { at: number; value: TokenTransfer[] }>();
+/** Scans currently running, so concurrent callers share one chain scan. */
+const inFlightScans = new Map<string, Promise<TokenTransfer[]>>();
 const blockTimeCache = new Map<number, number>();
 const txMethodCache = new Map<string, string | undefined>();
 let headCache: { at: number; blockNumber: number; timestamp: number } | null = null;
@@ -332,14 +367,32 @@ function decimalsFor(address: string): number {
   return tokenFor(address)?.decimals ?? 18;
 }
 
-/** Recent ERC-20 transfers for an address (cached briefly — the UI polls). */
+/**
+ * Recent ERC-20 transfers for an address.
+ *
+ * Cached briefly, and de-duplicated while in flight: the portfolio page asks
+ * for activity and trades simultaneously, and without this both would scan the
+ * chain at once, double the RPC traffic and trip the rate limit for each other.
+ */
 export async function getTokenTransfers(address: string): Promise<TokenTransfer[]> {
   const key = address.toLowerCase();
+
   const cached = transferCache.get(key);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
-  const value = await scanTransfers(key);
-  if (transferCache.size > 200) transferCache.clear();
-  transferCache.set(key, { at: Date.now(), value });
-  return value;
+  const running = inFlightScans.get(key);
+  if (running) return running;
+
+  const scan = scanTransfers(key)
+    .then((value) => {
+      if (transferCache.size > 200) transferCache.clear();
+      transferCache.set(key, { at: Date.now(), value });
+      return value;
+    })
+    .finally(() => {
+      inFlightScans.delete(key);
+    });
+
+  inFlightScans.set(key, scan);
+  return scan;
 }

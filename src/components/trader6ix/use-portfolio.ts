@@ -13,6 +13,8 @@ export interface PortfolioSnapshot {
   walletAddress: string;
   totalUsdValue: string;
   balances: PortfolioBalance[];
+  /** Assets the chain did not answer for — not the same as a zero balance. */
+  unavailableAssets?: number;
 }
 
 export interface ActivityItem {

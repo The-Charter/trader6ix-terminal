@@ -14,12 +14,14 @@ import {
 } from "react";
 import {
   ArrowDownUp,
+  ArrowRightLeft,
   ArrowUpDown,
   Bell,
   ChevronDown,
   ChevronsUpDown,
   Clock,
   Copy,
+  ExternalLink,
   Eye,
   EyeOff,
   Info,
@@ -46,7 +48,7 @@ import { TokenIcon } from "@/components/trader6ix/token-icons";
 import { toggleTheme, useTheme } from "@/components/trader6ix/theme";
 import { usePrivyOptional } from "@/components/trader6ix/privy-auth";
 import { apiFetch, newIdempotencyKey } from "@/components/trader6ix/api-client";
-import { ARC_CHAIN_ID, ARC_CHAIN_NAME, ARC_FAUCET_URL, IS_ARC_MAINNET } from "@/lib/arc-network";
+import { ARC_CHAIN_ID, ARC_CHAIN_NAME, ARC_FAUCET_URL, IS_ARC_MAINNET, arcExplorerAddressUrl, arcExplorerTxUrl } from "@/lib/arc-network";
 import logo from "@/assets/trader6ix-logo.png.asset.json";
 
 /* ---------- shared app bar ---------- */
@@ -847,13 +849,33 @@ function Row({ k, v }: { k: string; v: ReactNode }) {
 }
 
 /* ---------- PORTFOLIO ---------- */
+
+/** Compact relative time for activity rows ("12m ago"). */
+function relativeTime(unixSeconds: number): string {
+  const diff = Math.max(0, Math.floor(Date.now() / 1000) - unixSeconds);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86_400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604_800) return `${Math.floor(diff / 86_400)}d ago`;
+  return new Date(unixSeconds * 1000).toLocaleDateString();
+}
+
+function formatUsd(value: number): string {
+  return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function PortfolioPage() {
   const session = useSession();
   const address = session?.wallet ?? null;
   const { portfolio, activity, trades, loading, error, refresh } = usePortfolioData(address);
-  const [range, setRange] = useState("6m");
   const [hidden, setHidden] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!loading && portfolio) setUpdatedAt(Date.now());
+  }, [loading, portfolio]);
 
   const totalUsd = Number(portfolio?.totalUsdValue ?? 0);
   const closedTrades = trades.filter((t) => t.pnl !== undefined);
@@ -861,6 +883,58 @@ export function PortfolioPage() {
   const realizedPnl = closedTrades.reduce((sum, t) => sum + Number(t.pnl ?? 0), 0);
   const winRate = closedTrades.length > 0 ? (wins / closedTrades.length) * 100 : null;
   const volume = trades.reduce((sum, t) => sum + Number(t.quantity) * Number(t.price ?? 0), 0);
+
+  /**
+   * Every figure on this page is derived from real balances and real swaps.
+   *
+   * The allocation split and the concentration reading replace the decorative
+   * "risk score" slider this page used to render — a full-width track that no
+   * data ever moved, which read as a real metric without being one.
+   */
+  const allocation = useMemo(() => {
+    const valued = (portfolio?.balances ?? [])
+      .map((balance) => ({
+        symbol: balance.symbol,
+        amount: Number(balance.amount),
+        usd: Number(balance.usdValue ?? 0),
+      }))
+      .filter((item) => item.amount > 0)
+      .sort((a, b) => b.usd - a.usd);
+    const total = valued.reduce((sum, item) => sum + item.usd, 0);
+    return valued.map((item) => ({ ...item, pct: total > 0 ? (item.usd / total) * 100 : 0 }));
+  }, [portfolio]);
+
+  const hasAllocation = allocation.some((item) => item.pct > 0);
+  const concentrationPct = hasAllocation ? allocation[0].pct : null;
+  const concentrationLabel =
+    concentrationPct === null
+      ? null
+      : concentrationPct >= 70
+        ? "Concentrated"
+        : concentrationPct >= 40
+          ? "Balanced"
+          : "Diversified";
+
+  const statCards: { label: string; value: string; tone?: "gain" | "loss"; meter?: number }[] = [
+    {
+      label: "Realized PnL",
+      value: `${realizedPnl >= 0 ? "+" : "-"}$${Math.abs(realizedPnl).toFixed(2)}`,
+      ...(realizedPnl > 0 ? { tone: "gain" as const } : realizedPnl < 0 ? { tone: "loss" as const } : {}),
+    },
+    { label: "Win Rate", value: winRate === null ? "—" : `${winRate.toFixed(0)}%`, ...(winRate === null ? {} : { meter: winRate }) },
+    { label: "Volume", value: `$${volume.toLocaleString("en-US", { maximumFractionDigits: 0 })}` },
+    { label: "Trades", value: String(trades.length) },
+  ];
+
+  const copyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(address ?? "");
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — the address stays visible on screen */
+    }
+  };
 
   const refreshBalance = async () => {
     if (syncing) return;
@@ -890,118 +964,235 @@ export function PortfolioPage() {
   return (
     <div className="app-page portfolio">
       <AppBar />
-      <div className="pf-grid">
-        <section>
-          <div className="pf-head">
-            <div>
-              <p className="pf-label">Wallet Value</p>
-              <h1>
-                {hidden ? (
-                  <span className="pf-masked">••••••••</span>
-                ) : (
-                  <>
-                    $
-                    {totalUsd.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </>
-                )}
-              </h1>
-              {error && <p className="pf-error">{error}</p>}
+      <div className="pf-wrap">
+        <section className="pf-hero">
+          <div className="pf-hero-main">
+            <p className="pf-label">Wallet Value</p>
+            <h1 className="pf-value">
+              {hidden ? <span className="pf-masked">••••••••</span> : <>${formatUsd(totalUsd)}</>}
+            </h1>
+            <div className="pf-identity">
+              <span className="pf-addr" title={address}>
+                {address}
+              </span>
+              <button type="button" className="pf-mini" onClick={copyAddress} aria-label="Copy wallet address">
+                {copied ? <CircleCheck size={13} /> : <Copy size={13} />}
+              </button>
+              <a
+                className="pf-mini"
+                href={arcExplorerAddressUrl(address)}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="View this wallet on the Arc explorer"
+              >
+                <ExternalLink size={13} />
+              </a>
             </div>
-            <div className="pf-tools">
-              <div className="pf-icons">
-                <button
-                  type="button"
-                  aria-label={hidden ? "Reveal balance" : "Hide balance"}
-                  aria-pressed={hidden}
-                  onClick={() => setHidden((v) => !v)}
-                >
-                  {hidden ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-                <button
-                  type="button"
-                  aria-label="Refresh balance"
-                  className={syncing ? "syncing" : ""}
-                  disabled={syncing}
-                  onClick={refreshBalance}
-                >
-                  <RefreshCw size={14} />
-                </button>
-              </div>
-              <div className="pf-ranges">
-                {["1h", "8h", "1d", "1w", "1m", "6m", "1y"].map((r) => (
-                  <button key={r} className={range === r ? "on" : ""} onClick={() => setRange(r)}>
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="pf-chart">
-            <p className="pf-chart-empty">
-              {loading ? "Loading portfolio…" : "Historical value chart isn't available yet."}
-            </p>
-          </div>
-          <div className="pf-stats">
-            {[
-              ["Realized PnL", `${realizedPnl >= 0 ? "+" : "-"}$${Math.abs(realizedPnl).toFixed(2)}`],
-              ["Win Rate", winRate === null ? "—" : `${winRate.toFixed(1)}%`],
-              ["Volume", `$${volume.toLocaleString("en-US", { maximumFractionDigits: 0 })}`],
-              ["Trades", String(trades.length)],
-            ].map(([label, value]) => (
-              <div key={label} className="pf-stat">
-                <span>{label}</span>
-                <b>{value}</b>
-              </div>
-            ))}
-          </div>
-        </section>
-        <aside>
-          <div className="pf-risk-head">
-            <h2>
-              Portfolio
-              <br />
-              Risk Score
-            </h2>
-            <small>
-              Updated:
-              <br />
-              Just Now
-            </small>
-          </div>
-          <div className="pf-risk">
-            <i style={{ width: "0%" }} />
-          </div>
-          <div className="pf-risk-labels">
-            <span>Low Risk</span>
-            <span>High Risk</span>
-          </div>
-          <div className="pf-tx-head">
-            <h3>Transactions</h3>
-            <button>View All</button>
-          </div>
-          <div className="pf-tx-grid">
-            {activity.length === 0 ? (
-              <p className="pf-empty">{loading ? "Loading transactions…" : "No transactions yet."}</p>
-            ) : (
-              activity.slice(0, 6).map((tx) => (
-                <div key={tx.hash} className="pf-tx">
-                  <div className="pf-tx-top">
-                    <div>
-                      {tx.type}
-                      <small>{new Date(tx.timestamp * 1000).toLocaleString()}</small>
-                    </div>
-                  </div>
-                  <div className="pf-tx-amt">
-                    <b>{tx.summary}</b>
-                  </div>
-                </div>
-              ))
+            {error && <p className="pf-error">{error}</p>}
+            {!error && (portfolio?.unavailableAssets ?? 0) > 0 && (
+              <p className="pf-note">
+                {portfolio?.unavailableAssets} asset balance
+                {portfolio?.unavailableAssets === 1 ? "" : "s"} could not be read — totals below are partial.
+              </p>
             )}
           </div>
-        </aside>
+          <div className="pf-hero-tools">
+            <button
+              type="button"
+              className="pf-iconbtn"
+              aria-label={hidden ? "Reveal value" : "Hide value"}
+              aria-pressed={hidden}
+              onClick={() => setHidden((value) => !value)}
+            >
+              {hidden ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+            <button
+              type="button"
+              className={`pf-iconbtn${syncing ? " syncing" : ""}`}
+              aria-label="Refresh balances"
+              disabled={syncing}
+              onClick={refreshBalance}
+            >
+              <RefreshCw size={15} />
+            </button>
+            <span className="pf-updated">
+              {loading ? "Refreshing…" : updatedAt ? `Updated ${relativeTime(Math.floor(updatedAt / 1000))}` : "Live"}
+            </span>
+          </div>
+        </section>
+
+        {hasAllocation && (
+          <section className="pf-card">
+            <header className="pf-card-head">
+              <h2>Asset allocation</h2>
+              <span className="pf-muted pf-small">by USD value</span>
+            </header>
+            <div
+              className="pf-alloc-track"
+              role="img"
+              aria-label={allocation.map((item) => `${item.symbol} ${item.pct.toFixed(0)}%`).join(", ")}
+            >
+              {allocation.map((item, index) => (
+                <i key={item.symbol} className={`pf-seg-${index % 4}`} style={{ width: `${item.pct}%` }} />
+              ))}
+            </div>
+            <ul className="pf-alloc-legend">
+              {allocation.map((item, index) => (
+                <li key={item.symbol}>
+                  <span className={`pf-dot pf-seg-${index % 4}`} aria-hidden="true" />
+                  <b>{item.symbol}</b>
+                  <span className="pf-mono pf-muted">
+                    {item.amount.toLocaleString("en-US", { maximumFractionDigits: 6 })}
+                  </span>
+                  <span className="pf-mono pf-pct">{item.pct.toFixed(1)}%</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section className="pf-stats">
+          {statCards.map((stat) => (
+            <div key={stat.label} className="pf-stat">
+              <span className="pf-label">{stat.label}</span>
+              <b className={`pf-stat-value pf-mono${stat.tone ? ` ${stat.tone}` : ""}`}>{stat.value}</b>
+              {stat.meter !== undefined && (
+                <span className="pf-meter" aria-hidden="true">
+                  <i style={{ width: `${Math.min(100, Math.max(0, stat.meter))}%` }} />
+                </span>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <section className="pf-columns">
+          <div className="pf-card">
+            <header className="pf-card-head">
+              <h2>Holdings</h2>
+              <span className="pf-muted pf-small">
+                {allocation.length} asset{allocation.length === 1 ? "" : "s"}
+              </span>
+            </header>
+            {allocation.length === 0 ? (
+              <div className="pf-empty-block">
+                <p className="pf-empty-title">{loading ? "Reading balances from Arc…" : "No assets yet"}</p>
+                <p className="pf-empty-body">
+                  {loading
+                    ? "Your holdings appear as soon as the chain responds."
+                    : "Balances for USDC, EURC and cirBTC will show here once this wallet holds them on Arc mainnet."}
+                </p>
+                {!loading && (
+                  <Link className="pf-empty-cta" href="/spot">
+                    Swap on Spot
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <table className="pf-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Balance</th>
+                    <th>Price</th>
+                    <th>Value</th>
+                    <th>Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allocation.map((item, index) => (
+                    <tr key={item.symbol}>
+                      <td>
+                        <span className="pf-asset">
+                          <TokenIcon symbol={item.symbol} />
+                          <b>{item.symbol}</b>
+                        </span>
+                      </td>
+                      <td className="pf-mono">{item.amount.toLocaleString("en-US", { maximumFractionDigits: 6 })}</td>
+                      <td className="pf-mono pf-muted">
+                        {item.amount > 0 && item.usd > 0 ? `$${formatUsd(item.usd / item.amount)}` : "—"}
+                      </td>
+                      <td className="pf-mono pf-strong">${formatUsd(item.usd)}</td>
+                      <td>
+                        <span className="pf-share">
+                          <i className={`pf-seg-${index % 4}`} style={{ width: `${item.pct}%` }} />
+                          <span className="pf-mono">{item.pct.toFixed(0)}%</span>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <div className="pf-card pf-concentration">
+            <header className="pf-card-head">
+              <h2>Concentration</h2>
+            </header>
+            {concentrationPct === null ? (
+              <p className="pf-empty-body">Available once this wallet holds a valued asset.</p>
+            ) : (
+              <>
+                <div
+                  className="pf-gauge"
+                  role="img"
+                  aria-label={`Your largest holding is ${concentrationPct.toFixed(0)} percent of this portfolio`}
+                >
+                  {Array.from({ length: 24 }).map((_, index) => (
+                    <i key={index} className={index < Math.round((concentrationPct / 100) * 24) ? "on" : ""} />
+                  ))}
+                </div>
+                <p className="pf-gauge-label">
+                  {concentrationLabel} <b className="pf-mono">{concentrationPct.toFixed(0)}%</b>
+                </p>
+                <p className="pf-empty-body">Share of value in your single largest holding.</p>
+                <p className="pf-muted pf-small">Largest: {allocation[0].symbol}</p>
+              </>
+            )}
+          </div>
+        </section>
+
+        <section className="pf-card">
+          <header className="pf-card-head">
+            <h2>Activity</h2>
+            {activity.length > 0 && <span className="pf-muted pf-small">last {Math.min(8, activity.length)}</span>}
+          </header>
+          {activity.length === 0 ? (
+            <div className="pf-empty-block">
+              <p className="pf-empty-title">{loading ? "Reading on-chain history…" : "No activity yet"}</p>
+              <p className="pf-empty-body">
+                {loading
+                  ? "Scanning recent Arc blocks for this wallet."
+                  : "Swaps and transfers appear here after your first transaction."}
+              </p>
+            </div>
+          ) : (
+            <ul className="pf-activity">
+              {activity.slice(0, 8).map((tx) => {
+                const hash = tx.hash.split("-")[0];
+                const isSwap = tx.type === "swap";
+                return (
+                  <li key={tx.hash} className={isSwap ? "swap" : ""}>
+                    <span className="pf-act-glyph" aria-hidden="true">
+                      {isSwap ? <ArrowRightLeft size={15} /> : <ArrowDownUp size={15} />}
+                    </span>
+                    <span className="pf-act-summary">{tx.summary}</span>
+                    <span className="pf-act-time pf-mono">{relativeTime(tx.timestamp)}</span>
+                    <a
+                      className="pf-mini"
+                      href={arcExplorerTxUrl(hash)}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="View this transaction on the Arc explorer"
+                    >
+                      <ExternalLink size={13} />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );

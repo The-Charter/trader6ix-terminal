@@ -20,6 +20,12 @@ export interface PortfolioSnapshot {
   walletAddress: string;
   totalUsdValue: string;
   balances: TokenBalance[];
+  /**
+   * How many tracked assets could not be read from the chain. Zero balances and
+   * unreadable balances look identical in a total, so this is surfaced
+   * separately rather than being folded into the numbers.
+   */
+  unavailableAssets?: number;
 }
 
 export interface IndexedTransaction {

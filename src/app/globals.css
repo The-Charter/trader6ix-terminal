@@ -3051,11 +3051,6 @@
   height: 29px;
   margin: 0;
 }
-.pf-tx-top .token-icon {
-  width: 30px;
-  height: 30px;
-  margin: 0;
-}
 .perps-market-wrap {
   position: relative;
 }
@@ -3627,321 +3622,445 @@
   }
 }
 
-/* portfolio */
-.pf-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 350px;
-  gap: 34px;
-  padding: 22px 34px;
-}
-.pf-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 13px;
-  flex-wrap: wrap;
-  margin-bottom: 13px;
-}
-.pf-label {
-  font-size: 16px;
-  color: oklch(0.85 0 0);
-}
-.pf-head h1 {
-  font-size: 38px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  display: flex;
-  align-items: baseline;
-  gap: 11px;
-}
-.pf-change {
-  font-size: 16px;
-  color: oklch(0.75 0 0);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 400;
-}
-.pf-tools {
+/* portfolio — mirrors the Stitch "Trader6ix - Portfolio" screen: hero value,
+   allocation split, four stat cards, holdings + concentration, then activity.
+   Every colour comes from the app theme variables, so light and dark both work,
+   and every figure rendered by this CSS is driven by real on-chain data. */
+.pf-wrap {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 11px;
+  gap: 18px;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 24px 34px 44px;
 }
-.pf-icons {
+
+/* hero */
+.pf-hero {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.pf-value {
+  margin: 4px 0 8px;
+  font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 44px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.pf-identity {
+  display: flex;
+  align-items: center;
   gap: 6px;
+  color: var(--app-muted);
+  font-size: 12px;
 }
-.pf-icons button {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
+.pf-addr {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+}
+.pf-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
   border: 1px solid var(--app-line);
-  border-radius: 8px;
-  background: var(--app-card);
-  color: inherit;
+  background: transparent;
+  color: var(--app-muted);
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    opacity 0.15s ease;
+  text-decoration: none;
 }
-.pf-icons button:hover {
+.pf-mini:hover {
+  color: var(--app-ink);
   border-color: var(--app-muted);
 }
-.pf-icons button:disabled {
-  opacity: 0.65;
+.pf-hero-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.pf-icons button.syncing svg {
-  animation: pf-spin 0.7s linear infinite;
+.pf-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--app-panel);
+  border: 1px solid var(--app-line);
+  color: var(--app-muted);
+  cursor: pointer;
+}
+.pf-iconbtn:hover {
+  color: var(--app-ink);
+  border-color: var(--app-muted);
+}
+.pf-iconbtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.pf-iconbtn.syncing svg {
+  animation: pf-spin 1s linear infinite;
 }
 @keyframes pf-spin {
   to {
     transform: rotate(360deg);
   }
 }
-.pf-masked {
-  letter-spacing: 0.12em;
+.pf-updated {
   color: var(--app-muted);
+  font-size: 12px;
 }
-.pf-ranges {
-  display: flex;
-  gap: 4px;
-}
-.pf-ranges button {
-  padding: 6px 10px;
-  border: 1px solid var(--app-line);
-  border-radius: 8px;
-  color: var(--app-muted);
-  font-size: 11px;
-}
-.pf-ranges button.on {
-  border-color: var(--app-lime);
-  color: var(--app-bright);
-}
-.pf-chart {
-  position: relative;
-  background: var(--app-card);
-  border-radius: 13px;
-  padding: 0 0 11px;
-  overflow: hidden;
-}
-.pf-chart svg {
-  width: 100%;
-  height: 320px;
-  display: block;
-}
-.pf-bar {
-  fill: var(--app-chip);
-}
-.pf-cursor {
-  stroke: var(--app-bright);
-  stroke-width: 2;
-}
-.pf-line {
-  fill: none;
-  stroke: var(--app-lime);
-  stroke-width: 3;
-  vector-effect: non-scaling-stroke;
-}
-.pf-tip {
-  position: absolute;
-  top: 38px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  pointer-events: none;
-  white-space: nowrap;
-  transform: translateX(-8px);
-}
-.pf-cursor-dot {
-  fill: var(--app-card);
-  stroke: var(--app-lime);
-  stroke-width: 3;
-}
-.pf-times {
-  display: flex;
-  justify-content: space-around;
-  color: var(--app-muted);
-  font-size: 11px;
-  padding-top: 6px;
-}
-.pf-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
-  margin-top: 19px;
-}
-.pf-stat {
-  background: var(--app-card);
-  border-radius: 10px;
-  padding: 11px;
+
+/* connect gate */
+.pf-connect {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 10px;
+  padding: 120px 20px;
+  text-align: center;
 }
-.pf-stat span {
+.pf-connect h1 {
+  margin: 0;
+  font-size: 24px;
+}
+.pf-connect p {
+  margin: 0;
+  color: var(--app-muted);
+}
+.pf-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  margin-top: 6px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* cards and shared type */
+.pf-card {
+  background: var(--app-panel);
+  border: 1px solid var(--app-line);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+.pf-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.pf-card-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.pf-label {
+  margin: 0;
   color: var(--app-muted);
   font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
-.pf-stat b {
-  font-size: 18px;
-  font-weight: 500;
+.pf-small {
+  font-size: 12px;
 }
-.pf-stat small {
+.pf-muted {
   color: var(--app-muted);
-  display: flex;
-  gap: 3px;
-  align-items: center;
-  font-size: 10px;
 }
-.pf-risk-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+.pf-strong {
+  color: var(--app-ink);
+  font-weight: 600;
 }
-.pf-risk-head h2 {
-  font-size: 24px;
-  line-height: 1.1;
-  font-weight: 500;
+.pf-mono {
+  font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
 }
-.pf-risk-head small {
+.pf-pct {
+  color: var(--app-ink);
+}
+.pf-error {
+  margin: 8px 0 0;
+  color: var(--app-down);
+  font-size: 13px;
+}
+.pf-note {
+  margin: 8px 0 0;
   color: var(--app-muted);
-  text-align: right;
-  font-size: 10px;
+  font-size: 12px;
 }
-.pf-risk {
-  margin-top: 13px;
-  height: 18px;
-  background: repeating-linear-gradient(90deg, var(--app-hatch) 0 2px, transparent 2px 6px);
+.pf-masked {
+  letter-spacing: 2px;
 }
-.pf-risk i {
+
+/* allocation */
+.pf-alloc-track {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--app-line);
+}
+.pf-alloc-track i {
   display: block;
   height: 100%;
-  background: var(--app-lime);
 }
-.pf-risk-labels {
+.pf-alloc-legend {
   display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-  font-size: 10px;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
 }
-.pf-tx-head {
+.pf-alloc-legend li {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin: 29px 0 11px;
+  gap: 8px;
 }
-.pf-tx-head h3 {
-  font-size: 14px;
-  font-weight: 500;
+.pf-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
 }
-.pf-tx-head button {
-  color: var(--app-lime);
-  font-size: 11px;
+
+/* four-step ramp shared by the allocation bar and the holdings share bars */
+.pf-seg-0 {
+  background: var(--primary);
 }
-.pf-tx-grid {
+.pf-seg-1 {
+  background: color-mix(in srgb, var(--primary) 62%, var(--app-muted));
+}
+.pf-seg-2 {
+  background: color-mix(in srgb, var(--primary) 34%, var(--app-muted));
+}
+.pf-seg-3 {
+  background: var(--app-muted);
+}
+
+/* stat cards */
+.pf-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
 }
-.pf-tx {
-  background: var(--app-card);
-  border-radius: 10px;
-  padding: 11px;
+.pf-stat {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   gap: 8px;
-  min-height: 132px;
+  padding: 15px 16px;
+  border-radius: 14px;
+  background: var(--app-panel);
+  border: 1px solid var(--app-line);
 }
-.pf-tx.hl {
-  background: var(--app-hl-bg);
-  color: var(--app-on-accent);
+.pf-stat-value {
+  font-size: 22px;
+  font-weight: 600;
 }
-.pf-tx.hl .pf-tx-top small,
-.pf-tx.hl .pf-tx-amt span {
-  color: oklch(0.25 0 0);
+.pf-stat-value.gain {
+  color: var(--app-up);
 }
-.pf-tx-top {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 11px;
-}
-.pf-tx-top small {
-  display: block;
-  color: var(--app-muted);
-  font-size: 10px;
-}
-.pf-coin {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--app-coin-bg);
-  color: var(--app-coin-ink);
-  font-weight: 700;
-  font-size: 12px;
-  flex: 0 0 auto;
-}
-.pf-spark {
-  width: 100%;
-  height: 29px;
-}
-.pf-spark polyline {
-  fill: none;
-  stroke: oklch(0.9 0 0);
-  stroke-width: 1.5;
-}
-.pf-tx-amt small {
-  font-size: 10px;
-}
-.pf-tx-amt b {
-  display: block;
-  font-size: 16px;
-  font-weight: 500;
-}
-.pf-tx-amt span {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  color: var(--app-muted);
-  font-size: 10px;
-}
-.pf-tx-amt span.fail {
+.pf-stat-value.loss {
   color: var(--app-down);
 }
-@media (max-width: 1300px) {
-  .pf-grid {
+.pf-meter {
+  display: block;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--app-line);
+  overflow: hidden;
+}
+.pf-meter i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+/* holdings + concentration */
+.pf-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 18px;
+}
+.pf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.pf-table th {
+  padding: 0 10px 8px;
+  color: var(--app-muted);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pf-table th:not(:first-child),
+.pf-table td:not(:first-child) {
+  text-align: right;
+}
+.pf-table td {
+  padding: 12px 10px;
+  border-top: 1px solid var(--app-line);
+}
+.pf-table tbody tr:hover {
+  background: color-mix(in srgb, var(--app-ink) 4%, transparent);
+}
+.pf-asset {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.pf-share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.pf-share i {
+  display: block;
+  min-width: 2px;
+  max-width: 56px;
+  height: 3px;
+  border-radius: 999px;
+}
+.pf-gauge {
+  display: flex;
+  gap: 3px;
+}
+.pf-gauge i {
+  flex: 1;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--app-line);
+}
+.pf-gauge i.on {
+  background: var(--primary);
+}
+.pf-gauge-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 12px 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* empty states — a fresh wallet is the common case, so it is designed, not hidden */
+.pf-empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 12px;
+  text-align: center;
+}
+.pf-empty-title {
+  margin: 0;
+  font-weight: 600;
+}
+.pf-empty-body {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+.pf-empty-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--app-line);
+  color: var(--app-ink);
+  font-size: 13px;
+  text-decoration: none;
+}
+.pf-empty-cta:hover {
+  border-color: var(--app-muted);
+}
+
+/* activity */
+.pf-activity {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pf-activity li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border-top: 1px solid var(--app-line);
+}
+.pf-activity li:first-child {
+  border-top: 0;
+}
+.pf-act-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-ink) 6%, transparent);
+  color: var(--app-muted);
+}
+.pf-activity li.swap .pf-act-glyph {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.pf-act-summary {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.pf-act-time {
+  flex: none;
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .pf-columns {
     grid-template-columns: 1fr;
-    padding: 16px 13px;
-    gap: 22px;
+  }
+  .pf-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 700px) {
-  .pf-head h1 {
-    font-size: 27px;
+  .pf-wrap {
+    padding: 16px 13px 32px;
   }
-  .pf-label {
-    font-size: 13px;
+  .pf-value {
+    font-size: 30px;
   }
-  .pf-stats {
-    grid-template-columns: 1fr 1fr;
-  }
-  .pf-chart svg {
-    height: 224px;
-  }
-  .pf-tip {
-    font-size: 12px;
-    top: 24px;
-  }
-  .pf-times {
-    font-size: 9px;
+  .pf-table th:nth-child(3),
+  .pf-table td:nth-child(3) {
+    display: none;
   }
 }
 
@@ -4197,16 +4316,8 @@ html[data-app-theme="light"] .app-page.portfolio {
   --app-lime: oklch(0.697 0.207 44);
   --app-hl-bg: oklch(0.697 0.207 44);
 }
-html[data-app-theme="light"] .app-page .pf-label,
-html[data-app-theme="light"] .app-page .pf-change {
+html[data-app-theme="light"] .app-page .pf-label {
   color: oklch(0.45 0 0);
-}
-html[data-app-theme="light"] .app-page .pf-spark polyline {
-  stroke: oklch(0.3 0 0);
-}
-html[data-app-theme="light"] .app-page .pf-tx.hl .pf-tx-top small,
-html[data-app-theme="light"] .app-page .pf-tx.hl .pf-tx-amt span {
-  color: oklch(0.3 0 0);
 }
 html[data-app-theme="light"] .app-page .spot-best {
   background: oklch(0.9 0.07 160);

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trader6ix Terminal | Spot</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Fonts: Inter & JetBrains Mono -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Forms and Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container-high": "#362721",
+            "surface-bright": "#463530",
+            "on-tertiary": "#003547",
+            "on-surface-variant": "#e2bfb3",
+            "destructive": "#FF4D5E",
+            "surface": "#0E1013",
+            "on-primary": "#FFFFFF",
+            "surface-container": "#2a1c17",
+            "on-secondary-fixed": "#181c21",
+            "secondary-fixed-dim": "#c3c6cd",
+            "on-primary-fixed-variant": "#812900",
+            "error": "#ffb4ab",
+            "on-primary-fixed": "#380d00",
+            "on-tertiary-fixed": "#001e2b",
+            "tertiary": "#71d2ff",
+            "surface-container-lowest": "#170b07",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#41312c",
+            "error-container": "#93000a",
+            "tertiary-fixed-dim": "#71d2ff",
+            "surface-container-low": "#261813",
+            "secondary-fixed": "#e0e2e9",
+            "background": "#08090B",
+            "primary": "#ffb59a",
+            "secondary-container": "#43474d",
+            "outline": "#3A4048",
+            "inverse-surface": "#f7ddd5",
+            "surface-dim": "#1d100c",
+            "primary-fixed": "#ffdbcf",
+            "hairline": "#23272E",
+            "on-secondary-container": "#b2b5bc",
+            "on-surface": "#F4F6F8",
+            "inverse-primary": "#a83900",
+            "successful": "#2FD37A",
+            "on-secondary-fixed-variant": "#43474d",
+            "warning": "#F5B544",
+            "on-primary-container": "#5c1b00",
+            "primary-fixed-dim": "#ffb59a",
+            "primary-hover": "#FF7F45",
+            "on-tertiary-container": "#003648",
+            "on-background": "#f7ddd5",
+            "on-tertiary-fixed-variant": "#004d66",
+            "primary-container": "#ff6a2b",
+            "outline-variant": "#5a4138",
+            "on-error": "#690005",
+            "tertiary-container": "#00a5d7",
+            "chart-line": "#FF6A2B",
+            "chart-grid": "#1C2026",
+            "secondary": "#c3c6cd",
+            "surface-variant": "#41312c",
+            "surface-tint": "#ffb59a",
+            "on-secondary": "#2d3136",
+            "inverse-on-surface": "#3c2d27",
+            "tertiary-fixed": "#c0e8ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "16px",
+            "margin": "24px",
+            "space-xs": "4px",
+            "space-sm": "8px",
+            "space-lg": "24px",
+            "space-xl": "32px",
+            "space-md": "16px"
+          },
+          "fontFamily": {
+            "label": ["Inter", "sans-serif"],
+            "numeric-hero": ["JetBrains Mono", "monospace"],
+            "display": ["Inter", "sans-serif"],
+            "numeric": ["JetBrains Mono", "monospace"],
+            "body": ["Inter", "sans-serif"],
+            "title": ["Inter", "sans-serif"],
+            "headline": ["Inter", "sans-serif"]
+          },
+          "fontSize": {
+            "label": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "numeric-hero": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "display": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "650" }],
+            "numeric": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "body": ["14px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "title": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+          }
+        }
+      }
+    };
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body min-h-screen selection:bg-chart-line/20 selection:text-chart-line antialiased">
+<!-- TOP APP BAR (64px docked top, sticky) -->
+<header class="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-margin bg-surface border-b border-hairline">
+<!-- Left: Brand + Global Navigation -->
+<div class="flex items-center space-x-8">
+<div class="flex items-center space-x-2">
+<span class="font-numeric font-bold text-chart-line text-lg tracking-wider select-none">[·]</span>
+<span class="font-headline text-title font-bold tracking-tight text-on-surface select-none">Trader6ix</span>
+</div>
+<nav class="hidden md:flex items-center space-x-6 h-16">
+<a class="h-full flex items-center text-on-surface border-b-2 border-chart-line font-title text-body px-1" href="#spot">Spot</a>
+<a class="h-full flex items-center text-secondary hover:text-on-surface font-title text-body transition-colors duration-150 px-1" href="#perpetual">Perpetual</a>
+<a class="h-full flex items-center text-secondary hover:text-on-surface font-title text-body transition-colors duration-150 px-1" href="#portfolio">Portfolio</a>
+</nav>
+</div>
+<!-- Right Side: Network Pill, Quick Actions, Wallet, Theme -->
+<div class="flex items-center space-x-3">
+<!-- Arc Network Pill -->
+<div class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-background border border-hairline" title="Connected to Arc Mainnet">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-successful opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-successful"></span>
+</span>
+<span class="font-label text-label text-on-surface tracking-wide">Arc</span>
+</div>
+<!-- Search Icon Button -->
+<button aria-label="Search pairs" class="w-8 h-8 flex items-center justify-center rounded-lg text-secondary hover:text-on-surface hover:bg-hairline/40 transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="search">search</span>
+</button>
+<!-- Notification Bell -->
+<button aria-label="Notifications" class="w-8 h-8 flex items-center justify-center rounded-lg text-secondary hover:text-on-surface hover:bg-hairline/40 transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="notifications">notifications</span>
+</button>
+<!-- Wallet Chip -->
+<div class="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-surface border border-outline hover:border-chart-line/40 transition-colors cursor-pointer select-none">
+<div class="w-2 h-2 rounded-full bg-chart-line"></div>
+<span class="font-numeric text-label text-on-surface">0xA69a...f875</span>
+</div>
+<!-- Theme Toggle (Moon Icon) -->
+<button aria-label="Theme toggle" class="w-8 h-8 flex items-center justify-center rounded-lg text-secondary hover:text-on-surface hover:bg-hairline/40 transition-colors duration-150" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="dark_mode">dark_mode</span>
+</button>
+</div>
+</header>
+<!-- SUB-BAR: Centered Compact Mode Selector -->
+<div class="w-full pt-6 flex justify-center">
+<div class="inline-flex p-1 rounded-full bg-surface border border-hairline shadow-inner">
+<div class="px-5 py-1 rounded-full bg-background border border-hairline/80 text-on-surface font-title text-label shadow-sm select-none">
+        Swap
+      </div>
+</div>
+</div>
+<!-- MAIN CANVAS: Max Width 1180px, Two Column Grid -->
+<main class="max-w-[1180px] mx-auto px-margin pt-6 pb-12">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl">
+<!-- LEFT COLUMN: The Swap Ticket (6 Cols) -->
+<section class="lg:col-span-6 flex flex-col">
+<div class="relative bg-surface border border-hairline rounded-[16px] p-6 flex flex-col justify-between">
+<div class="space-y-3">
+<!-- SELL PANEL -->
+<div class="bg-background/80 rounded-xl p-4 border border-hairline/60 focus-within:border-outline transition-colors">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label text-label uppercase text-[#9AA3AD] tracking-wider">Sell</span>
+<div class="flex items-center space-x-1.5 font-numeric text-label text-[#9AA3AD]">
+<span>Balance 1.00 USDC</span>
+<button class="text-chart-line hover:text-primary-hover font-semibold transition-colors duration-150 ml-1" type="button">Max</button>
+</div>
+</div>
+<div class="flex items-center justify-between pb-2 border-b border-hairline">
+<!-- USDC Token Selector -->
+<button class="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-surface border border-hairline hover:border-outline transition-colors text-on-surface" type="button">
+<div class="w-6 h-6 rounded-full bg-blue-600/30 border border-blue-400 flex items-center justify-center text-blue-300 font-numeric text-label font-bold select-none">
+                    $
+                  </div>
+<span class="font-title text-body font-semibold">USDC</span>
+<span class="material-symbols-outlined text-sm text-[#9AA3AD]" data-icon="expand_more">expand_more</span>
+</button>
+<!-- Amount Input -->
+<div class="flex-1 ml-4 text-right">
+<input class="w-full text-right bg-transparent border-0 p-0 font-numeric-hero text-[34px] leading-tight text-on-surface placeholder-[#9AA3AD]/40 focus:ring-0 focus:outline-none" placeholder="0.00" type="text"/>
+</div>
+</div>
+<!-- Sell Sub-row -->
+<div class="flex justify-end pt-2">
+<span class="font-numeric text-label text-[#9AA3AD]">~ $0.00</span>
+</div>
+</div>
+<!-- SWITCH BUTTON (Centered Relative Stacking) -->
+<div class="relative flex justify-center -my-3 z-10">
+<button aria-label="Switch token positions" class="w-9 h-9 rounded-full bg-[#14171B] border border-hairline hover:border-chart-line/60 hover:text-chart-line flex items-center justify-center text-secondary transition-all duration-150 shadow-md active:scale-95" type="button">
+<span class="material-symbols-outlined text-lg" data-icon="swap_vert">swap_vert</span>
+</button>
+</div>
+<!-- BUY PANEL -->
+<div class="bg-background/80 rounded-xl p-4 border border-hairline/60 focus-within:border-outline transition-colors">
+<div class="flex items-center justify-between mb-3">
+<span class="font-label text-label uppercase text-[#9AA3AD] tracking-wider">Buy</span>
+<span class="font-numeric text-label text-[#9AA3AD]">Balance 0.00 EURC</span>
+</div>
+<div class="flex items-center justify-between pb-2 border-b border-hairline">
+<!-- EURC Token Selector -->
+<button class="flex items-center space-x-2 px-2.5 py-1.5 rounded-lg bg-surface border border-hairline hover:border-outline transition-colors text-on-surface" type="button">
+<div class="w-6 h-6 rounded-full bg-indigo-600/30 border border-indigo-400 flex items-center justify-center text-indigo-300 font-numeric text-label font-bold select-none">
+                    €
+                  </div>
+<span class="font-title text-body font-semibold">EURC</span>
+<span class="material-symbols-outlined text-sm text-[#9AA3AD]" data-icon="expand_more">expand_more</span>
+</button>
+<!-- Amount Input / Value -->
+<div class="flex-1 ml-4 text-right">
+<input class="w-full text-right bg-transparent border-0 p-0 font-numeric-hero text-[34px] leading-tight text-on-surface placeholder-[#9AA3AD]/40 focus:ring-0 focus:outline-none" placeholder="0.00" type="text"/>
+</div>
+</div>
+<!-- Buy Sub-row -->
+<div class="flex justify-end pt-2">
+<span class="font-numeric text-label text-[#9AA3AD]">~ $0.00</span>
+</div>
+</div>
+</div>
+<!-- DETAILS BLOCK -->
+<div class="mt-6 pt-5 border-t border-hairline space-y-3">
+<div class="flex items-center justify-between">
+<span class="font-label text-label text-[#9AA3AD]">Rate</span>
+<div class="flex items-center space-x-1.5 font-numeric text-label text-on-surface">
+<span>1 USDC = 0.9183 EURC</span>
+<span class="material-symbols-outlined text-[14px] text-[#9AA3AD] cursor-pointer hover:text-on-surface transition-colors" data-icon="refresh">refresh</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label text-label text-[#9AA3AD]">Minimum received</span>
+<span class="font-numeric text-label text-on-surface">0.9137 EURC</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-label text-label text-[#9AA3AD]">Network fee</span>
+<span class="font-numeric text-label text-[#9AA3AD]">~0.0004 USDC</span>
+</div>
+</div>
+<!-- ACTION BUTTON (Disabled Empty State) -->
+<div class="mt-6">
+<button class="w-full py-3.5 px-4 rounded-xl bg-[#2A1508] text-[#812900] font-title text-body font-semibold cursor-not-allowed select-none transition-colors border border-hairline/40" disabled="" type="button">
+              Enter an amount
+            </button>
+</div>
+</div>
+</section>
+<!-- RIGHT COLUMN: Stacked Route & Assets Cards (6 Cols) -->
+<section class="lg:col-span-6 flex flex-col space-y-6">
+<!-- CARD 1: Route Card -->
+<div class="bg-surface border border-hairline rounded-[16px] p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between pb-4 border-b border-hairline/80">
+<div class="flex items-center space-x-2">
+<h2 class="font-title text-title text-on-surface font-semibold">Route</h2>
+<span class="material-symbols-outlined text-sm text-[#9AA3AD]" data-icon="info">info</span>
+</div>
+<span class="font-label text-label text-[#9AA3AD]">Optimal Path</span>
+</div>
+<!-- Body Mini-Flow -->
+<div class="pt-5 pb-4 px-2">
+<div class="flex items-center space-x-3">
+<div class="w-2.5 h-2.5 rounded-full bg-blue-400 ring-2 ring-blue-500/20"></div>
+<span class="font-numeric text-label text-on-surface">You pay 0.00 USDC</span>
+</div>
+<!-- Vertical Connector Line -->
+<div class="ml-[5px] my-1.5 h-6 border-l-2 border-dashed border-[#3A4048]"></div>
+<div class="flex items-center space-x-3">
+<div class="w-2.5 h-2.5 rounded-full bg-indigo-400 ring-2 ring-indigo-500/20"></div>
+<span class="font-numeric text-label text-on-surface">You receive 0.00 EURC</span>
+</div>
+</div>
+<!-- Badges Row -->
+<div class="flex flex-wrap items-center gap-2 pt-2 pb-4">
+<span class="px-2.5 py-1 rounded bg-[#14171B] border border-hairline font-label text-label text-secondary">Tower</span>
+<span class="px-2.5 py-1 rounded bg-[#14171B] border border-hairline font-label text-label text-secondary">Auto-routed</span>
+<span class="px-2.5 py-1 rounded bg-[#14171B] border border-hairline font-label text-label text-secondary">50 bps slippage</span>
+</div>
+</div>
+<p class="font-body text-label text-[#9AA3AD] pt-3 border-t border-hairline/80">
+            The venue, rate and minimum received are always shown before you sign.
+          </p>
+</div>
+<!-- CARD 2: Your Assets Card -->
+<div class="bg-surface border border-hairline rounded-[16px] p-6 flex flex-col">
+<div class="flex items-center justify-between pb-3 border-b border-hairline">
+<h2 class="font-title text-title text-on-surface font-semibold">Your assets</h2>
+<span class="font-numeric text-label text-[#9AA3AD]">3 Assets</span>
+</div>
+<!-- Assets Table Header -->
+<div class="grid grid-cols-12 py-3 border-b border-hairline/60 font-label text-label uppercase text-[#9AA3AD]">
+<div class="col-span-6">Asset</div>
+<div class="col-span-3 text-right">Balance</div>
+<div class="col-span-3 text-right">Value</div>
+</div>
+<!-- Assets Rows -->
+<div class="divide-y divide-hairline/40">
+<!-- Row 1: USDC -->
+<div class="grid grid-cols-12 items-center py-3.5 hover:bg-hairline/20 transition-colors rounded-lg px-1">
+<div class="col-span-6 flex items-center space-x-3">
+<div class="w-6 h-6 rounded-full bg-blue-600/30 border border-blue-400 flex items-center justify-center text-blue-300 font-numeric text-label font-bold select-none">
+                  $
+                </div>
+<div>
+<span class="font-title text-body font-medium text-on-surface">USDC</span>
+<span class="block text-[11px] text-[#9AA3AD] font-body leading-none">USD Coin</span>
+</div>
+</div>
+<div class="col-span-3 text-right font-numeric text-numeric text-on-surface">1.00</div>
+<div class="col-span-3 text-right font-numeric text-label text-[#9AA3AD]">$1.00</div>
+</div>
+<!-- Row 2: EURC -->
+<div class="grid grid-cols-12 items-center py-3.5 hover:bg-hairline/20 transition-colors rounded-lg px-1">
+<div class="col-span-6 flex items-center space-x-3">
+<div class="w-6 h-6 rounded-full bg-indigo-600/30 border border-indigo-400 flex items-center justify-center text-indigo-300 font-numeric text-label font-bold select-none">
+                  €
+                </div>
+<div>
+<span class="font-title text-body font-medium text-on-surface">EURC</span>
+<span class="block text-[11px] text-[#9AA3AD] font-body leading-none">Euro Coin</span>
+</div>
+</div>
+<div class="col-span-3 text-right font-numeric text-numeric text-on-surface">0.00</div>
+<div class="col-span-3 text-right font-numeric text-label text-[#9AA3AD]">$0.00</div>
+</div>
+<!-- Row 3: cirBTC -->
+<div class="grid grid-cols-12 items-center py-3.5 hover:bg-hairline/20 transition-colors rounded-lg px-1">
+<div class="col-span-6 flex items-center space-x-3">
+<div class="w-6 h-6 rounded-full bg-amber-600/30 border border-amber-400 flex items-center justify-center text-amber-300 font-numeric text-label font-bold select-none">
+                  ₿
+                </div>
+<div>
+<span class="font-title text-body font-medium text-on-surface">cirBTC</span>
+<span class="block text-[11px] text-[#9AA3AD] font-body leading-none">Circle BTC</span>
+</div>
+</div>
+<div class="col-span-3 text-right font-numeric text-numeric text-on-surface">0.0000</div>
+<div class="col-span-3 text-right font-numeric text-label text-[#9AA3AD]">$0.00</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- BOTTOM SECTION: Full Width Recent Swaps (Honest Empty State) -->
+<section class="mt-6">
+<div class="bg-surface border border-hairline rounded-[16px] p-6">
+<div class="flex items-center justify-between pb-4 border-b border-hairline">
+<h2 class="font-title text-title text-on-surface font-semibold">Recent swaps</h2>
+<a class="font-label text-label text-chart-line hover:text-primary-hover font-semibold transition-colors duration-150 inline-flex items-center" href="#activity">
+            View all →
+          </a>
+</div>
+<!-- Strict Empty State: Zero fabricated transactions -->
+<div class="py-12 flex flex-col items-center justify-center text-center">
+<div class="w-12 h-12 rounded-full bg-background border border-hairline flex items-center justify-center text-[#9AA3AD] mb-3">
+<span class="material-symbols-outlined text-2xl" data-icon="receipt_long">receipt_long</span>
+</div>
+<p class="font-body text-body text-[#9AA3AD] max-w-sm mb-5">
+            Your swaps will appear here after your first trade.
+          </p>
+<button class="px-4 py-2 rounded-lg bg-transparent border border-outline hover:border-chart-line/70 hover:bg-hairline/30 font-title text-label text-on-surface transition-all duration-150" type="button">
+            Get USDC
+          </button>
+</div>
+</div>
+</section>
+</main>
+</body></html>

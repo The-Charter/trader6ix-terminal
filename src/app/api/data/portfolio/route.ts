@@ -27,13 +27,12 @@ export const GET = withApi(
     }
     requireOwnedWallet(ctx.user, address);
 
-    const balances = (await getTokenBalances(address)).filter((balance) =>
-      isTrustedArcToken(balance.address)
-    );
+    const { balances, unavailable } = await getTokenBalances(address);
+    const trusted = balances.filter((balance) => isTrustedArcToken(balance.address));
     const prices = await fetchSpotPrices().catch(() => ({}) as Record<string, number>);
 
     let totalUsdValue = 0;
-    const mappedBalances = balances.map((balance) => {
+    const mappedBalances = trusted.map((balance) => {
       const amount = formatUnits(balance.rawValue, balance.decimals);
       const price = prices[balance.symbol];
       const usdValue = price !== undefined ? Number(amount) * price : undefined;
@@ -49,6 +48,7 @@ export const GET = withApi(
       walletAddress: address,
       totalUsdValue: totalUsdValue.toFixed(2),
       balances: mappedBalances,
+      unavailableAssets: unavailable,
     };
     return NextResponse.json(snapshot);
   },

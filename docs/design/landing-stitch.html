@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trader6ix Terminal — Non-Custodial Trading on Arc Mainnet</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-error": "#690005",
+            "surface-container-high": "#362721",
+            "on-tertiary-container": "#003648",
+            "background": "#08090B",
+            "surface-container-highest": "#41312c",
+            "inverse-on-surface": "#3c2d27",
+            "successful": "#2FD37A",
+            "on-tertiary-fixed": "#001e2b",
+            "surface": "#0E1013",
+            "on-secondary-container": "#b2b5bc",
+            "secondary": "#c3c6cd",
+            "primary-hover": "#FF7F45",
+            "inverse-primary": "#a83900",
+            "inverse-surface": "#f7ddd5",
+            "on-error-container": "#ffdad6",
+            "destructive": "#FF4D5E",
+            "surface-dim": "#1d100c",
+            "on-primary-container": "#5c1b00",
+            "on-secondary-fixed": "#181c21",
+            "secondary-container": "#43474d",
+            "on-primary": "#FFFFFF",
+            "on-surface": "#f7ddd5",
+            "surface-container": "#14171B",
+            "on-primary-fixed": "#380d00",
+            "chart-line": "#FF6A2B",
+            "chart-grid": "#1C2026",
+            "primary-container": "#2A1508",
+            "on-tertiary": "#003547",
+            "on-background": "#f7ddd5",
+            "on-primary-fixed-variant": "#812900",
+            "secondary-fixed-dim": "#c3c6cd",
+            "on-surface-variant": "#e2bfb3",
+            "primary-fixed-dim": "#ffb59a",
+            "outline": "#3A4048",
+            "error": "#ffb4ab",
+            "surface-container-lowest": "#170b07",
+            "surface-variant": "#41312c",
+            "tertiary": "#71d2ff",
+            "tertiary-container": "#00a5d7",
+            "outline-variant": "#5a4138",
+            "secondary-fixed": "#e0e2e9",
+            "hairline": "#23272E",
+            "tertiary-fixed": "#c0e8ff",
+            "surface-container-low": "#261813",
+            "surface-bright": "#463530",
+            "error-container": "#93000a",
+            "warning": "#F5B544",
+            "surface-tint": "#ffb59a",
+            "on-secondary-fixed-variant": "#43474d",
+            "on-tertiary-fixed-variant": "#004d66",
+            "primary-fixed": "#ffdbcf",
+            "tertiary-fixed-dim": "#71d2ff",
+            "on-secondary": "#2d3136",
+            "primary": "#ffb59a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "16px",
+            "space-xs": "4px",
+            "gutter": "16px",
+            "margin": "24px",
+            "space-xl": "32px",
+            "space-sm": "8px",
+            "space-lg": "24px"
+          },
+          "fontFamily": {
+            "display": ["Inter", "sans-serif"],
+            "numeric": ["JetBrains Mono", "monospace"],
+            "body": ["Inter", "sans-serif"],
+            "headline": ["Inter", "sans-serif"],
+            "title": ["Inter", "sans-serif"],
+            "numeric-hero": ["JetBrains Mono", "monospace"],
+            "label": ["Inter", "sans-serif"]
+          },
+          "fontSize": {
+            "display": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "650" }],
+            "numeric": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "body": ["14px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "title": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "numeric-hero": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "label": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    ::selection {
+      background-color: #2A1508;
+      color: #FF6A2B;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body text-body selection:bg-primary-container selection:text-chart-line antialiased min-h-screen flex flex-col">
+<!-- 1. TOP NAV (Shared Components Anchor: TopNavBar) -->
+<header class="bg-surface docked full-width top sticky top-0 z-50 h-16 border-b border-hairline transition-colors duration-150">
+<div class="flex justify-between items-center w-full px-margin h-16 max-w-[1440px] mx-auto">
+<!-- Brand & Navigation Cluster -->
+<div class="flex items-center gap-space-xl">
+<a class="flex items-center gap-space-sm group focus:outline-none" href="#">
+<span class="font-numeric text-chart-line text-title tracking-widest group-hover:scale-105 transition-transform">
+            [·]
+          </span>
+<span class="font-headline text-title font-bold tracking-tight text-on-surface">
+            Trader6ix
+          </span>
+</a>
+<!-- Desktop Navigation Links -->
+<nav class="hidden md:flex items-center gap-space-lg">
+<a class="text-secondary font-title text-body hover:text-on-surface hover:bg-surface-container px-2 py-1 rounded transition-colors duration-150" href="#swap">Spot</a>
+<a class="text-secondary font-title text-body hover:text-on-surface hover:bg-surface-container px-2 py-1 rounded transition-colors duration-150" href="#roadmap">Perpetual</a>
+<a class="text-secondary font-title text-body hover:text-on-surface hover:bg-surface-container px-2 py-1 rounded transition-colors duration-150" href="#portfolio">Portfolio</a>
+<a class="text-secondary font-title text-body hover:text-on-surface hover:bg-surface-container px-2 py-1 rounded transition-colors duration-150" href="#docs">Docs</a>
+</nav>
+</div>
+<!-- Trailing Status and Actions -->
+<div class="flex items-center gap-space-md">
+<!-- Network Pill -->
+<div class="flex items-center gap-2 bg-surface-container border border-hairline px-3 py-1 rounded-full">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-successful opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-successful"></span>
+</span>
+<span class="font-label text-label text-secondary tracking-wide">Arc</span>
+</div>
+<!-- Secondary Action -->
+<button class="hidden sm:inline-flex text-secondary font-label text-label hover:text-on-surface px-3 py-2 rounded transition-colors duration-150">
+          Sign In
+        </button>
+<!-- Primary Action -->
+<a class="bg-chart-line hover:bg-primary-hover active:scale-[0.98] text-white px-4 py-2 rounded-lg font-label text-label font-medium transition-all duration-150 shadow-sm flex items-center gap-1.5" href="#terminal-frame">
+<span>Launch App</span>
+<span class="material-symbols-outlined text-sm leading-none" data-icon="north_east">north_east</span>
+</a>
+</div>
+</div>
+</header>
+<!-- MAIN CANVAS -->
+<main class="flex-1 w-full max-w-[1440px] mx-auto px-margin flex flex-col gap-space-xl">
+<!-- 2. HERO SECTION -->
+<section class="pt-16 pb-8 md:pt-24 md:pb-12 flex flex-col items-center text-center max-w-4xl mx-auto">
+<!-- Network Badge -->
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container border border-hairline text-chart-line font-label text-label mb-space-lg">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-chart-line"></span>
+<span>Live on Arc mainnet</span>
+</div>
+<!-- Hero Headline -->
+<h1 class="font-display text-display font-semibold tracking-tight text-on-surface max-w-3xl mb-space-md">
+        One terminal for Arc’s<br class="hidden sm:block"/> stablecoin markets.
+      </h1>
+<!-- Muted Sub-headline -->
+<p class="font-body text-body text-secondary max-w-2xl mb-space-xl leading-relaxed">
+        Swap USDC, EURC and cirBTC with routing across Arc’s venues. Your keys, your funds — signed in your own wallet.
+      </p>
+<!-- CTAs -->
+<div class="flex flex-col sm:flex-row items-center gap-space-md mb-space-xl w-full sm:w-auto">
+<a class="w-full sm:w-auto bg-chart-line hover:bg-primary-hover text-white px-6 py-3 rounded-lg font-title text-title font-medium transition-all duration-150 active:scale-[0.98] text-center" href="#terminal-frame">
+          Launch app
+        </a>
+<a class="w-full sm:w-auto border border-hairline bg-surface-container text-on-surface hover:border-outline px-6 py-3 rounded-lg font-title text-title font-medium transition-colors duration-150 text-center" href="#market-strip">
+          View markets
+        </a>
+</div>
+<!-- Trust Chips Row -->
+<div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center justify-center gap-3 pt-4 border-t border-hairline/60 w-full max-w-2xl text-secondary font-label text-label">
+<div class="flex items-center justify-center gap-2 px-3 py-1.5 rounded bg-surface/50 border border-hairline/50">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="shield">shield</span>
+<span>Non-custodial</span>
+</div>
+<div class="flex items-center justify-center gap-2 px-3 py-1.5 rounded bg-surface/50 border border-hairline/50">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span>Signed in your wallet</span>
+</div>
+<div class="flex items-center justify-center gap-2 px-3 py-1.5 rounded bg-surface/50 border border-hairline/50">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="alt_route">alt_route</span>
+<span>Routed by Tower</span>
+</div>
+<div class="flex items-center justify-center gap-2 px-3 py-1.5 rounded bg-surface/50 border border-hairline/50">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="lock">lock</span>
+<span>Secured by Privy</span>
+</div>
+</div>
+</section>
+<!-- 3. TERMINAL PRODUCT PREVIEW FRAME -->
+<section class="relative w-full mb-12" id="terminal-frame">
+<!-- Diffuse Subtle Glow -->
+<div class="absolute inset-0 bg-primary-container/10 filter blur-3xl -z-10 rounded-full max-w-4xl mx-auto h-96 pointer-events-none"></div>
+<!-- Outer Frame -->
+<div class="w-full border border-hairline bg-surface rounded-2xl overflow-hidden shadow-2xl">
+<!-- Mock App Shell Top Bar -->
+<div class="h-12 border-b border-hairline bg-surface-container/60 px-4 flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="font-numeric text-chart-line text-xs font-bold">[·]</span>
+<span class="font-headline text-xs font-semibold tracking-tight text-on-surface">Trader6ix Terminal</span>
+</div>
+<div class="hidden sm:flex items-center gap-4 text-xs font-label">
+<span class="text-on-surface border-b-2 border-chart-line py-3.5 px-1 font-medium">Spot</span>
+<span class="text-secondary py-3.5 px-1 hover:text-on-surface transition-colors cursor-pointer">Perpetual</span>
+<span class="text-secondary py-3.5 px-1 hover:text-on-surface transition-colors cursor-pointer">Portfolio</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 bg-background border border-hairline px-2.5 py-1 rounded-full text-xs">
+<span class="h-1.5 w-1.5 rounded-full bg-successful"></span>
+<span class="text-secondary font-label text-[11px]">Arc Mainnet</span>
+</div>
+<div class="flex items-center gap-1 bg-surface-container border border-hairline px-2.5 py-1 rounded font-numeric text-xs text-secondary">
+<span class="material-symbols-outlined text-[14px]" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span>0xA69a...f875</span>
+</div>
+</div>
+</div>
+<!-- Terminal Workspace Split -->
+<div class="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-background/50">
+<!-- Left: Swap Ticket (7 cols on Desktop) -->
+<div class="lg:col-span-7 bg-surface border border-hairline rounded-xl p-5 md:p-6 flex flex-col justify-between" id="swap">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-title text-title text-on-surface">Swap</span>
+<div class="flex items-center gap-2 text-secondary font-label text-label">
+<span class="material-symbols-outlined text-sm cursor-pointer hover:text-on-surface" data-icon="tune">tune</span>
+<span>Slippage 0.1%</span>
+</div>
+</div>
+<!-- Pay Field -->
+<div class="bg-surface-container border border-hairline rounded-lg p-3.5 mb-2 focus-within:border-chart-line transition-colors">
+<div class="flex items-center justify-between text-xs text-secondary mb-1">
+<span>Pay</span>
+<span class="font-numeric">Balance: 8,420.11 USDC</span>
+</div>
+<div class="flex items-center justify-between gap-4">
+<input class="bg-transparent border-0 p-0 font-numeric text-xl md:text-2xl text-on-surface focus:ring-0 w-full font-medium" readonly="" type="text" value="1,000.00"/>
+<div class="flex items-center gap-1.5 bg-background border border-hairline px-2.5 py-1.5 rounded-lg shrink-0">
+<span class="w-5 h-5 rounded-full bg-[#2775CA]/20 text-[#2775CA] flex items-center justify-center font-bold text-xs">$</span>
+<span class="font-title text-xs font-semibold text-on-surface">USDC</span>
+</div>
+</div>
+</div>
+<!-- Flip Button Divider -->
+<div class="relative flex justify-center -my-2.5 z-10">
+<button aria-label="Invert swap pair" class="bg-surface border border-hairline rounded-md p-1 hover:border-chart-line text-secondary hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined text-base leading-none" data-icon="swap_vert">swap_vert</span>
+</button>
+</div>
+<!-- Receive Field -->
+<div class="bg-surface-container border border-hairline rounded-lg p-3.5 mb-4 focus-within:border-chart-line transition-colors">
+<div class="flex items-center justify-between text-xs text-secondary mb-1">
+<span>Receive</span>
+<span class="font-numeric">Balance: 2,573.94 EURC</span>
+</div>
+<div class="flex items-center justify-between gap-4">
+<input class="bg-transparent border-0 p-0 font-numeric text-xl md:text-2xl text-on-surface focus:ring-0 w-full font-medium" readonly="" type="text" value="847.50"/>
+<div class="flex items-center gap-1.5 bg-background border border-hairline px-2.5 py-1.5 rounded-lg shrink-0">
+<span class="w-5 h-5 rounded-full bg-[#1C539F]/20 text-[#71d2ff] flex items-center justify-center font-bold text-xs">€</span>
+<span class="font-title text-xs font-semibold text-on-surface">EURC</span>
+</div>
+</div>
+</div>
+<!-- Execution Details Meta -->
+<div class="space-y-2 border-t border-hairline pt-3 font-numeric text-xs text-secondary">
+<div class="flex justify-between items-center">
+<span class="font-label text-label">Exchange Rate</span>
+<span class="text-on-surface">1 USDC = 0.8475 EURC</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label text-label">Routing Engine</span>
+<span class="text-on-surface flex items-center gap-1">
+<span class="material-symbols-outlined text-xs text-chart-line" data-icon="alt_route">alt_route</span>
+                    Tower DEX Router
+                  </span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label text-label">Minimum Received</span>
+<span class="text-on-surface">846.65 EURC</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-5 bg-chart-line hover:bg-primary-hover text-white py-3 rounded-lg font-title text-title font-medium transition-colors duration-150 active:scale-[0.99] text-center" type="button">
+              Review Swap
+            </button>
+</div>
+<!-- Right: Holdings Real Preview (5 cols on Desktop) -->
+<div class="lg:col-span-5 bg-surface border border-hairline rounded-xl p-5 md:p-6 flex flex-col justify-between" id="portfolio">
+<div>
+<div class="flex items-center justify-between mb-4">
+<span class="font-title text-title text-on-surface">Holdings</span>
+<span class="font-label text-label text-secondary">Verified On-Chain</span>
+</div>
+<!-- Total Net Value -->
+<div class="p-3.5 bg-surface-container rounded-lg border border-hairline mb-4">
+<div class="font-label text-label text-secondary mb-1">Total Balance</div>
+<div class="font-numeric text-xl md:text-2xl font-semibold text-on-surface tracking-tight">$12,272.67</div>
+</div>
+<!-- Holdings Stack -->
+<div class="space-y-3">
+<!-- USDC Row -->
+<div class="p-2.5 rounded-lg border border-hairline/60 bg-background/50 flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-[#2775CA]/20 text-[#2775CA] flex items-center justify-center font-bold text-xs">$</span>
+<div>
+<div class="font-title text-xs text-on-surface leading-tight">USDC</div>
+<div class="font-label text-[10px] text-secondary">USD Coin</div>
+</div>
+</div>
+<div class="text-right">
+<div class="font-numeric text-xs text-on-surface font-medium">$8,420.11</div>
+<div class="font-numeric text-[10px] text-secondary">8,420.11 USDC</div>
+</div>
+</div>
+<!-- Proportional share bar -->
+<div class="w-full bg-hairline h-1 rounded-full overflow-hidden">
+<div class="bg-chart-line h-full rounded-full" style="width: 68%;"></div>
+</div>
+</div>
+<!-- EURC Row -->
+<div class="p-2.5 rounded-lg border border-hairline/60 bg-background/50 flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-[#1C539F]/20 text-[#71d2ff] flex items-center justify-center font-bold text-xs">€</span>
+<div>
+<div class="font-title text-xs text-on-surface leading-tight">EURC</div>
+<div class="font-label text-[10px] text-secondary">Euro Coin</div>
+</div>
+</div>
+<div class="text-right">
+<div class="font-numeric text-xs text-on-surface font-medium">$2,573.94</div>
+<div class="font-numeric text-[10px] text-secondary">2,181.30 EURC</div>
+</div>
+</div>
+<div class="w-full bg-hairline h-1 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 21%;"></div>
+</div>
+</div>
+<!-- cirBTC Row -->
+<div class="p-2.5 rounded-lg border border-hairline/60 bg-background/50 flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-5 h-5 rounded-full bg-[#F7931A]/20 text-[#F5B544] flex items-center justify-center font-bold text-xs">₿</span>
+<div>
+<div class="font-title text-xs text-on-surface leading-tight">cirBTC</div>
+<div class="font-label text-[10px] text-secondary">Wrapped Bitcoin</div>
+</div>
+</div>
+<div class="text-right">
+<div class="font-numeric text-xs text-on-surface font-medium">$1,278.62</div>
+<div class="font-numeric text-[10px] text-secondary">0.0152 cirBTC</div>
+</div>
+</div>
+<div class="w-full bg-hairline h-1 rounded-full overflow-hidden">
+<div class="bg-outline h-full rounded-full" style="width: 11%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Terminal Self Custody Affirmation -->
+<div class="pt-4 mt-3 border-t border-hairline flex items-center justify-between font-label text-label text-secondary">
+<span>Custody: Self</span>
+<span class="text-chart-line font-numeric">Arc Native</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. MARKET STRIP -->
+<section class="w-full border border-hairline bg-surface rounded-xl p-4 md:px-6" id="market-strip">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<!-- 3 Market Items -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 flex-1">
+<!-- USDC -->
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container border border-hairline flex items-center justify-center font-bold text-sm text-[#2775CA]">
+              $
+            </div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title text-title text-on-surface">USDC</span>
+<span class="font-numeric text-numeric text-on-surface font-medium">$1.00</span>
+</div>
+<div class="font-label text-label text-secondary">USD Peg</div>
+</div>
+</div>
+<!-- EURC -->
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container border border-hairline flex items-center justify-center font-bold text-sm text-[#71d2ff]">
+              €
+            </div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title text-title text-on-surface">EURC</span>
+<span class="font-numeric text-numeric text-on-surface font-medium">$1.18</span>
+</div>
+<div class="font-label text-label text-secondary">Euro Peg</div>
+</div>
+</div>
+<!-- cirBTC -->
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-surface-container border border-hairline flex items-center justify-center font-bold text-sm text-[#F5B544]">
+              ₿
+            </div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-title text-title text-on-surface">cirBTC</span>
+<span class="font-numeric text-numeric text-on-surface font-medium">$84,120.00</span>
+</div>
+<div class="font-label text-label text-secondary">Circle Wrapped BTC</div>
+</div>
+</div>
+</div>
+<!-- Right: Live prices marker -->
+<div class="flex items-center gap-2 self-start lg:self-center border-t lg:border-t-0 pt-3 lg:pt-0 border-hairline">
+<span class="h-2 w-2 rounded-full bg-successful animate-pulse"></span>
+<span class="font-numeric text-xs text-secondary tracking-wide">Live prices</span>
+</div>
+</div>
+</section>
+<!-- 5. FEATURES SECTION -->
+<section class="py-12">
+<div class="mb-8">
+<h2 class="font-headline text-headline text-on-surface tracking-tight mb-2">
+          Built for on-chain execution
+        </h2>
+<p class="font-body text-body text-secondary">
+          No custodian layer. Minimal latency. Pure transaction construct transparency.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="bg-surface border border-hairline rounded-2xl p-6 flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-container border border-chart-line/20 flex items-center justify-center text-chart-line mb-4">
+<span class="material-symbols-outlined" data-icon="swap_horiz">swap_horiz</span>
+</div>
+<h3 class="font-title text-title text-on-surface mb-2">Spot swaps</h3>
+<p class="font-body text-body text-secondary leading-relaxed">
+              Quote, build and sign in your wallet. Tower routes across Arc's venues and shows the venue, rate and minimum received before you sign.
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline font-label text-label text-secondary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs text-chart-line" data-icon="verified">verified</span>
+            Direct route inspection
+          </div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface border border-hairline rounded-2xl p-6 flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-container border border-chart-line/20 flex items-center justify-center text-chart-line mb-4">
+<span class="material-symbols-outlined" data-icon="pie_chart">pie_chart</span>
+</div>
+<h3 class="font-title text-title text-on-surface mb-2">Portfolio</h3>
+<p class="font-body text-body text-secondary leading-relaxed">
+              Balances, allocation, realized PnL and win rate computed from your own on-chain history. No custody, no statements, no indexer middleman.
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline font-label text-label text-secondary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs text-chart-line" data-icon="analytics">analytics</span>
+            Deterministic calculations
+          </div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface border border-hairline rounded-2xl p-6 flex flex-col justify-between">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-container border border-chart-line/20 flex items-center justify-center text-chart-line mb-4">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</div>
+<h3 class="font-title text-title text-on-surface mb-2">Transparent by default</h3>
+<p class="font-body text-body text-secondary leading-relaxed">
+              Every figure is read live from Arc. If we cannot compute something, we show a dash instead of inventing a number.
+            </p>
+</div>
+<div class="mt-6 pt-4 border-t border-hairline font-label text-label text-secondary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-xs text-chart-line" data-icon="code">code</span>
+            Zero simulated figures
+          </div>
+</div>
+</div>
+</section>
+<!-- 6. ROADMAP ROW -->
+<section class="w-full" id="roadmap">
+<div class="bg-surface border border-hairline rounded-2xl p-6 md:p-8">
+<h3 class="font-title text-title text-on-surface mb-6">What is next</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex items-center justify-between p-4 rounded-xl bg-surface-container border border-hairline">
+<span class="font-body text-body text-on-surface font-medium">Perpetual futures</span>
+<span class="font-label text-label px-2.5 py-0.5 rounded-full bg-surface border border-hairline text-secondary">Coming soon</span>
+</div>
+<div class="flex items-center justify-between p-4 rounded-xl bg-surface-container border border-hairline">
+<span class="font-body text-body text-on-surface font-medium">Stablecoin FX</span>
+<span class="font-label text-label px-2.5 py-0.5 rounded-full bg-surface border border-hairline text-secondary">Coming soon</span>
+</div>
+<div class="flex items-center justify-between p-4 rounded-xl bg-surface-container border border-hairline">
+<span class="font-body text-body text-on-surface font-medium">Deeper history</span>
+<span class="font-label text-label px-2.5 py-0.5 rounded-full bg-surface border border-hairline text-secondary">Planned</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 7. HOW IT WORKS -->
+<section class="py-12">
+<div class="mb-8">
+<h2 class="font-headline text-headline text-on-surface tracking-tight mb-2">
+          Execution workflow
+        </h2>
+<p class="font-body text-body text-secondary">
+          Three lightweight steps to execute native on-chain order routing.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="p-6 rounded-2xl bg-surface border border-hairline flex flex-col justify-between">
+<div>
+<div class="font-numeric text-chart-line text-sm mb-4 font-semibold">01</div>
+<h4 class="font-title text-title text-on-surface mb-2">1. Connect your wallet</h4>
+<p class="font-body text-body text-secondary leading-relaxed">
+              Link your preferred Arc-compatible wallet or create an embedded key instantly.
+            </p>
+</div>
+</div>
+<div class="p-6 rounded-2xl bg-surface border border-hairline flex flex-col justify-between">
+<div>
+<div class="font-numeric text-chart-line text-sm mb-4 font-semibold">02</div>
+<h4 class="font-title text-title text-on-surface mb-2">2. Fund on Arc</h4>
+<p class="font-body text-body text-secondary leading-relaxed">
+              Deposit native Arc gas and verified stable assets directly to your self-custody address.
+            </p>
+</div>
+</div>
+<div class="p-6 rounded-2xl bg-surface border border-hairline flex flex-col justify-between">
+<div>
+<div class="font-numeric text-chart-line text-sm mb-4 font-semibold">03</div>
+<h4 class="font-title text-title text-on-surface mb-2">3. Swap or hold</h4>
+<p class="font-body text-body text-secondary leading-relaxed">
+              Execute optimized spot swaps through Tower or track holdings in real time on-chain.
+            </p>
+</div>
+</div>
+</div>
+</section>
+<!-- 8. FAQ -->
+<section class="py-8 border-t border-hairline">
+<div class="mb-8">
+<h2 class="font-headline text-headline text-on-surface tracking-tight mb-2">
+          Frequently asked questions
+        </h2>
+</div>
+<div class="divide-y divide-hairline border-t border-b border-hairline">
+<!-- Row 1 -->
+<div class="py-4 flex items-center justify-between group cursor-pointer">
+<span class="font-title text-title text-on-surface group-hover:text-chart-line transition-colors">
+            Is Trader6ix custodial?
+          </span>
+<span class="material-symbols-outlined text-secondary group-hover:text-on-surface transition-colors" data-icon="expand_more">expand_more</span>
+</div>
+<!-- Row 2 -->
+<div class="py-4 flex items-center justify-between group cursor-pointer">
+<span class="font-title text-title text-on-surface group-hover:text-chart-line transition-colors">
+            Which assets can I trade?
+          </span>
+<span class="material-symbols-outlined text-secondary group-hover:text-on-surface transition-colors" data-icon="expand_more">expand_more</span>
+</div>
+<!-- Row 3 -->
+<div class="py-4 flex items-center justify-between group cursor-pointer">
+<span class="font-title text-title text-on-surface group-hover:text-chart-line transition-colors">
+            What are the fees?
+          </span>
+<span class="material-symbols-outlined text-secondary group-hover:text-on-surface transition-colors" data-icon="expand_more">expand_more</span>
+</div>
+<!-- Row 4 -->
+<div class="py-4 flex items-center justify-between group cursor-pointer">
+<span class="font-title text-title text-on-surface group-hover:text-chart-line transition-colors">
+            Is Perpetual trading live?
+          </span>
+<span class="material-symbols-outlined text-secondary group-hover:text-on-surface transition-colors" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</section>
+</main>
+<!-- 9. INSTITUTIONAL FOOTER (Shared Components Anchor: Footer) -->
+<footer class="bg-background border-t border-hairline mt-20 transition-colors">
+<div class="w-full max-w-[1440px] mx-auto px-margin py-space-xl">
+<!-- Top Columns -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
+<div class="col-span-2">
+<div class="flex items-center gap-space-sm mb-4">
+<span class="font-numeric text-chart-line text-title tracking-widest">[·]</span>
+<span class="font-headline text-headline font-bold text-on-surface">Trader6ix</span>
+</div>
+<p class="font-body text-body text-secondary max-w-sm mb-4 leading-relaxed">
+            Institutional-grade, zero-custody routing terminal engineered natively for the Arc mainnet.
+          </p>
+<div class="inline-flex items-center gap-2 bg-surface border border-hairline px-2.5 py-1 rounded-full">
+<span class="h-2 w-2 rounded-full bg-successful"></span>
+<span class="font-label text-label text-secondary">Arc Mainnet Operational</span>
+</div>
+</div>
+<!-- Product Column -->
+<div class="flex flex-col gap-3">
+<span class="font-title text-xs font-semibold uppercase tracking-wider text-on-surface">Product</span>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#swap">Spot</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#roadmap">Perpetual</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#portfolio">Portfolio</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#docs">Docs</a>
+</div>
+<!-- Company Column -->
+<div class="flex flex-col gap-3">
+<span class="font-title text-xs font-semibold uppercase tracking-wider text-on-surface">Company</span>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#">About</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#">Status</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#">Brand</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#">Blog</a>
+</div>
+<!-- Legal Column -->
+<div class="flex flex-col gap-3">
+<span class="font-title text-xs font-semibold uppercase tracking-wider text-on-surface">Legal</span>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#">Terms of Service</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#">Privacy Policy</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#">Risk Disclosure</a>
+<a class="text-secondary font-label text-label hover:text-chart-line transition-colors duration-150" href="#">Security</a>
+</div>
+</div>
+<!-- Bottom Meta -->
+<div class="pt-8 border-t border-hairline flex flex-col md:flex-row items-center justify-between gap-4 font-label text-label text-secondary">
+<div>
+          Non-custodial. Trade at your own risk.
+        </div>
+<div class="flex items-center gap-6">
+<span>© 2025 Trader6ix Terminal. Built for Arc Mainnet. Institutional-grade execution.</span>
+</div>
+</div>
+</div>
+</footer>
+</body></html>
