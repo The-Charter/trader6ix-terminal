@@ -11,13 +11,7 @@ import logo from "@/assets/trader6ix-logo.png.asset.json";
 import { images } from "@/assets/images";
 import background from "@/assets/signup-background.png.asset.json";
 import portrait from "@/assets/signup-wei.png.asset.json";
-import {
-  AUTH_REDIRECT_PATH,
-  DEMO_WALLET,
-  useSession,
-  writeSession,
-  type Session,
-} from "@/components/trader6ix/session";
+import { AUTH_REDIRECT_PATH, useSession } from "@/components/trader6ix/session";
 import { PRIVY_ENABLED, usePrivyOptional } from "@/components/trader6ix/privy-auth";
 
 const languages = ["ENG", "BNG", "Hindi"] as const;
@@ -121,17 +115,13 @@ export function SignInPage() {
     }, 350);
     return () => window.clearTimeout(id);
   }, [reviewLeaving]);
-  const finish = (session: Omit<Session, "signedInAt" | "via">) => {
-    writeSession({ ...session, signedInAt: new Date().toISOString(), via: "mock" });
-  };
-  // A written session — mock here, or mirrored from Privy by PrivySessionSync —
-  // is the single signal that sign-in completed.
+  // A written session — mirrored from Privy by PrivySessionSync — is the single
+  // signal that sign-in completed.
   useEffect(() => {
     if (session) router.replace(AUTH_REDIRECT_PATH);
   }, [session, router]);
   const connectWallet = () => {
     if (PRIVY_ENABLED && privy) privy.connectWallet();
-    else finish({ wallet: DEMO_WALLET });
   };
   const continueWithEmail = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -146,7 +136,6 @@ export function SignInPage() {
     }
     setEmailError("");
     if (PRIVY_ENABLED && privy) privy.login({ prefill: { type: "email", value: email } });
-    else finish({ email });
   };
 
   return (

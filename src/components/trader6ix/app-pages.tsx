@@ -37,10 +37,10 @@ import {
 } from "lucide-react";
 import {
   clearSession,
-  DEMO_WALLET,
   displayIdentity,
   useSession,
 } from "@/components/trader6ix/session";
+import { usePortfolioData } from "@/components/trader6ix/use-portfolio";
 import { TokenIcon } from "@/components/trader6ix/token-icons";
 import { toggleTheme, useTheme } from "@/components/trader6ix/theme";
 import { usePrivyOptional } from "@/components/trader6ix/privy-auth";
@@ -111,7 +111,7 @@ function AppBar() {
   const unreadCount = notifs.filter((n) => !n.read).length;
   const markAllRead = () => setNotifs((list) => list.map((n) => ({ ...n, read: true })));
   const [copied, setCopied] = useState(false);
-  const address = session?.wallet ?? DEMO_WALLET;
+  const address = session?.wallet ?? "";
   const signOut = () => {
     clearSession();
     void privy?.logout().catch(() => {});
@@ -810,68 +810,45 @@ function Row({ k, v }: { k: string; v: ReactNode }) {
 }
 
 /* ---------- PORTFOLIO ---------- */
-const txs = [
-  {
-    kind: "Receive",
-    time: "08:21 AM",
-    coin: "BTC",
-    amt: "+0.002345",
-    status: "Pending",
-    tall: true,
-  },
-  { kind: "Send", time: "05.12.2024", coin: "SOL", amt: "-23.42", status: "Pending", spark: true },
-  { kind: "Reward", time: "05:19 AM", coin: "ETH", amt: "+3.21", status: "Confirmed", spark: true },
-  {
-    kind: "Receive",
-    time: "05.12.2024",
-    coin: "MATIC",
-    amt: "+590.41",
-    status: "Confirmed",
-    hl: true,
-  },
-  { kind: "Receive", time: "05.12.2024", coin: "MATIC", amt: "+14.08", status: "Confirmed" },
-  { kind: "Send", time: "04.12.2024", coin: "USDT", amt: "-19.57", status: "Failed" },
-];
-
 export function PortfolioPage() {
+  const session = useSession();
+  const address = session?.wallet ?? null;
+  const { portfolio, activity, trades, loading, error, refresh } = usePortfolioData(address);
   const [range, setRange] = useState("6m");
-  const [hover, setHover] = useState<number | null>(null);
   const [hidden, setHidden] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [balance, setBalance] = useState({ v: 41812.14, pct: 4.6 });
-  const refreshBalance = () => {
+
+  const totalUsd = Number(portfolio?.totalUsdValue ?? 0);
+  const closedTrades = trades.filter((t) => t.pnl !== undefined);
+  const wins = closedTrades.filter((t) => Number(t.pnl) > 0).length;
+  const realizedPnl = closedTrades.reduce((sum, t) => sum + Number(t.pnl ?? 0), 0);
+  const winRate = closedTrades.length > 0 ? (wins / closedTrades.length) * 100 : null;
+  const volume = trades.reduce((sum, t) => sum + Number(t.quantity) * Number(t.price ?? 0), 0);
+
+  const refreshBalance = async () => {
     if (syncing) return;
     setSyncing(true);
-    window.setTimeout(() => {
-      setBalance((b) => ({
-        v: Math.round((b.v + (Math.random() - 0.45) * 140) * 100) / 100,
-        pct: Math.max(0.1, Math.round((b.pct + (Math.random() - 0.5) * 0.5) * 10) / 10),
-      }));
-      setSyncing(false);
-    }, 700);
+    try {
+      await refresh();
+    } finally {
+      window.setTimeout(() => setSyncing(false), 400);
+    }
   };
-  const pts = useMemo(() => series(40, 3, 50, 9).map((p) => p.c), []);
-  const mx = Math.max(...pts),
-    mn = Math.min(...pts);
-  const line = pts
-    .map((v, i) => `${(i / (pts.length - 1)) * 1000},${40 + ((mx - v) / (mx - mn)) * 480}`)
-    .join(" ");
-  const bars = useMemo(() => series(160, 11, 50, 20).map((p) => p.vol), []);
-  const hx = hover == null ? null : (hover / (pts.length - 1)) * 1000;
-  const hv0 = hover == null || pts[hover] == null ? mn : pts[hover];
-  const hy = hover == null ? null : 40 + ((mx - hv0) / (mx - mn)) * 480;
-  const hv =
-    hover == null
-      ? ""
-      : (36000 + ((hv0 - mn) / (mx - mn)) * 9000).toLocaleString("en-US", {
-          style: "currency",
-          currency: "USD",
-        });
-  const onChartMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width;
-    setHover(Math.max(0, Math.min(pts.length - 1, Math.round(x * (pts.length - 1)))));
-  };
+
+  if (!address) {
+    return (
+      <div className="app-page portfolio">
+        <AppBar />
+        <div className="pf-connect">
+          <h1>Connect your wallet</h1>
+          <p>Connect a wallet to view your on-chain portfolio.</p>
+          <Link href="/auth" className="pf-connect-btn">
+            Connect wallet
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-page portfolio">
@@ -887,16 +864,14 @@ export function PortfolioPage() {
                 ) : (
                   <>
                     $
-                    {balance.v.toLocaleString("en-US", {
+                    {totalUsd.toLocaleString("en-US", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
-                    <span className="pf-change">
-                      <CircleArrowUp size={16} /> {balance.pct}%
-                    </span>
                   </>
                 )}
               </h1>
+              {error && <p className="pf-error">{error}</p>}
             </div>
             <div className="pf-tools">
               <div className="pf-icons">
@@ -927,48 +902,21 @@ export function PortfolioPage() {
               </div>
             </div>
           </div>
-          <div className="pf-chart" onMouseMove={onChartMove} onMouseLeave={() => setHover(null)}>
-            <svg viewBox="0 0 1000 560" preserveAspectRatio="none">
-              {bars.map((b, i) => (
-                <rect
-                  key={i}
-                  x={i * 6.25}
-                  y={560 - b * 480}
-                  width={1.4}
-                  height={b * 480}
-                  className="pf-bar"
-                />
-              ))}
-              {hx != null && <line x1={hx} x2={hx} y1="0" y2="560" className="pf-cursor" />}
-              <polyline points={line} className="pf-line" />
-              {hx != null && <circle cx={hx} cy={hy ?? 0} r="5" className="pf-cursor-dot" />}
-            </svg>
-            {hover != null && (
-              <div className="pf-tip" style={{ left: `${(hover / (pts.length - 1)) * 100}%` }}>
-                {hv}
-              </div>
-            )}
-            <div className="pf-times">
-              {["8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM"].map(
-                (t) => (
-                  <span key={t}>{t}</span>
-                ),
-              )}
-            </div>
+          <div className="pf-chart">
+            <p className="pf-chart-empty">
+              {loading ? "Loading portfolio…" : "Historical value chart isn't available yet."}
+            </p>
           </div>
           <div className="pf-stats">
             {[
-              ["Realized PnL", "+$1,429.00", "+27% Today"],
-              ["Win Rate", "68.4%", "+2.1% Today"],
-              ["Volume", "$3,125,897", "+8.4% Today"],
-              ["Trades", "1,284", "+36 Today"],
-            ].map(([a, b, c]) => (
-              <div key={a} className="pf-stat">
-                <span>{a}</span>
-                <b>{b}</b>
-                <small>
-                  <CircleArrowUp size={10} /> {c}
-                </small>
+              ["Realized PnL", `${realizedPnl >= 0 ? "+" : "-"}$${Math.abs(realizedPnl).toFixed(2)}`],
+              ["Win Rate", winRate === null ? "—" : `${winRate.toFixed(1)}%`],
+              ["Volume", `$${volume.toLocaleString("en-US", { maximumFractionDigits: 0 })}`],
+              ["Trades", String(trades.length)],
+            ].map(([label, value]) => (
+              <div key={label} className="pf-stat">
+                <span>{label}</span>
+                <b>{value}</b>
               </div>
             ))}
           </div>
@@ -987,7 +935,7 @@ export function PortfolioPage() {
             </small>
           </div>
           <div className="pf-risk">
-            <i style={{ width: "65%" }} />
+            <i style={{ width: "0%" }} />
           </div>
           <div className="pf-risk-labels">
             <span>Low Risk</span>
@@ -998,36 +946,23 @@ export function PortfolioPage() {
             <button>View All</button>
           </div>
           <div className="pf-tx-grid">
-            {txs.map((t, i) => (
-              <div key={i} className={`pf-tx${t.hl ? " hl" : ""}${t.tall ? " tall" : ""}`}>
-                <div className="pf-tx-top">
-                  <TokenIcon symbol={t.coin} />
-                  <div>
-                    {t.kind}
-                    <small>{t.time}</small>
+            {activity.length === 0 ? (
+              <p className="pf-empty">{loading ? "Loading transactions…" : "No transactions yet."}</p>
+            ) : (
+              activity.slice(0, 6).map((tx) => (
+                <div key={tx.hash} className="pf-tx">
+                  <div className="pf-tx-top">
+                    <div>
+                      {tx.type}
+                      <small>{new Date(tx.timestamp * 1000).toLocaleString()}</small>
+                    </div>
+                  </div>
+                  <div className="pf-tx-amt">
+                    <b>{tx.summary}</b>
                   </div>
                 </div>
-                {t.spark && (
-                  <svg viewBox="0 0 100 30" className="pf-spark">
-                    <polyline points="0,20 15,18 30,22 45,14 60,16 75,8 90,12 100,10" />
-                  </svg>
-                )}
-                <div className="pf-tx-amt">
-                  <small>{t.coin}</small>
-                  <b>{t.amt}</b>
-                  <span className={t.status === "Failed" ? "fail" : ""}>
-                    {t.status === "Pending" ? (
-                      <Clock size={10} />
-                    ) : t.status === "Failed" ? (
-                      <CircleX size={10} />
-                    ) : (
-                      <CircleCheck size={10} />
-                    )}{" "}
-                    {t.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </aside>
       </div>

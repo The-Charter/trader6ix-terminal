@@ -7,9 +7,6 @@ export const AUTH_REDIRECT_PATH = "/perps" as const;
 
 const STORAGE_KEY = "trader6ix-session";
 
-/** Placeholder address shown before a wallet is connected. */
-export const DEMO_WALLET = "0xA7F3d4B8c62369B0fEa2c4D8eF1b7A9C3d5E8f21";
-
 export type Session = {
   email?: string;
   wallet?: string;
@@ -27,7 +24,7 @@ export function displayIdentity(session: Session | null) {
   if (session?.email)
     return session.email.length > 26 ? `${session.email.slice(0, 23)}…` : session.email;
   if (session?.wallet) return shortAddress(session.wallet);
-  return "0xA7F3d4B8c62369B0fEa2…";
+  return "Not connected";
 }
 
 const listeners = new Set<() => void>();
