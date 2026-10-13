@@ -28,8 +28,10 @@ export function Eyebrow({ children }: { children: React.ReactNode }) {
 export function Hero() {
   return (
     <section className="hero">
+      {/* Background and candlestick artwork hidden — plain black hero for now.
       <img className="hero-bg" src={images[0]} alt="" />
       <img className="hero-bg hero-candles" src={images[1]} alt="" />
+      */}
       <div className="hero-inner site-container">
         <div className="hero-copy">
           <Eyebrow>Real-Time Trading Intelligence</Eyebrow>
@@ -55,11 +57,13 @@ export function Hero() {
             </Button>
           </div>
         </div>
+        {/* Side dashboard card hidden for now.
         <img
           className="hero-card"
           src={images[2]}
           alt="Trader6ix live trading dashboard showing crypto staking rewards and market performance"
         />
+        */}
       </div>
     </section>
   );
