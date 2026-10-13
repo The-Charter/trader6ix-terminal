@@ -1,4 +1,5 @@
 import type { TowerErrorCode } from "@/lib/tower/types";
+import { ApiError } from "@/server/http/errors";
 
 /** Raised for any non-success response from the Tower API. */
 export class TowerApiError extends Error {
@@ -63,4 +64,38 @@ export function toTowerErrorResponse(err: unknown): { status: number; body: Towe
     return { status, body: { error: err.message, code: err.code } };
   }
   return { status: 502, body: { error: err instanceof Error ? err.message : "Unknown error" } };
+}
+
+/**
+ * Maps a Tower failure onto an `ApiError` for the shared error boundary.
+ *
+ * Something the caller can fix (bad token, no route, stale quote, slippage)
+ * stays a 4xx carrying Tower's already-sanitised message. Anything upstream or
+ * credential-related collapses to a generic 5xx: the client must never learn
+ * about our Tower account, its scopes, or the state of our key.
+ */
+export function toSwapApiError(err: unknown): ApiError {
+  if (err instanceof ApiError) return err;
+
+  if (err instanceof TowerValidationError) {
+    return new ApiError("VALIDATION_FAILED", err.message);
+  }
+
+  if (err instanceof TowerApiError) {
+    const callerFixable =
+      err.status === 400 ||
+      err.status === 404 ||
+      err.status === 422 ||
+      err.code === "QUOTE_STALE" ||
+      err.code === "QUOTE_EXPIRED" ||
+      err.code === "INSUFFICIENT_LIQUIDITY" ||
+      err.code === "NO_ROUTE_FOUND" ||
+      err.code === "INVALID_TOKEN" ||
+      err.code === "SLIPPAGE_EXCEEDED";
+
+    if (callerFixable) return new ApiError("BAD_REQUEST", err.message);
+    if (err.status === 429) return new ApiError("RATE_LIMITED", err.message);
+  }
+
+  return new ApiError("INTERNAL", "The swap service is temporarily unavailable. Please retry shortly.");
 }

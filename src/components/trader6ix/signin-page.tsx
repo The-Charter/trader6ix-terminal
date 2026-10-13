@@ -87,7 +87,7 @@ const authReviews = [
   },
   {
     quote:
-      "Practising on testnet with real market data gave me the confidence to size positions properly before risking anything.",
+      "Practising with real market data gave me the confidence to size positions properly before risking anything.",
     name: "David Chen",
     role: "Day Trader",
     image: images[10],

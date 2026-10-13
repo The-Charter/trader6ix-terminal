@@ -13,6 +13,9 @@ export type Session = {
   signedInAt: string;
   /** Which backend established this session. Mock is the local demo fallback. */
   via?: "privy" | "mock";
+  /** Local user id + role, set once the API has verified the Privy token. */
+  userId?: string;
+  role?: "user" | "admin";
 };
 
 export function shortAddress(address: string) {

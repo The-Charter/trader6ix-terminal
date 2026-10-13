@@ -2,22 +2,34 @@
 
 import { PrivyProvider } from "@privy-io/react-auth";
 import { PrivySessionSync } from "@/components/trader6ix/privy-session-sync";
+import {
+  ARC_CHAIN_ID,
+  ARC_CHAIN_NAME,
+  ARC_EXPLORER_URL,
+  ARC_NETWORK_SLUG,
+  ARC_RPC_URL,
+  IS_ARC_MAINNET,
+} from "@/lib/arc-network";
 
-const ARC_TESTNET = {
-  id: Number(process.env.NEXT_PUBLIC_ARC_CHAIN_ID ?? 5042002),
-  name: "Arc Testnet",
-  network: "arc-testnet",
-  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+/**
+ * Chain descriptor handed to Privy and to wallet_addEthereumChain. Derived from
+ * the env so switching networks never leaves a stale chain in the auth modal.
+ *
+ * USDC is Arc's native gas token; native balances are 18-decimal wei even
+ * though the USDC ERC-20 interface reports 6 (see the token registry).
+ */
+const ARC_CHAIN = {
+  id: ARC_CHAIN_ID,
+  name: ARC_CHAIN_NAME,
+  network: ARC_NETWORK_SLUG,
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
   rpcUrls: {
-    default: { http: [process.env.NEXT_PUBLIC_ARC_RPC_URL ?? "https://rpc.testnet.arc.network"] },
+    default: { http: [ARC_RPC_URL] },
   },
   blockExplorers: {
-    default: {
-      name: "Arc Explorer",
-      url: process.env.NEXT_PUBLIC_ARC_EXPLORER_URL ?? "https://testnet.arcscan.app",
-    },
+    default: { name: "Arc Explorer", url: ARC_EXPLORER_URL },
   },
-  testnet: true,
+  testnet: !IS_ARC_MAINNET,
 } as const;
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -40,8 +52,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       config={{
         loginMethods: ["wallet", "email"],
         appearance: { theme: "dark", accentColor: "#22D3EE" },
-        defaultChain: ARC_TESTNET,
-        supportedChains: [ARC_TESTNET],
+        defaultChain: ARC_CHAIN,
+        supportedChains: [ARC_CHAIN],
         embeddedWallets: { createOnLogin: "users-without-wallets" },
       }}
     >

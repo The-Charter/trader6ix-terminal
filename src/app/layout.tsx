@@ -2,14 +2,17 @@ import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
 import { THEME_BOOTSTRAP } from "@/lib/theme-bootstrap";
+import { ARC_CHAIN_NAME } from "@/lib/arc-network";
 import "./globals.css";
 
+const TITLE = `Trader6ix — Spot & Perps on ${ARC_CHAIN_NAME}`;
+
 export const metadata: Metadata = {
-  title: "Trader6ix — Spot & Perps on Arc Testnet",
+  title: TITLE,
   description:
     "Real-time trading intelligence, analytics, and portfolio performance tools from Trader6ix.",
   openGraph: {
-    title: "Trader6ix — Spot & Perps on Arc Testnet",
+    title: TITLE,
     description: "Trade smarter with Trader6ix analytics and portfolio tools.",
     type: "website",
   },

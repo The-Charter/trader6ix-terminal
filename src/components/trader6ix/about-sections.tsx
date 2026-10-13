@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight, Unplug, Telescope, SquareChartGantt, FileTerminal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Eyebrow, CTA } from "./sections";
+import { ARC_CHAIN_NAME } from "@/lib/arc-network";
 import hero from "@/assets/about-hero.png.asset.json";
 import cardGlow from "@/assets/about-card-glow.png.asset.json";
 import payout from "@/assets/about-payout.png.asset.json";
@@ -75,8 +76,7 @@ export function AboutProcess() {
   const steps = [
     {
       title: "1. Connect Your Wallet",
-      description:
-        "Access Trader6ix in minutes by connecting your wallet to Arc Testnet or signing in with your preferred login method.",
+      description: `Access Trader6ix in minutes by connecting your wallet to ${ARC_CHAIN_NAME} or signing in with your preferred login method.`,
       Icon: Unplug,
     },
     {

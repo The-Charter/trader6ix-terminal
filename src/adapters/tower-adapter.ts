@@ -1,6 +1,8 @@
 import { ethers } from "ethers";
 import type { SpotAdapter, SpotPool, SpotToken, SwapQuote, SwapQuoteInput, SwapResult } from "./spot-adapter";
 import { getTowerToken } from "@/lib/tower/tokens";
+import { apiFetch, newIdempotencyKey } from "@/components/trader6ix/api-client";
+import { ARC_CHAIN_ID, ARC_CHAIN_NAME, IS_ARC_MAINNET } from "@/lib/arc-network";
 
 /**
  * Tower Exchange — Arc's native stablecoin swap aggregator. Implemented as a
@@ -15,21 +17,28 @@ import { getTowerToken } from "@/lib/tower/tokens";
  */
 
 const ENABLED = process.env.NEXT_PUBLIC_TOWER_ENABLED !== "false"; // on by default once deployed with a real key
-const ARC_CHAIN_ID = Number(process.env.NEXT_PUBLIC_ARC_CHAIN_ID ?? 5042002);
 
 // Tower expresses slippage in BASIS POINTS (50 = 0.5%); this is also Tower's
 // own API default. TODO: make user-configurable in the trade ticket.
 const DEFAULT_SLIPPAGE_BPS = 50;
 
-// Tower's build-tx endpoint only builds swaps for its native DEX. Auto-routed
-// quotes (which may pick synthra / unitflow / xylonet-adapter) fail with
-// QUOTE_STALE, so the venue is pinned to a buildable one.
-const BUILDABLE_DEX_ID = "tower-dex";
+/**
+ * Venue pinning now lives server-side (see src/server/swap/controller.ts) so a
+ * client cannot choose the venue or the chain a swap is priced for.
+ */
 
 interface BuiltSwap {
   approval: { to: string; data: string; value?: string } | null;
   swap: { to: string; data: string; value?: string; chainId?: number };
   chainId?: number;
+}
+
+/** Reads a message out of the API's `{ error: { message } }` envelope. */
+function apiErrorMessage(payload: unknown, fallback: string): string {
+  const error = (payload as { error?: { message?: string } | string } | null)?.error;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && typeof error.message === "string") return error.message;
+  return fallback;
 }
 
 async function requestQuote(input: SwapQuoteInput) {
@@ -39,26 +48,27 @@ async function requestQuote(input: SwapQuoteInput) {
   const outputToken = getTowerToken(toSymbol);
   const amountAtomic = ethers.parseUnits(input.amount, inputToken.decimals).toString();
 
-  const res = await fetch("/api/tower/quote", {
+  // Authenticated first-party endpoint: it pins the chain and the venue and
+  // only accepts trusted Arc tokens.
+  const res = await apiFetch("/api/v1/swap/quote", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    noIdempotencyKey: true,
     body: JSON.stringify({
       inputToken: inputToken.address,
       outputToken: outputToken.address,
       inputAmount: amountAtomic,
       slippageTolerance: input.slippageBps ?? DEFAULT_SLIPPAGE_BPS,
-      chainId: ARC_CHAIN_ID,
-      dexId: BUILDABLE_DEX_ID,
     }),
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.error ?? "Failed to get Tower quote");
+  if (!res.ok) throw new Error(apiErrorMessage(json, "Failed to get Tower quote"));
 
-  // CONFIRMED shape: { success: boolean, data: {...} } — not flat fields.
+  // CONFIRMED shape: the API returns Tower's `data` object as our envelope's
+  // `data`, so `{ outputAmount, minOut, route, expiresAt, … }`.
   const data = json.data;
   if (!data || data.outputAmount === undefined || data.outputAmount === null) {
     throw new Error(
-      `Tower quote response is missing "data.outputAmount" — raw response: ${JSON.stringify(json).slice(0, 500)}`
+      `Tower quote response is missing "outputAmount" — raw response: ${JSON.stringify(json).slice(0, 500)}`
     );
   }
 
@@ -135,31 +145,33 @@ export const towerAdapter: SpotAdapter = {
     }
 
     try {
-      // Tower's build-tx is unreliable on testnet and intermittently returns
-      // QUOTE_STALE / "No valid route found" for a valid quote, so retry with a
-      // fresh quote several times before giving up.
-      const MAX_ATTEMPTS = 6;
+      // Tower's build endpoint is intermittent on some networks, so retry with a
+      // fresh quote. Each attempt is a NEW economic attempt, so it gets its own
+      // idempotency key — reusing one would replay the previous build.
+      const MAX_ATTEMPTS = IS_ARC_MAINNET ? 3 : 6;
       let buildData: BuiltSwap | null = null;
       let lastError = "Tower could not build the swap transaction.";
 
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         const { data } = await requestQuote(input);
-        const buildRes = await fetch("/api/tower/build-tx", {
+        const buildRes = await apiFetch("/api/v1/swap/build", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          // One key per attempt: a network-level retry of THIS call replays the
+          // transaction Tower already built instead of building a second one.
+          idempotencyKey: newIdempotencyKey(),
           body: JSON.stringify({
-            // Tower requires the complete quote returned by /swap/quote.
+            // Tower requires the complete quote returned by the quote endpoint.
             quote: data,
             userAddress: walletAddress,
           }),
         });
         const buildJson = await buildRes.json();
-        const candidate = (buildJson.data ?? buildJson) as Partial<BuiltSwap>;
-        if (buildRes.ok && candidate.swap?.to && candidate.swap?.data) {
+        const candidate = buildJson.data as Partial<BuiltSwap> | undefined;
+        if (buildRes.ok && candidate?.swap?.to && candidate?.swap?.data) {
           buildData = candidate as BuiltSwap;
           break;
         }
-        lastError = buildJson.error ?? "Tower could not build the swap transaction.";
+        lastError = apiErrorMessage(buildJson, "Tower could not build the swap transaction.");
         if (attempt < MAX_ATTEMPTS) await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
@@ -182,7 +194,7 @@ export const towerAdapter: SpotAdapter = {
       const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
       const network = await browserProvider.getNetwork();
       if (Number(network.chainId) !== ARC_CHAIN_ID) {
-        return { ok: false, error: `Your wallet is connected to the wrong network. Please switch to Arc Testnet (chain ${ARC_CHAIN_ID}) and try again.` };
+        return { ok: false, error: `Your wallet is connected to the wrong network. Please switch to ${ARC_CHAIN_NAME} (chain ${ARC_CHAIN_ID}) and try again.` };
       }
       const signer = await browserProvider.getSigner(walletAddress);
 

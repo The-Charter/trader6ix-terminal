@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Workflow, PanelsTopLeft, Gauge, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Eyebrow, CTA, CountUp } from "./sections";
+import { ARC_CHAIN_NAME } from "@/lib/arc-network";
 import { images } from "@/assets/images";
 import hero from "@/assets/about-hero.png.asset.json";
 import cardGlow from "@/assets/about-card-glow.png.asset.json";
@@ -31,7 +32,7 @@ export function FeaturesHero() {
         <p>
           Trader6ix brings the complete trading workflow together. From wallet connection and
           real-time market data to risk management, trade execution, portfolio tracking, and
-          seamless on-chain settlement on Arc Testnet.
+          seamless on-chain settlement on {ARC_CHAIN_NAME}.
         </p>
       </div>
     </section>

@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { formatUnits } from "ethers";
-import { getTokenTransfers, type ExplorerTokenTransfer } from "@/server/arc-explorer/client";
+import { withApi } from "@/server/http/with-api";
+import { requireOwnedWallet } from "@/server/auth/ownership";
+import { badRequest } from "@/server/http/errors";
+import { getTokenTransfers, type TokenTransfer } from "@/server/arc-rpc/client";
 import { fetchSpotPrices } from "@/server/prices/spot";
 import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { IndexedTrade } from "@/adapters/data-adapter";
@@ -9,38 +12,43 @@ export const dynamic = "force-dynamic";
 
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
-/** Known swap entrypoints, keyed by 4-byte method selector. */
-const SWAP_METHODS = new Set(["0xcd6267d5"]); // TowerSwapExecutor.executeSwap
+/**
+ * Executed swaps for one of the caller's own wallets.
+ *
+ * A swap is identified structurally — one transaction where the wallet sends
+ * one trusted token and receives a different one — rather than by a venue's
+ * method selector, so it keeps working across routers (Tower's executor,
+ * Uniswap, Kyber, Aerodrome…). Multi-hop legs that net out are ignored by
+ * pairing the sold leg with a bought leg of a different token.
+ */
+export const GET = withApi(
+  async (req, ctx) => {
+    const address = req.nextUrl.searchParams.get("address") ?? "";
+    if (!ADDRESS_PATTERN.test(address)) {
+      throw badRequest("address query param must be a valid 0x address.");
+    }
+    requireOwnedWallet(ctx.user, address);
 
-export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get("address");
-  if (!address || !ADDRESS_PATTERN.test(address)) {
-    return NextResponse.json({ error: "address query param must be a valid 0x address" }, { status: 400 });
-  }
-
-  try {
-    const transfers = (await getTokenTransfers(address)).filter((transfer) => isTrustedArcToken(transfer.tokenAddress));
+    const transfers = (await getTokenTransfers(address)).filter((transfer) =>
+      isTrustedArcToken(transfer.tokenAddress)
+    );
     const wallet = address.toLowerCase();
 
-    // Group swap-transaction transfers by their transaction hash.
-    const byTransaction = new Map<string, ExplorerTokenTransfer[]>();
+    const grouped = new Map<string, TokenTransfer[]>();
     for (const transfer of transfers) {
-      if (!transfer.method || !SWAP_METHODS.has(transfer.method)) continue;
-      const group = byTransaction.get(transfer.txHash) ?? [];
+      const group = grouped.get(transfer.txHash) ?? [];
       group.push(transfer);
-      byTransaction.set(transfer.txHash, group);
+      grouped.set(transfer.txHash, group);
     }
 
     const prices = await fetchSpotPrices().catch(() => ({}) as Record<string, number>);
 
     const trades: IndexedTrade[] = [];
-    for (const group of byTransaction.values()) {
+    for (const group of grouped.values()) {
       const outgoing = group.filter((transfer) => transfer.from.toLowerCase() === wallet);
       const incoming = group.filter((transfer) => transfer.to.toLowerCase() === wallet);
       if (outgoing.length === 0 || incoming.length === 0) continue;
 
-      // Pick an outgoing/incoming pair of DIFFERENT tokens; multi-hop routing
-      // produces same-token legs that are not the user's swap.
       const sold = outgoing.find((out) => incoming.some((inc) => inc.tokenSymbol !== out.tokenSymbol));
       if (!sold) continue;
       const bought = incoming.find((inc) => inc.tokenSymbol !== sold.tokenSymbol);
@@ -70,8 +78,6 @@ export async function GET(request: NextRequest) {
 
     trades.sort((a, b) => b.timestamp - a.timestamp);
     return NextResponse.json(trades);
-  } catch (err) {
-    console.error("Trades request failed:", err instanceof Error ? err.message : err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 502 });
-  }
-}
+  },
+  { auth: true, rateLimit: { limit: 60 } }
+);

@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { formatUnits } from "ethers";
-import { getTokenBalances } from "@/server/arc-explorer/client";
+import { withApi } from "@/server/http/with-api";
+import { requireOwnedWallet } from "@/server/auth/ownership";
+import { badRequest } from "@/server/http/errors";
+import { getTokenBalances } from "@/server/arc-rpc/client";
 import { fetchSpotPrices } from "@/server/prices/spot";
 import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { PortfolioSnapshot } from "@/adapters/data-adapter";
@@ -9,14 +12,24 @@ export const dynamic = "force-dynamic";
 
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
-export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get("address");
-  if (!address || !ADDRESS_PATTERN.test(address)) {
-    return NextResponse.json({ error: "address query param must be a valid 0x address" }, { status: 400 });
-  }
+/**
+ * Balances for one of the caller's own wallets, valued with Tower's prices.
+ *
+ * Balances are read straight from Arc over JSON-RPC (the mainnet explorer API
+ * is Cloudflare-gated, see src/server/arc-rpc/client.ts) and filtered to the
+ * trusted token registry so airdrop spam never shows up as a holding.
+ */
+export const GET = withApi(
+  async (req, ctx) => {
+    const address = req.nextUrl.searchParams.get("address") ?? "";
+    if (!ADDRESS_PATTERN.test(address)) {
+      throw badRequest("address query param must be a valid 0x address.");
+    }
+    requireOwnedWallet(ctx.user, address);
 
-  try {
-    const balances = (await getTokenBalances(address)).filter((balance) => isTrustedArcToken(balance.address));
+    const balances = (await getTokenBalances(address)).filter((balance) =>
+      isTrustedArcToken(balance.address)
+    );
     const prices = await fetchSpotPrices().catch(() => ({}) as Record<string, number>);
 
     let totalUsdValue = 0;
@@ -38,8 +51,6 @@ export async function GET(request: NextRequest) {
       balances: mappedBalances,
     };
     return NextResponse.json(snapshot);
-  } catch (err) {
-    console.error("Portfolio request failed:", err instanceof Error ? err.message : err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 502 });
-  }
-}
+  },
+  { auth: true, rateLimit: { limit: 60 } }
+);

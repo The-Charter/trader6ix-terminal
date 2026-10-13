@@ -2711,6 +2711,36 @@
   gap: 10px;
   align-items: center;
 }
+/* Network badge — on mainnet the user is spending real funds, so which chain
+   the terminal is pointed at must be unambiguous at a glance. */
+.app-network-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--app-line);
+  background: var(--app-panel);
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.app-network-pill .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--app-muted);
+}
+.app-network-pill.live {
+  color: var(--app-ink);
+}
+.app-network-pill.live .dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgb(34 197 94 / 18%);
+}
 .app-icon-btn,
 .app-wallet {
   display: inline-flex;

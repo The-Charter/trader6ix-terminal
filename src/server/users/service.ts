@@ -1,32 +1,43 @@
 import "server-only";
 import * as repository from "./repository";
-import { hashPassword, verifyPassword } from "@/server/auth/password";
-import { issueAccessToken } from "@/server/auth/jwt";
-import { conflict, unauthorized } from "@/server/http/errors";
+import { roleFromAllowlist } from "@/server/auth/roles";
+import { notFound } from "@/server/http/errors";
+import type { PrivyIdentity } from "@/server/auth/privy";
 import type { PublicUser, UserRecord } from "./types";
 
-function toPublic(user: UserRecord): PublicUser {
-  return { id: user.id, email: user.email, role: user.role, createdAt: user.createdAt };
+export function toPublic(user: UserRecord): PublicUser {
+  return {
+    id: user.id,
+    did: user.did,
+    wallet: user.wallet,
+    role: user.role,
+    createdAt: user.createdAt,
+  };
 }
 
-export async function register(email: string, password: string): Promise<{ user: PublicUser; token: string }> {
-  const existing = await repository.findByEmail(email);
-  if (existing) throw conflict("An account with that email already exists.");
+/**
+ * Maps a *verified* Privy identity onto a local user row, creating it on first
+ * contact. Authentication itself is Privy's job; this only owns the local
+ * profile and its role.
+ */
+export async function resolveIdentity(identity: PrivyIdentity): Promise<UserRecord> {
+  const user = await repository.upsertByDid(identity.did, identity.wallet);
 
-  const user = await repository.insert(email, await hashPassword(password), "user");
-  const token = await issueAccessToken({ id: user.id, email: user.email, role: user.role });
-  return { user: toPublic(user), token };
-}
-
-export async function login(email: string, password: string): Promise<{ user: PublicUser; token: string }> {
-  const user = await repository.findByEmail(email);
-  // Same message for unknown email and wrong password (no account enumeration).
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    throw unauthorized("Invalid email or password.");
+  // The env allowlist can only promote, and the promotion is persisted so that
+  // Postgres remains the source of truth for every later request.
+  const allowlisted = roleFromAllowlist(identity.did);
+  if (allowlisted && allowlisted !== user.role) {
+    await repository.setRole(user.id, allowlisted);
+    return { ...user, role: allowlisted };
   }
 
-  const token = await issueAccessToken({ id: user.id, email: user.email, role: user.role });
-  return { user: toPublic(user), token };
+  return user;
+}
+
+export async function getProfile(userId: string): Promise<PublicUser> {
+  const user = await repository.findById(userId);
+  if (!user) throw notFound("User not found.");
+  return toPublic(user);
 }
 
 export async function listUsers(): Promise<PublicUser[]> {

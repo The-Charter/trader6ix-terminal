@@ -45,6 +45,8 @@ import { usePortfolioData } from "@/components/trader6ix/use-portfolio";
 import { TokenIcon } from "@/components/trader6ix/token-icons";
 import { toggleTheme, useTheme } from "@/components/trader6ix/theme";
 import { usePrivyOptional } from "@/components/trader6ix/privy-auth";
+import { apiFetch, newIdempotencyKey } from "@/components/trader6ix/api-client";
+import { ARC_CHAIN_ID, ARC_CHAIN_NAME, ARC_FAUCET_URL, IS_ARC_MAINNET } from "@/lib/arc-network";
 import logo from "@/assets/trader6ix-logo.png.asset.json";
 
 /* ---------- shared app bar ---------- */
@@ -53,6 +55,14 @@ const appLinks = [
   { to: "/perps", label: "Perpetual" },
   { to: "/portfolio", label: "Portfolio" },
 ] as const;
+
+/** Reads a message out of the API's `{ error: { message } }` envelope. */
+function apiErrorMessage(payload: unknown, fallback: string): string {
+  const error = (payload as { error?: { message?: string } | string } | null)?.error;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && typeof error.message === "string") return error.message;
+  return fallback;
+}
 
 /* A tap with a falling drop — lucide has no "faucet" glyph of its own. */
 const faucetNode: IconNode = [
@@ -91,7 +101,10 @@ function AppBar() {
     let cancelled = false;
     const load = async () => {
       try {
-        const res = await fetch(`/api/data/activity?address=${encodeURIComponent(wallet)}`);
+        // Only ever fetches the connected wallet's own activity: the API
+        // authorizes the address against the caller's linked wallets.
+        const res = await apiFetch(`/api/data/activity?address=${encodeURIComponent(wallet)}`);
+        if (!res.ok) return;
         const json = await res.json();
         if (cancelled || !Array.isArray(json)) return;
         setNotifs(
@@ -168,19 +181,28 @@ function AppBar() {
         })}
       </nav>
       <div className="app-bar-right">
+        <span
+          className={`app-network-pill${IS_ARC_MAINNET ? " live" : ""}`}
+          title={`Connected to ${ARC_CHAIN_NAME} (chain ${ARC_CHAIN_ID})`}
+        >
+          <span className="dot" aria-hidden="true" />
+          {ARC_CHAIN_NAME}
+        </span>
         <button className="app-icon-btn" aria-label="Search">
           <Search size={18} />
         </button>
-        <a
-          className="app-icon-btn"
-          href="https://faucet.circle.com/"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Open the testnet faucet"
-          title="Get testnet USDC from the Circle faucet"
-        >
-          <Icon iconNode={faucetNode} size={18} />
-        </a>
+        {ARC_FAUCET_URL ? (
+          <a
+            className="app-icon-btn"
+            href={ARC_FAUCET_URL}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open the testnet faucet"
+            title="Get testnet USDC from the Circle faucet"
+          >
+            <Icon iconNode={faucetNode} size={18} />
+          </a>
+        ) : null}
         <div
           className="app-wallet-wrap"
           onKeyDown={(e) => {
@@ -1002,7 +1024,7 @@ export function SpotPage() {
   const privy = usePrivyOptional();
   const { portfolio } = usePortfolioData(address);
 
-  const chainId = Number(process.env.NEXT_PUBLIC_ARC_CHAIN_ID ?? 5042002);
+  const chainId = ARC_CHAIN_ID;
   const [tokens, setTokens] = useState<SpotToken[]>([]);
   const [fromSym, setFromSym] = useState("USDC");
   const [toSym, setToSym] = useState("EURC");
@@ -1040,25 +1062,25 @@ export function SpotPage() {
       setError(null);
       try {
         const inputAmount = ethers.parseUnits(amount, fromToken.decimals).toString();
-        const res = await fetch("/api/tower/quote", {
+        const res = await apiFetch("/api/v1/swap/quote", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          noIdempotencyKey: true,
           body: JSON.stringify({
             inputToken: fromToken.address,
             outputToken: toToken.address,
             inputAmount,
             slippageTolerance: 50,
-            chainId,
-            dexId: "tower-dex",
           }),
         });
         const json = await res.json();
         if (cancelled) return;
-        if (!res.ok || json.success === false) throw new Error(json.error ?? "Could not get a quote");
+        if (!res.ok) throw new Error(apiErrorMessage(json, "Could not get a quote"));
+        const data = json.data;
+        if (!data?.outputAmount) throw new Error("Could not get a quote");
         setQuote({
-          outputAmount: json.data.outputAmount,
-          minOut: json.data.minOut,
-          venue: json.data.route?.hops?.[0]?.dexName ?? json.data.route?.hops?.[0]?.dexId ?? "tower-dex",
+          outputAmount: data.outputAmount,
+          minOut: data.minOut,
+          venue: data.route?.hops?.[0]?.dexName ?? data.route?.hops?.[0]?.dexId ?? "tower",
         });
       } catch (err) {
         if (!cancelled) {
@@ -1094,40 +1116,40 @@ export function SpotPage() {
     try {
       const inputAmount = ethers.parseUnits(amount, fromToken.decimals).toString();
 
-      // Tower's build-tx is intermittent, so retry with a fresh quote.
+      // Tower's build endpoint is intermittent on some networks, so retry with a
+      // fresh quote. Each attempt is a NEW economic attempt, so it gets its own
+      // idempotency key — reusing one would replay the previous build instead.
       let build:
         | { approval?: { to: string; data: string; value?: string } | null; swap: { to: string; data: string; value?: string } }
         | null = null;
       let lastError = "Tower could not build the swap transaction.";
       for (let attempt = 1; attempt <= 6 && !build; attempt++) {
-        const quoteRes = await fetch("/api/tower/quote", {
+        const quoteRes = await apiFetch("/api/v1/swap/quote", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          noIdempotencyKey: true,
           body: JSON.stringify({
             inputToken: fromToken.address,
             outputToken: toToken.address,
             inputAmount,
             slippageTolerance: 50,
-            chainId,
-            dexId: "tower-dex",
           }),
         });
         const quoteJson = await quoteRes.json();
-        if (quoteRes.ok && quoteJson.success !== false) {
-          const buildRes = await fetch("/api/tower/build-tx", {
+        if (quoteRes.ok && quoteJson.data) {
+          const buildRes = await apiFetch("/api/v1/swap/build", {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            idempotencyKey: newIdempotencyKey(),
             body: JSON.stringify({ quote: quoteJson.data, userAddress: address }),
           });
           const buildJson = await buildRes.json();
-          const candidate = buildJson.data ?? buildJson;
+          const candidate = buildJson.data;
           if (buildRes.ok && candidate?.swap?.to && candidate?.swap?.data) {
             build = candidate;
             break;
           }
-          lastError = buildJson.error ?? lastError;
+          lastError = apiErrorMessage(buildJson, lastError);
         } else {
-          lastError = quoteJson.error ?? lastError;
+          lastError = apiErrorMessage(quoteJson, lastError);
         }
         await new Promise((resolve) => setTimeout(resolve, 500));
       }

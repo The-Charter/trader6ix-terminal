@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteLayout } from "@/components/trader6ix/site-layout";
+import { ARC_CHAIN_NAME } from "@/lib/arc-network";
 import {
   CTA,
   FAQ,
@@ -12,9 +13,8 @@ import {
 } from "@/components/trader6ix/sections";
 
 export const metadata: Metadata = {
-  title: "Trader6ix — Spot & Perps on Arc Testnet",
-  description:
-    "Access live analytics, staking insights, and portfolio performance tools designed for fast-moving crypto markets on Arc Testnet.",
+  title: `Trader6ix — Spot & Perps on ${ARC_CHAIN_NAME}`,
+  description: `Access live analytics, staking insights, and portfolio performance tools designed for fast-moving crypto markets on ${ARC_CHAIN_NAME}.`,
 };
 
 export default function HomePage() {

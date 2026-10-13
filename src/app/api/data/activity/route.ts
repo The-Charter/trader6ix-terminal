@@ -1,6 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { formatUnits } from "ethers";
-import { getTokenTransfers } from "@/server/arc-explorer/client";
+import { withApi } from "@/server/http/with-api";
+import { requireOwnedWallet } from "@/server/auth/ownership";
+import { badRequest } from "@/server/http/errors";
+import { getTokenTransfers, type TokenTransfer } from "@/server/arc-rpc/client";
 import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { IndexedTransaction } from "@/adapters/data-adapter";
 
@@ -8,35 +11,72 @@ export const dynamic = "force-dynamic";
 
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
-/** Known swap entrypoints, keyed by 4-byte method selector. */
-const SWAP_METHODS = new Set(["0xcd6267d5"]); // TowerSwapExecutor.executeSwap
+function amount(transfer: TokenTransfer): string {
+  return Number(formatUnits(transfer.rawValue, transfer.decimals)).toLocaleString(undefined, {
+    maximumFractionDigits: 6,
+  });
+}
 
-export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get("address");
-  if (!address || !ADDRESS_PATTERN.test(address)) {
-    return NextResponse.json({ error: "address query param must be a valid 0x address" }, { status: 400 });
-  }
+/**
+ * Activity feed for the app-bar bell and the portfolio timeline.
+ *
+ * Rows are grouped per transaction: a transaction that both sends and receives
+ * a *different* trusted token is a swap (whichever venue routed it — Tower,
+ * Uniswap, Kyber…), and is reported as one line rather than one line per leg.
+ */
+export const GET = withApi(
+  async (req, ctx) => {
+    const address = req.nextUrl.searchParams.get("address") ?? "";
+    if (!ADDRESS_PATTERN.test(address)) {
+      throw badRequest("address query param must be a valid 0x address.");
+    }
+    requireOwnedWallet(ctx.user, address);
 
-  try {
-    const transfers = (await getTokenTransfers(address)).filter((transfer) => isTrustedArcToken(transfer.tokenAddress));
+    const transfers = (await getTokenTransfers(address)).filter((transfer) =>
+      isTrustedArcToken(transfer.tokenAddress)
+    );
     const wallet = address.toLowerCase();
 
-    const transactions: IndexedTransaction[] = transfers.map((transfer) => {
-      const incoming = transfer.to.toLowerCase() === wallet;
-      const amount = formatUnits(transfer.rawValue, transfer.decimals);
-      const type = transfer.method && SWAP_METHODS.has(transfer.method) ? "swap" : "transfer";
-      const direction = incoming ? "Received" : "Sent";
-      return {
-        hash: `${transfer.txHash}-${transfer.logIndex}`,
-        timestamp: Math.floor(new Date(transfer.timestamp).getTime() / 1000),
-        type,
-        summary: `${direction} ${Number(amount).toLocaleString(undefined, { maximumFractionDigits: 6 })} ${transfer.tokenSymbol}`,
-      };
-    });
+    const grouped = new Map<string, TokenTransfer[]>();
+    for (const transfer of transfers) {
+      const group = grouped.get(transfer.txHash) ?? [];
+      group.push(transfer);
+      grouped.set(transfer.txHash, group);
+    }
 
-    return NextResponse.json(transactions);
-  } catch (err) {
-    console.error("Activity request failed:", err instanceof Error ? err.message : err);
-    return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 502 });
-  }
-}
+    const rows: IndexedTransaction[] = [];
+    for (const [hash, group] of grouped) {
+      const outgoing = group.filter((transfer) => transfer.from.toLowerCase() === wallet);
+      const incoming = group.filter((transfer) => transfer.to.toLowerCase() === wallet);
+      const symbols = new Set(group.map((transfer) => transfer.tokenSymbol));
+      const timestamp = Math.floor(new Date(group[0].timestamp).getTime() / 1000);
+
+      const sold = outgoing.find((out) => incoming.some((inc) => inc.tokenSymbol !== out.tokenSymbol));
+      const bought = sold ? incoming.find((inc) => inc.tokenSymbol !== sold.tokenSymbol) : undefined;
+
+      if (sold && bought && symbols.size > 1) {
+        rows.push({
+          hash: `${hash}-swap`,
+          timestamp,
+          type: "swap",
+          summary: `Swapped ${amount(sold)} ${sold.tokenSymbol} → ${amount(bought)} ${bought.tokenSymbol}`,
+        });
+        continue;
+      }
+
+      for (const transfer of group) {
+        const incomingLeg = transfer.to.toLowerCase() === wallet;
+        rows.push({
+          hash: `${hash}-${transfer.logIndex}`,
+          timestamp,
+          type: "transfer",
+          summary: `${incomingLeg ? "Received" : "Sent"} ${amount(transfer)} ${transfer.tokenSymbol}`,
+        });
+      }
+    }
+
+    rows.sort((a, b) => b.timestamp - a.timestamp);
+    return NextResponse.json(rows);
+  },
+  { auth: true, rateLimit: { limit: 60 } }
+);

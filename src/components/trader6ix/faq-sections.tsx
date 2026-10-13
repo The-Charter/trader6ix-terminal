@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { Eyebrow, faqItems } from "./sections";
 import { Button } from "@/components/ui/button";
+import { ARC_CHAIN_NAME, IS_ARC_MAINNET } from "@/lib/arc-network";
 import hero from "@/assets/about-hero.png.asset.json";
 
 const categories = [
@@ -17,7 +18,7 @@ const categories = [
     items: [
       [
         "Does Trader6ix have access to my private keys?",
-        "No. Trader6ix is designed as a non-custodial platform. Your private keys remain with your connected wallet, and blockchain transactions are signed through your wallet provider before they are submitted to Arc Testnet.",
+        `No. Trader6ix is designed as a non-custodial platform. Your private keys remain with your connected wallet, and blockchain transactions are signed through your wallet provider before they are submitted to ${ARC_CHAIN_NAME}.`,
       ],
       [
         "How are my trades authorized?",
@@ -29,7 +30,9 @@ const categories = [
       ],
       [
         "Is Trader6ix connected to real funds?",
-        "Trader6ix is currently designed for Arc Testnet, where transactions use testnet assets with no real monetary value. Users should only connect test wallets and testnet funds while the platform and its integrations are being tested.",
+        IS_ARC_MAINNET
+          ? "Yes. Trader6ix is connected to Arc mainnet, so swaps settle on-chain with real USDC, EURC and cirBTC. Only trade funds you can afford to risk, and check every transaction before you sign it."
+          : "Not yet. Trader6ix is connected to Arc Testnet, where transactions use test assets with no monetary value while integrations are being tested.",
       ],
     ],
   },

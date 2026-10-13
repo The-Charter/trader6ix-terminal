@@ -1,17 +1,20 @@
 import type { Role } from "@/server/auth/types";
 
+/** A user as stored in Postgres. */
 export interface UserRecord {
   id: string;
-  email: string;
-  passwordHash: string;
+  /** Privy DID — the identity the auth layer verified. */
+  did: string;
+  wallet: string | null;
   role: Role;
   createdAt: string;
 }
 
-/** A user shape safe to return to clients (never includes the password hash). */
+/** Client-safe projection of a user (no tokens, no password material exists). */
 export interface PublicUser {
   id: string;
-  email: string;
+  did: string;
+  wallet: string | null;
   role: Role;
   createdAt: string;
 }

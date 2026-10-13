@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ARC_CHAIN_NAME, IS_ARC_MAINNET } from "@/lib/arc-network";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -170,7 +171,7 @@ export function WhyChooseUs() {
     ],
     [
       "Non-Custodial Trading",
-      "Trade with confidence while keeping control of your assets. Connect your wallet, review every transaction, and sign trades directly on Arc Testnet without handing your funds to a centralized platform.",
+      "Trade with confidence while keeping control of your assets. Connect your wallet, review every transaction, and sign trades directly on Arc without handing your funds to a centralized platform.",
       ChartCandlestick,
     ],
   ] as const;
@@ -336,7 +337,7 @@ export const faqItems = [
   ],
   [
     "Which markets can I trade on Trader6ix?",
-    "Trader6ix is designed to support crypto assets, perpetual futures, stablecoin swaps, and FX markets. Available markets depend on the connected venue, current integrations, and whether the platform is running in demo or live testnet mode.",
+    "Trader6ix is designed to support crypto assets, perpetual futures, stablecoin swaps, and FX markets. Available markets depend on the connected venue, the current integrations, and the network the terminal is pointed at.",
   ],
   [
     "Do I need to create a separate exchange account?",
@@ -344,11 +345,19 @@ export const faqItems = [
   ],
   [
     "Is Trader6ix safe to use?",
-    "Trader6ix is designed around non-custodial wallet interactions. You review and sign blockchain transactions through your connected wallet rather than sharing your private key with the platform. During the current testing phase, all transactions take place on Arc Testnet and do not involve real funds.",
+    `Trader6ix is designed around non-custodial wallet interactions. You review and sign blockchain transactions through your connected wallet rather than sharing your private key with the platform. ${
+      IS_ARC_MAINNET
+        ? "The terminal is connected to Arc mainnet, so a signed transaction moves real funds — every one is shown to you before it is submitted."
+        : "The terminal is connected to Arc Testnet, where transactions use test assets and do not involve real funds."
+    }`,
   ],
   [
-    "Can I use Trader6ix without risking real money?",
-    "Yes. Trader6ix currently runs on Arc Testnet, where you can use testnet assets for experimentation and product testing. Demo mode also provides simulated market data and trading activity while live integrations are being finalized.",
+    IS_ARC_MAINNET
+      ? "Do trades on Trader6ix involve real funds?"
+      : "Can I use Trader6ix without risking real money?",
+    IS_ARC_MAINNET
+      ? "Yes. Trader6ix is connected to Arc mainnet, so swaps settle in real USDC, EURC and cirBTC. Only trade funds you can afford to risk."
+      : "Yes. Trader6ix is connected to Arc Testnet, where you can use testnet assets for experimentation and product testing.",
   ],
 ];
 export function FAQ() {
@@ -392,7 +401,7 @@ export function CTA({ to = "/contact" }: { to?: string }) {
         <h2>Trade Smarter From One Terminal</h2>
         <p>
           Connect your wallet in minutes and start exploring spot markets, perpetuals, real-time
-          analytics, and risk-management tools on Arc Testnet.
+          analytics, and risk-management tools on {ARC_CHAIN_NAME}.
         </p>
         <Button variant="hero" size="hero" asChild>
           <Link href={to}>

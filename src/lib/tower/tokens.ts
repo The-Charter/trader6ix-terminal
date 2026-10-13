@@ -1,30 +1,22 @@
 /**
- * Tokens currently configured for Tower on Arc Testnet. Add future Tower
- * assets here; the selector, balance display, and quote flow read this list.
+ * Tower-facing view of the active Arc token registry.
  *
- * Addresses verified against Tower's official docs listing of Arc Testnet
- * token contracts (docs.tower.exchange → Testnet & Faucet).
+ * The registry itself lives in `@/lib/arc-tokens` so the UI, the swap ticket
+ * and the server all agree on addresses and decimals for the selected network.
  */
-export const TOWER_TOKENS = [
-  {
-    symbol: "EURC",
-    name: "Euro Coin",
-    address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
-    decimals: 6,
-  },
-  {
-    symbol: "USDC",
-    name: "USD Coin",
-    address: "0x3600000000000000000000000000000000000000",
-    decimals: 6,
-  },
-] as const;
 
-export type TowerTokenSymbol = (typeof TOWER_TOKENS)[number]["symbol"];
-export type TowerToken = (typeof TOWER_TOKENS)[number];
+import { ARC_TOKENS, getArcToken, isArcTokenSymbol, type ArcToken } from "@/lib/arc-tokens";
+
+export type TowerToken = ArcToken;
+export type TowerTokenSymbol = string;
+
+/** Tokens the swap ticket offers for the active network. */
+export const TOWER_TOKENS: ArcToken[] = ARC_TOKENS;
 
 export function getTowerToken(symbol: string): TowerToken {
-  const token = TOWER_TOKENS.find((item) => item.symbol === symbol);
-  if (!token) throw new Error(`Unsupported Tower token: ${symbol}`);
-  return token;
+  return getArcToken(symbol);
+}
+
+export function isTowerToken(symbol: string): boolean {
+  return isArcTokenSymbol(symbol);
 }

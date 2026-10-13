@@ -1,119 +1,90 @@
-# Trader6ix — MVP Roadmap
+# Trader6ix — Status & Roadmap
 
-Goal: a fully working trading terminal on Arc Testnet via `PerpsAdapter`
-(Hibachi), `SpotAdapter` (Curve), with `FXAdapter` (StableFX) architected but
-not required for launch. Goldsky paused, placeholders left in place.
-
----
-
-## The two real blockers — need your action, not more code
-
-Everything else in this roadmap is buildable right now. These two are not —
-no amount of additional code fixes them, because they're not code problems.
-
-### 1. Hibachi connectivity (blocks ALL perps functionality)
-**Status:** every Hibachi endpoint (public and authenticated) returns HTTP 200
-with an empty body when called from our deployed Vercel backend. Root cause
-still unconfirmed — most likely a WAF/bot-mitigation layer silently blocking
-datacenter IPs, per our earlier debugging session.
-**What's needed:** a response from Hibachi's team confirming either (a) how
-to get server-to-server access allowed, or (b) a separate testnet-specific
-API base URL we should be using instead of production.
-**Your action:** keep following up with them. If this stays unresolved much
-longer, worth deciding on a fallback plan (see "Contingency" below) rather
-than letting the whole MVP wait indefinitely on one vendor.
-
-### 2. Curve pool contract address (blocks ALL spot functionality)
-**Status:** Curve has a real, live, permissionless USDC/EURC pool on Arc
-testnet (confirmed via their own swap UI and third-party guides), but I
-don't have the actual pool contract address, and I have no way to look it up
-myself from this environment.
-**Your action (5 minutes):** open `curve.finance/dex/arc/swap`, connect a
-wallet, select USDC → EURC, open DevTools → Network tab, and copy either the
-contract address the transaction is about to call or any API response
-containing `"address": "0x..."`. Send it to me and Curve's `SpotAdapter`
-becomes real within the same session — their swap ABI (`exchange`, `get_dy`)
-is standardized, so this isn't another multi-day debugging cycle.
+**Current target: Arc Mainnet (chain 5042).** Spot swaps are live through Tower;
+Perps and FX are "coming soon"; the API is Privy-authenticated and idempotent.
 
 ---
 
-## Phase-by-phase build order
+## Where the project actually is
 
-### Phase A — Unblock (needs you)
-- [ ] Get the Curve pool address (above)
-- [ ] Hear back from Hibachi, or decide on a contingency
+| Area | State |
+| --- | --- |
+| Spot swap | **Live on mainnet** — quote → build → signed in the user's wallet, routed by Tower |
+| Portfolio / activity / trades | **Live** — read from Arc over JSON-RPC, scoped to the caller's own wallets |
+| Perps | **Coming soon** — Hibachi connectivity still unresolved (see Blockers) |
+| FX | **Coming soon** — Circle StableFX needs a KYB/AML-gated key |
+| Auth | **Privy owns it** — no passwords, no self-issued JWTs, server verifies the Privy token |
+| Authorization | Roles in Postgres + per-resource ownership checks |
+| Idempotency | Required on every mutating `/api/v1` call, payload-bound, with replay |
+| Prices | Tower `/prices` (CoinGecko removed — free tier rate-limited and missing cNGN/QCAD/cirBTC) |
+| Indexed data | None — read the chain directly; Goldsky is not used |
 
-### Phase B — PerpsAdapter completion (I do this, once Hibachi responds)
-Currently working: markets list, orderbook, chart, market/limit order
-placement, positions/orders display.
-Still missing for the full feature list you described:
-- [ ] Modify stop-loss / take-profit on an open position — needs checking
-      Hibachi's actual API for a SL/TP modification endpoint; not yet
-      confirmed to exist in their public docs
-- [ ] Leverage selection in the trade ticket — needs confirming how
-      Hibachi's order payload expresses leverage
-- [ ] Margin/liquidation-price display — depends on exact fields Hibachi's
-      `/account/info` actually returns, which we can only see once real
-      responses come back
-- [ ] Real end-to-end test: connect wallet → fund via faucet → place a
-      market order → see it as an open position → close it
+### Switched to mainnet
 
-### Phase C — SpotAdapter completion (I do this, once you have the pool address)
-- [ ] Implement `getSwapQuote()` via Curve's `get_dy` view function
-- [ ] Implement `swap()` — build the transaction, have the connected wallet
-      (via Privy) sign and send it — **this step requires your wallet
-      signature in the browser, not something automatable**
-- [ ] Add a minimal spot swap UI (input amount, see quote, confirm swap) —
-      replaces the current "coming soon" spot page
-- [ ] Real end-to-end test: swap testnet USDC → EURC and back
-
-### Phase D — FXAdapter (architecture only, no action needed for MVP)
-Already scaffolded against Circle's confirmed endpoint and inactive by
-design. No further work until you decide whether to pursue KYB/AML — this
-phase doesn't block anything else.
-
-### Phase E — Mobile experience (can run in parallel with B/C — doesn't depend on either)
-- [ ] Landing page: choose Perpetual Futures / Spot / Stablecoin FX
-- [ ] Bottom-tab terminal (Markets / Chart / Positions / History / Tools)
-      matching the provided mobile reference, Trader6ix-branded
-- [ ] Desktop stays exactly as-is structurally (per your instruction)
-
-### Phase F — Goldsky (paused, resume later)
-Placeholder `DataAdapter`/`goldskyDataAdapter` already in the codebase,
-`isLive: false`, real subgraph config sitting in `/goldsky` ready to pick
-back up. Nothing to do here until Phases A–E are solid.
+- `NEXT_PUBLIC_ARC_CHAIN_ID=5042`, RPC `rpc.mainnet.arc.io`, explorer `explorer.arc.io`.
+- Mainnet token registry: **USDC** (6), **EURC** (6), **cirBTC** (8) — the exact set
+  Tower's mainnet venues route. All three addresses/decimals read off-chain.
+- Venue routing is network-aware: mainnet lets Tower's aggregator route (aero,
+  kyberswap, uniswap all build); testnet pins `tower-dex` because nothing else builds there.
+- The faucet is hidden on mainnet, and the app bar shows which network you are on.
 
 ---
 
-## Credentials/accounts checklist
+## Blockers (need action, not more code)
 
-| Item | Status | Needed for |
-|---|---|---|
-| Hibachi API key/secret/account ID | Already have | Perps (blocked on connectivity, not credentials) |
-| Curve pool address | **Missing — your action** | Spot |
-| Circle StableFX API key | Paused (KYB/AML gate) | FX (not MVP-blocking) |
-| Goldsky account | Have, paused | Data layer (not MVP-blocking) |
-| Testnet USDC/EURC in your wallet | Needed for real end-to-end testing | Both Perps and Spot testing |
+### 1. Hibachi connectivity — blocks all Perps
+Every Hibachi endpoint returns HTTP 200 with an empty body from our deployed
+backend; most likely a WAF blocking datacenter IPs. Needs a response from
+Hibachi confirming server-to-server access, or a testnet-specific base URL.
 
-## What needs your hands specifically (can't be automated)
-- Grabbing the Curve pool address (one-time DevTools task)
-- Following up with Hibachi's team
-- Every wallet signature — connecting, approving, signing swap/order
-  transactions in the browser
-- Funding your test wallet via the faucet
-- Any future account signups (already done: GitHub, Vercel, Goldsky)
+### 2. Private mainnet access (optional)
+Arc's docs describe mainnet RPC as "permissioned" during the private phase. The
+public `rpc.mainnet.arc.io` currently answers fine, but if rate limits bite,
+request node-provider credentials.
 
-## What I can do without waiting on you
-- All adapter code, error handling, UI polish
-- Curve swap logic the moment I have the address
-- Hibachi SL/TP/leverage/margin wiring the moment their API responds
-- Mobile landing page + bottom-tab terminal (Phase E) — can start this now,
-  in parallel, since it doesn't depend on either blocker
+### 3. Deeper history (optional)
+The public RPC caps `eth_getLogs` at ~5,000 blocks (~43 min), so activity covers
+about the last 4 hours. Deeper history needs an indexer or a subgraph.
 
 ---
 
-## Suggested immediate next step
-Send me the Curve pool address whenever you get it — that's the fastest
-path to "at least one fully working, real, tradeable flow" (spot swap),
-independent of whatever's happening with Hibachi. In parallel, I can start
-Phase E (mobile UI) right now if you'd like, since it's blocked by neither.
+## What you need to fill in
+
+| Item | Where | Needed for |
+| --- | --- | --- |
+| `PRIVY_VERIFICATION_KEY` | Privy dashboard → App settings → Verification key | **Every authenticated request.** Until it is set, the API returns 401 by design |
+| `DATABASE_URL` / `DIRECT_URL` | Supabase (pooler + direct) | Users, roles, watchlist, idempotency |
+| `ADMIN_PRIVY_DIDS` | Your own DIDs | Bootstrapping the first admin |
+| `PRIVY_APP_SECRET` | Privy dashboard | Optional: server-side user lookups |
+| Circle StableFX key | Circle (KYB/AML) | FX |
+
+After filling `DATABASE_URL`/`DIRECT_URL`: `npm run migrate`.
+
+---
+
+## Remaining work
+
+### Now
+- [ ] Fill `PRIVY_VERIFICATION_KEY` + the database URLs, then run the end-to-end pass:
+      sign in → session resolves → portfolio loads → swap builds and signs on mainnet.
+- [ ] Confirm Arc mainnet is an allowed chain in the Privy dashboard.
+
+### Next
+- [ ] Persist the app-bar notification read state per user instead of per session.
+- [ ] Server-side watchlist UI (the API exists; no screen uses it yet).
+- [ ] Decide whether to index history (subgraph) or keep the 4-hour RPC window.
+
+### Blocked on third parties
+- [ ] Perps — Hibachi connectivity.
+- [ ] FX — Circle StableFX key.
+
+---
+
+## Non-negotiables established along the way
+
+- Secrets live in `.env.local` / Vercel only, never in chat and never `NEXT_PUBLIC_`.
+- No mocked or simulated values in the UI — an empty state says "empty".
+- Signed on-chain transactions are never blind-retried; a retry replays the
+  stored build so the user cannot sign two different swaps by accident.
+- Only trusted Arc tokens are shown or routable, so airdrop spam and symbol
+  clones stay invisible.

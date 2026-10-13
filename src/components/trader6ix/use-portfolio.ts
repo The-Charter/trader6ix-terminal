@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/components/trader6ix/api-client";
 
 export interface PortfolioBalance {
   symbol: string;
@@ -41,9 +42,19 @@ interface PortfolioState {
 
 const EMPTY: PortfolioState = { portfolio: null, activity: [], trades: [], loading: false, error: null };
 
+/** Reads a message out of the API's `{ error: { message } }` envelope. */
+function errorText(payload: unknown, fallback: string): string {
+  const error = (payload as { error?: { message?: string } | string } | null)?.error;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && typeof error.message === "string") return error.message;
+  return fallback;
+}
+
 /**
  * Loads the connected wallet's on-chain portfolio, activity and trades from the
- * backend (`/api/data/*`). Polls every 20s so newly indexed balances appear.
+ * backend (`/api/data/*`). Calls are authenticated with the Privy access token
+ * and the API only serves wallets linked to the signed-in account. Polls every
+ * 20s so new balances appear.
  */
 export function usePortfolioData(address: string | null) {
   const [state, setState] = useState<PortfolioState>(EMPTY);
@@ -56,18 +67,18 @@ export function usePortfolioData(address: string | null) {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const [portfolioRes, activityRes, tradesRes] = await Promise.all([
-        fetch(`/api/data/portfolio?address=${encodeURIComponent(address)}`),
-        fetch(`/api/data/activity?address=${encodeURIComponent(address)}`),
-        fetch(`/api/data/trades?address=${encodeURIComponent(address)}`),
+        apiFetch(`/api/data/portfolio?address=${encodeURIComponent(address)}`),
+        apiFetch(`/api/data/activity?address=${encodeURIComponent(address)}`),
+        apiFetch(`/api/data/trades?address=${encodeURIComponent(address)}`),
       ]);
       const [portfolioJson, activityJson, tradesJson] = await Promise.all([
         portfolioRes.json(),
         activityRes.json(),
         tradesRes.json(),
       ]);
-      if (!portfolioRes.ok) throw new Error(portfolioJson.error ?? "Failed to load portfolio");
-      if (!activityRes.ok) throw new Error(activityJson.error ?? "Failed to load activity");
-      if (!tradesRes.ok) throw new Error(tradesJson.error ?? "Failed to load trades");
+      if (!portfolioRes.ok) throw new Error(errorText(portfolioJson, "Failed to load portfolio"));
+      if (!activityRes.ok) throw new Error(errorText(activityJson, "Failed to load activity"));
+      if (!tradesRes.ok) throw new Error(errorText(tradesJson, "Failed to load trades"));
 
       setState({
         portfolio: portfolioJson as PortfolioSnapshot,
