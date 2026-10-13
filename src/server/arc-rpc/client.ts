@@ -19,8 +19,22 @@ import { ARC_BALANCE_TOKENS } from "@/lib/arc-tokens";
 
 /** Largest log range the public Arc RPC accepts (verified: 5,000 ok, 10,000 rejected). */
 const MAX_LOG_RANGE = 5_000;
-/** How far back to page when a wallet has little history (6 pages ≈ 4.3 hours). */
-const HISTORY_PAGES = 6;
+/** How far back to page when a wallet has little history (4 pages ≈ 2.9 hours). */
+const HISTORY_PAGES = 4;
+/**
+ * The public Arc RPC rate-limits `eth_getLogs` aggressively (JSON-RPC -32005).
+ * Measured 2026-10: a burst of 6 in parallel yields only 2 successes, while the
+ * same 6 run sequentially all succeed. Queries are therefore serialised and
+ * retried with backoff.
+ */
+const LOG_CONCURRENCY = 1;
+const LOG_RETRIES = 3;
+const RETRY_DELAYS_MS = [400, 900, 1800];
+/**
+ * Stop paging after this many consecutive empty pages. A wallet with no recent
+ * history should not cost the full scan, while an active one keeps paging.
+ */
+const MAX_CONSECUTIVE_EMPTY_PAGES = 2;
 /** Enough for the activity feed and the trades table. */
 const MAX_TRANSFERS = 60;
 /** Bound on block-header lookups per scan; anything beyond falls back to an estimate. */
@@ -67,6 +81,46 @@ function getProvider(): ethers.JsonRpcProvider {
     provider = new ethers.JsonRpcProvider(ARC_RPC_URL, undefined, { staticNetwork: true });
   }
   return provider;
+}
+
+function isRateLimited(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return message.includes("rate limit") || message.includes("-32005") || message.includes("429");
+}
+
+/** `eth_getLogs` with backoff, so one rate-limited page cannot sink a whole scan. */
+async function getLogsWithRetry(filter: ethers.Filter): Promise<{ logs: ethers.Log[]; failed: boolean }> {
+  const rpc = getProvider();
+
+  for (let attempt = 0; attempt <= LOG_RETRIES; attempt++) {
+    try {
+      return { logs: await rpc.getLogs(filter), failed: false };
+    } catch (err) {
+      const rateLimited = isRateLimited(err);
+      if (!rateLimited) {
+        console.warn("getLogs failed:", err instanceof Error ? err.message : err);
+        return { logs: [], failed: true };
+      }
+      if (attempt < LOG_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      console.warn("getLogs still rate limited after retries.");
+      return { logs: [], failed: true };
+    }
+  }
+
+  return { logs: [], failed: true };
+}
+
+/** Runs async work with bounded concurrency, preserving order. */
+async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = [];
+  for (let index = 0; index < items.length; index += limit) {
+    const batch = items.slice(index, index + limit);
+    results.push(...(await Promise.all(batch.map(fn))));
+  }
+  return results;
 }
 
 /** ERC-20 balances for the trusted token set. */
@@ -197,10 +251,12 @@ async function resolveMethods(txHashes: string[]): Promise<Map<string, string | 
  * rather than six.
  */
 async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
-  const rpc = getProvider();
   const anchor = await head();
   const padded = ethers.zeroPadValue(wallet, 32);
   const logs: ethers.Log[] = [];
+  let attempted = 0;
+  let failed = 0;
+  let emptyPages = 0;
 
   for (let page = 0; page < HISTORY_PAGES; page++) {
     const toBlock = anchor.blockNumber - page * MAX_LOG_RANGE;
@@ -212,20 +268,23 @@ async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
       { address: token.address, topics: [TRANSFER_TOPIC, null, padded], fromBlock, toBlock },
     ]);
 
-    const pages = await Promise.all(
-      filters.map((filter) =>
-        rpc.getLogs(filter).catch((err) => {
-          console.warn(
-            `getLogs failed for blocks ${fromBlock}-${toBlock}:`,
-            err instanceof Error ? err.message : err
-          );
-          return [] as ethers.Log[];
-        })
-      )
-    );
+    const before = logs.length;
+    const pages = await mapLimited(filters, LOG_CONCURRENCY, getLogsWithRetry);
+    for (const pageResult of pages) {
+      attempted += 1;
+      if (pageResult.failed) failed += 1;
+      logs.push(...pageResult.logs);
+    }
 
-    logs.push(...pages.flat());
+    emptyPages = logs.length === before ? emptyPages + 1 : 0;
+    if (emptyPages >= MAX_CONSECUTIVE_EMPTY_PAGES) break;
     if (logs.length >= MAX_TRANSFERS) break;
+  }
+
+  if (attempted > 0 && failed === attempted) {
+    // Reporting an empty feed here would be indistinguishable from "this wallet
+    // has no activity", which is a lie. Surface it instead.
+    throw new Error("Arc's public RPC is rate limiting history requests. Please retry shortly.");
   }
 
   // Newest first, deduped (a self-transfer matches both directions).

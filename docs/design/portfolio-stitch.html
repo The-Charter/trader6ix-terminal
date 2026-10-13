@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trader6ix Terminal - Portfolio</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface": "#0E1013",
+            "on-tertiary-fixed": "#001e2b",
+            "inverse-primary": "#a83900",
+            "on-surface-variant": "#e2bfb3",
+            "surface-container": "#14171B",
+            "secondary-container": "#43474d",
+            "warning": "#F5B544",
+            "on-tertiary": "#003547",
+            "primary-fixed-dim": "#ffb59a",
+            "outline-variant": "#5a4138",
+            "on-secondary-fixed-variant": "#43474d",
+            "surface-dim": "#1d100c",
+            "on-error-container": "#ffdad6",
+            "primary": "#ffb59a",
+            "on-tertiary-fixed-variant": "#004d66",
+            "successful": "#2FD37A",
+            "on-tertiary-container": "#003648",
+            "surface-container-highest": "#41312c",
+            "on-primary-fixed": "#380d00",
+            "on-primary-fixed-variant": "#812900",
+            "on-primary": "#5b1b00",
+            "primary-hover": "#FF7F45",
+            "chart-grid": "#1C2026",
+            "on-secondary": "#2d3136",
+            "surface-container-low": "#261813",
+            "on-primary-container": "#5c1b00",
+            "on-secondary-fixed": "#181c21",
+            "inverse-surface": "#f7ddd5",
+            "destructive": "#FF4D5E",
+            "tertiary-fixed-dim": "#71d2ff",
+            "surface-variant": "#41312c",
+            "chart-line": "#FF6A2B",
+            "surface-bright": "#463530",
+            "secondary-fixed": "#e0e2e9",
+            "background": "#08090B",
+            "tertiary-container": "#00a5d7",
+            "on-surface": "#f7ddd5",
+            "primary-fixed": "#ffdbcf",
+            "on-background": "#f7ddd5",
+            "secondary-fixed-dim": "#c3c6cd",
+            "error": "#ffb4ab",
+            "inverse-on-surface": "#3c2d27",
+            "surface-container-lowest": "#170b07",
+            "surface-tint": "#ffb59a",
+            "surface-container-high": "#362721",
+            "primary-container": "#2A1508",
+            "on-secondary-container": "#b2b5bc",
+            "on-error": "#690005",
+            "error-container": "#93000a",
+            "outline": "#3A4048",
+            "tertiary-fixed": "#c0e8ff",
+            "hairline": "#23272E",
+            "tertiary": "#71d2ff",
+            "secondary": "#c3c6cd"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "16px",
+            "space-md": "16px",
+            "space-lg": "24px",
+            "space-xs": "4px",
+            "space-xl": "32px",
+            "margin": "24px",
+            "space-sm": "8px"
+          },
+          "fontFamily": {
+            "label": ["Inter"],
+            "display": ["Inter"],
+            "title": ["Inter"],
+            "numeric": ["JetBrains Mono"],
+            "numeric-hero": ["JetBrains Mono"],
+            "body": ["Inter"],
+            "headline": ["Inter"]
+          },
+          "fontSize": {
+            "label": ["12px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "display": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.03em", "fontWeight": "650" }],
+            "title": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "numeric": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "numeric-hero": ["44px", { "lineHeight": "52px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body": ["14px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+    .font-tabular {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="bg-background text-[#F4F6F8] font-body min-h-screen selection:bg-chart-line selection:text-white antialiased">
+<!-- TOP APP BAR -->
+<header class="sticky top-0 z-50 flex items-center justify-between w-full h-16 px-margin bg-surface/95 backdrop-blur border-b border-hairline">
+<div class="flex items-center gap-8">
+<!-- Trader6ix Brand Logo -->
+<a class="flex items-center gap-2.5 group" href="#">
+<div class="w-8 h-8 rounded-lg bg-surface-container border border-hairline flex items-center justify-center text-chart-line group-hover:border-chart-line/40 transition-colors">
+<svg class="w-4 h-4 fill-current" viewbox="0 0 24 24">
+<path d="M4 4h5v2H6v12h3v2H4V4zm11 0h5v16h-5v-2h3V6h-3V4zm-5 5h4v2h-4V9zm0 4h4v2h-4v-2z"></path>
+</svg>
+</div>
+<span class="font-headline text-headline font-bold tracking-tight text-white">Trader6ix</span>
+</a>
+<!-- Terminal Navigation Links -->
+<nav class="hidden md:flex items-center gap-6 h-16">
+<a class="text-[#9AA3AD] hover:text-white font-title text-title transition-colors duration-150" href="#">Spot</a>
+<a class="text-[#9AA3AD] hover:text-white font-title text-title transition-colors duration-150" href="#">Perpetual</a>
+<a class="text-white border-b-2 border-chart-line font-title text-title h-full flex items-center px-1 font-medium" href="#">Portfolio</a>
+</nav>
+</div>
+<!-- Trailing Actions & Credentials -->
+<div class="flex items-center gap-3">
+<!-- Network Pill -->
+<div class="bg-surface-container border border-hairline px-2.5 py-1 rounded-full flex items-center gap-2">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-successful opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-successful"></span>
+</span>
+<span class="font-numeric text-xs font-medium text-white tracking-wide">Arc</span>
+</div>
+<!-- Action: Search -->
+<button aria-label="Search markets" class="w-9 h-9 rounded-full bg-surface-container border border-hairline flex items-center justify-center text-[#9AA3AD] hover:text-white transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<!-- Action: Notifications -->
+<button aria-label="Notifications" class="w-9 h-9 rounded-full bg-surface-container border border-hairline flex items-center justify-center text-[#9AA3AD] hover:text-white transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">notifications</span>
+</button>
+<!-- Trailing Action: Wallet Chip -->
+<div class="px-3 py-1.5 rounded-full bg-surface-container border border-hairline flex items-center gap-2 text-xs font-numeric text-[#F4F6F8]">
+<span class="material-symbols-outlined text-[16px] text-chart-line">account_balance_wallet</span>
+<span class="font-tabular font-medium">0xA69a…f875</span>
+</div>
+<!-- Action: Dark Mode Toggle -->
+<button aria-label="Toggle theme" class="w-9 h-9 rounded-full bg-surface-container border border-hairline flex items-center justify-center text-[#9AA3AD] hover:text-white transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">dark_mode</span>
+</button>
+</div>
+</header>
+<!-- MAIN VIEWPORT CANVAS -->
+<main class="max-w-[1280px] mx-auto px-6 py-8 flex flex-col gap-6">
+<!-- ROW 1: Hero Wallet Value -->
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2">
+<div>
+<span class="font-label text-label uppercase tracking-wider text-[#9AA3AD] font-semibold">WALLET VALUE</span>
+<div class="flex items-center gap-3.5 mt-1">
+<h1 class="font-numeric-hero text-numeric-hero font-semibold text-[#F4F6F8] font-tabular tracking-tight leading-none">
+            $12,480.55
+          </h1>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-numeric font-medium bg-[#2FD37A]/15 text-successful border border-successful/30 font-tabular">
+            +2.4%
+          </span>
+</div>
+<!-- Address & Utilities Line -->
+<div class="flex items-center gap-2 mt-2 text-xs font-numeric text-[#9AA3AD]">
+<span class="font-tabular">0xA69a1e8027E837f39276523BCABd6EC582eA8f75</span>
+<button class="p-0.5 hover:text-white transition-colors" title="Copy Address" type="button">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+</button>
+<a class="p-0.5 hover:text-white transition-colors" href="#" rel="noopener noreferrer" target="_blank" title="View on Arc Explorer">
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+</div>
+<!-- Quick Controls -->
+<div class="flex items-center gap-2 self-start md:self-end">
+<button class="w-8 h-8 rounded-lg bg-surface-container border border-hairline flex items-center justify-center text-[#9AA3AD] hover:text-white transition-colors" title="Hide Balance" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container border border-hairline flex items-center justify-center text-[#9AA3AD] hover:text-white transition-colors" title="Refresh Feed" type="button">
+<span class="material-symbols-outlined text-[16px]">refresh</span>
+</button>
+<span class="font-numeric text-xs text-[#9AA3AD] font-tabular ml-2">Updated just now</span>
+</div>
+</section>
+<!-- ROW 2: Allocation Overview Card -->
+<section class="bg-surface-container border border-hairline rounded-2xl p-5">
+<div class="font-label text-label uppercase tracking-wider text-[#9AA3AD] font-semibold mb-3">
+        Asset Allocation
+      </div>
+<!-- Proportion Segmented Bar -->
+<div class="w-full h-2 rounded-full bg-hairline overflow-hidden flex">
+<div class="bg-chart-line h-full transition-all duration-300" style="width: 68%" title="USDC: 68%"></div>
+<div class="bg-warning h-full transition-all duration-300" style="width: 21%" title="EURC: 21%"></div>
+<div class="bg-[#64748B] h-full transition-all duration-300" style="width: 11%" title="cirBTC: 11%"></div>
+</div>
+<!-- Allocation Legend -->
+<div class="flex flex-wrap items-center gap-y-2 gap-x-6 mt-3.5">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-chart-line"></span>
+<span class="font-body text-xs font-medium text-white">USDC</span>
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD]">$8,420.11</span>
+<span class="font-numeric text-xs font-tabular text-chart-line">68%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-warning"></span>
+<span class="font-body text-xs font-medium text-white">EURC</span>
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD]">$2,573.94</span>
+<span class="font-numeric text-xs font-tabular text-warning">21%</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-[#64748B]"></span>
+<span class="font-body text-xs font-medium text-white">cirBTC</span>
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD]">$1,278.62</span>
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD]">11%</span>
+</div>
+</div>
+</section>
+<!-- ROW 3: Equal-Width Metric Stat Cards -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Card 1: Realized PnL -->
+<div class="bg-surface-container border border-hairline rounded-2xl p-5 flex flex-col justify-between">
+<span class="font-label text-label uppercase tracking-wider text-[#9AA3AD] font-medium">REALIZED PNL</span>
+<div class="font-numeric text-2xl font-semibold text-successful font-tabular mt-2">
+          +$412.80
+        </div>
+</div>
+<!-- Card 2: Win Rate -->
+<div class="bg-surface-container border border-hairline rounded-2xl p-5 flex flex-col justify-between">
+<div>
+<span class="font-label text-label uppercase tracking-wider text-[#9AA3AD] font-medium">WIN RATE</span>
+<div class="font-numeric text-2xl font-semibold text-white font-tabular mt-2">
+            64%
+          </div>
+</div>
+<div class="w-full h-[3px] bg-hairline rounded-full overflow-hidden mt-3">
+<div class="bg-chart-line h-full rounded-full" style="width: 64%"></div>
+</div>
+</div>
+<!-- Card 3: Volume -->
+<div class="bg-surface-container border border-hairline rounded-2xl p-5 flex flex-col justify-between">
+<span class="font-label text-label uppercase tracking-wider text-[#9AA3AD] font-medium">VOLUME</span>
+<div class="font-numeric text-2xl font-semibold text-white font-tabular mt-2">
+          $28,940
+        </div>
+</div>
+<!-- Card 4: Trades -->
+<div class="bg-surface-container border border-hairline rounded-2xl p-5 flex flex-col justify-between">
+<span class="font-label text-label uppercase tracking-wider text-[#9AA3AD] font-medium">TRADES</span>
+<div class="font-numeric text-2xl font-semibold text-white font-tabular mt-2">
+          17
+        </div>
+</div>
+</section>
+<!-- ROW 4: Holdings & Concentration Breakdown (8/4 Grid) -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+<!-- Left: Holdings Card (8 cols) -->
+<div class="lg:col-span-8 bg-surface-container border border-hairline rounded-2xl p-5">
+<h2 class="font-title text-sm font-semibold text-white mb-4">Holdings</h2>
+<div class="overflow-x-auto">
+<table class="w-full border-collapse">
+<thead>
+<tr class="border-b border-hairline text-left">
+<th class="font-label text-xs uppercase tracking-wider text-[#9AA3AD] pb-3 font-medium">Asset</th>
+<th class="font-label text-xs uppercase tracking-wider text-[#9AA3AD] pb-3 font-medium text-right">Balance</th>
+<th class="font-label text-xs uppercase tracking-wider text-[#9AA3AD] pb-3 font-medium text-right">Price</th>
+<th class="font-label text-xs uppercase tracking-wider text-[#9AA3AD] pb-3 font-medium text-right">Value</th>
+<th class="font-label text-xs uppercase tracking-wider text-[#9AA3AD] pb-3 font-medium text-right">Share</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-hairline">
+<!-- Row 1: USDC -->
+<tr class="hover:bg-[#1A1E23]/60 transition-colors">
+<td class="py-3.5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#2775CA]/20 border border-[#2775CA]/40 flex items-center justify-center text-[#2775CA] font-numeric font-semibold text-xs">
+                      $
+                    </div>
+<div>
+<div class="font-title text-sm font-bold text-white leading-tight">USDC</div>
+<div class="font-body text-xs text-[#9AA3AD]">USD Coin</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 font-numeric text-sm font-tabular text-[#F4F6F8] text-right">8,420.11</td>
+<td class="py-3.5 font-numeric text-sm font-tabular text-[#9AA3AD] text-right">$1.00</td>
+<td class="py-3.5 font-numeric text-sm font-tabular font-semibold text-[#F4F6F8] text-right">$8,420.11</td>
+<td class="py-3.5 text-right">
+<div class="inline-flex items-center justify-end gap-2.5">
+<div class="w-10 h-1.5 bg-hairline rounded-full overflow-hidden">
+<div class="bg-chart-line h-full rounded-full" style="width: 68%"></div>
+</div>
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD] w-7 text-right">68%</span>
+</div>
+</td>
+</tr>
+<!-- Row 2: EURC -->
+<tr class="hover:bg-[#1A1E23]/60 transition-colors">
+<td class="py-3.5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#4F46E5]/20 border border-[#4F46E5]/40 flex items-center justify-center text-[#818CF8] font-numeric font-semibold text-xs">
+                      €
+                    </div>
+<div>
+<div class="font-title text-sm font-bold text-white leading-tight">EURC</div>
+<div class="font-body text-xs text-[#9AA3AD]">Euro Coin</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 font-numeric text-sm font-tabular text-[#F4F6F8] text-right">2,180.40</td>
+<td class="py-3.5 font-numeric text-sm font-tabular text-[#9AA3AD] text-right">$1.18</td>
+<td class="py-3.5 font-numeric text-sm font-tabular font-semibold text-[#F4F6F8] text-right">$2,573.94</td>
+<td class="py-3.5 text-right">
+<div class="inline-flex items-center justify-end gap-2.5">
+<div class="w-10 h-1.5 bg-hairline rounded-full overflow-hidden">
+<div class="bg-warning h-full rounded-full" style="width: 21%"></div>
+</div>
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD] w-7 text-right">21%</span>
+</div>
+</td>
+</tr>
+<!-- Row 3: cirBTC -->
+<tr class="hover:bg-[#1A1E23]/60 transition-colors">
+<td class="py-3.5">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-[#F7931A]/20 border border-[#F7931A]/40 flex items-center justify-center text-[#F7931A] font-numeric font-semibold text-xs">
+                      ₿
+                    </div>
+<div>
+<div class="font-title text-sm font-bold text-white leading-tight">cirBTC</div>
+<div class="font-body text-xs text-[#9AA3AD]">Circle Wrapped Bitcoin</div>
+</div>
+</div>
+</td>
+<td class="py-3.5 font-numeric text-sm font-tabular text-[#F4F6F8] text-right">0.0152</td>
+<td class="py-3.5 font-numeric text-sm font-tabular text-[#9AA3AD] text-right">$84,120.00</td>
+<td class="py-3.5 font-numeric text-sm font-tabular font-semibold text-[#F4F6F8] text-right">$1,278.62</td>
+<td class="py-3.5 text-right">
+<div class="inline-flex items-center justify-end gap-2.5">
+<div class="w-10 h-1.5 bg-hairline rounded-full overflow-hidden">
+<div class="bg-[#64748B] h-full rounded-full" style="width: 11%"></div>
+</div>
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD] w-7 text-right">11%</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right: Concentration Card (4 cols) -->
+<div class="lg:col-span-4 bg-surface-container border border-hairline rounded-2xl p-5 flex flex-col justify-between">
+<div>
+<h2 class="font-title text-sm font-semibold text-white mb-4">Concentration</h2>
+<!-- Segmented Gauge (5 discrete slots) -->
+<div class="grid grid-cols-5 gap-1.5 w-full mb-3">
+<div class="h-2 rounded bg-chart-line"></div>
+<div class="h-2 rounded bg-chart-line"></div>
+<div class="h-2 rounded bg-chart-line"></div>
+<div class="h-2 rounded bg-chart-line/40"></div>
+<div class="h-2 rounded bg-hairline"></div>
+</div>
+<!-- Gauge Threshold Labels -->
+<div class="flex justify-between items-center text-[10px] uppercase font-numeric text-[#9AA3AD] mb-4">
+<span>Diversified</span>
+<span>Balanced</span>
+<span class="text-chart-line font-medium">Concentrated</span>
+</div>
+<!-- Status Indicator Pill -->
+<div class="flex items-center gap-2 mb-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-chart-line/15 border border-chart-line/30 text-chart-line font-medium text-xs font-body">
+<span class="w-1.5 h-1.5 rounded-full bg-chart-line"></span>
+              Concentrated (68.0%)
+            </span>
+</div>
+<p class="font-body text-xs text-[#9AA3AD] leading-relaxed">
+            Share of value in your single largest holding.
+          </p>
+</div>
+<!-- Metric Details Footnote -->
+<div class="pt-4 border-t border-hairline mt-4">
+<div class="flex items-center justify-between text-xs font-numeric">
+<span class="text-[#9AA3AD]">Largest Holding</span>
+<span class="text-white font-medium">USDC (68.0%)</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ROW 5: Activity Feed Card -->
+<section class="bg-surface-container border border-hairline rounded-2xl p-5">
+<div class="flex items-center justify-between mb-2">
+<h2 class="font-title text-sm font-semibold text-white">Activity</h2>
+<a class="font-body text-xs font-medium text-chart-line hover:underline inline-flex items-center gap-0.5" href="#">
+<span>View all</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+<div class="divide-y divide-hairline">
+<!-- Entry 1: Swap -->
+<div class="py-3.5 flex items-center justify-between hover:bg-[#1A1E23]/40 px-2 rounded-lg transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-chart-line/15 text-chart-line flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+</div>
+<div class="font-body text-sm text-white">
+              Swapped <span class="font-numeric font-medium font-tabular">250.00 USDC</span> <span class="text-[#9AA3AD]">→</span> <span class="font-numeric font-medium font-tabular">229.60 EURC</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-4">
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD]">12m ago</span>
+<a class="text-[#9AA3AD] hover:text-white transition-colors" href="#" title="View Transaction">
+<span class="material-symbols-outlined text-[15px]">open_in_new</span>
+</a>
+</div>
+</div>
+<!-- Entry 2: Transfer In -->
+<div class="py-3.5 flex items-center justify-between hover:bg-[#1A1E23]/40 px-2 rounded-lg transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-hairline text-[#9AA3AD] flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+</div>
+<div class="font-body text-sm text-white">
+              Received <span class="font-numeric font-medium font-tabular">0.0041 cirBTC</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-4">
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD]">1h ago</span>
+<a class="text-[#9AA3AD] hover:text-white transition-colors" href="#" title="View Transaction">
+<span class="material-symbols-outlined text-[15px]">open_in_new</span>
+</a>
+</div>
+</div>
+<!-- Entry 3: Transfer Out -->
+<div class="py-3.5 flex items-center justify-between hover:bg-[#1A1E23]/40 px-2 rounded-lg transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-hairline text-[#9AA3AD] flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+</div>
+<div class="font-body text-sm text-white">
+              Sent <span class="font-numeric font-medium font-tabular">120.00 USDC</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-4">
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD]">3h ago</span>
+<a class="text-[#9AA3AD] hover:text-white transition-colors" href="#" title="View Transaction">
+<span class="material-symbols-outlined text-[15px]">open_in_new</span>
+</a>
+</div>
+</div>
+<!-- Entry 4: Swap -->
+<div class="py-3.5 flex items-center justify-between hover:bg-[#1A1E23]/40 px-2 rounded-lg transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-chart-line/15 text-chart-line flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+</div>
+<div class="font-body text-sm text-white">
+              Swapped <span class="font-numeric font-medium font-tabular">500.00 USDC</span> <span class="text-[#9AA3AD]">→</span> <span class="font-numeric font-medium font-tabular">592.20 EURC</span>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 ml-4">
+<span class="font-numeric text-xs font-tabular text-[#9AA3AD]">Yesterday</span>
+<a class="text-[#9AA3AD] hover:text-white transition-colors" href="#" title="View Transaction">
+<span class="material-symbols-outlined text-[15px]">open_in_new</span>
+</a>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>
