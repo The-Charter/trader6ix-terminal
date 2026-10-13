@@ -15,6 +15,8 @@
  * same `idempotencyKey` across retries of one user action.
  */
 
+import { apiUrl } from "@/lib/api-base";
+
 type TokenGetter = () => Promise<string | null>;
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -92,7 +94,7 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
   const send = async (token: string | null) => {
     const attemptHeaders = new Headers(finalHeaders);
     if (token) attemptHeaders.set("authorization", `Bearer ${token}`);
-    return fetch(path, { ...init, method, headers: attemptHeaders });
+    return fetch(apiUrl(path), { ...init, method, headers: attemptHeaders });
   };
 
   const response = await send(await getAccessToken());

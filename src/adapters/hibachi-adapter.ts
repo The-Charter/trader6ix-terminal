@@ -1,5 +1,6 @@
 import type { PerpsAdapter, PerpsMarket, PlacePerpsOrderInput, PerpsOrderResult, PerpsPosition, PerpsOrder } from "./perps-adapter";
 import type { AdapterCandle } from "./shared-types";
+import { apiUrl } from "@/lib/api-base";
 
 // Known fiat/metal tickers — anything else is treated as crypto. Hibachi
 // doesn't (as far as our docs research found) expose an explicit asset-class
@@ -41,7 +42,7 @@ export const hibachiAdapter: PerpsAdapter = {
   isLive: true, // reachable, but see charter-terminal.md — currently returning empty bodies pending their team's response
 
   async getMarkets(): Promise<PerpsMarket[]> {
-    const res = await fetch("/api/hibachi/exchange-info");
+    const res = await fetch(apiUrl("/api/hibachi/exchange-info"));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load Hibachi markets");
 
@@ -66,7 +67,7 @@ export const hibachiAdapter: PerpsAdapter = {
   },
 
   async getOrderbook(symbol) {
-    const res = await fetch(`/api/hibachi/orderbook?symbol=${encodeURIComponent(symbol)}`);
+    const res = await fetch(apiUrl(`/api/hibachi/orderbook?symbol=${encodeURIComponent(symbol)}`));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load orderbook");
     const toLevels = (rows: [string, string][]) => rows.map(([price, size]) => ({ price, size }));
@@ -74,14 +75,14 @@ export const hibachiAdapter: PerpsAdapter = {
   },
 
   async getKlines(symbol, interval) {
-    const res = await fetch(`/api/hibachi/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}`);
+    const res = await fetch(apiUrl(`/api/hibachi/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}`));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load chart data");
     return normalizeKlines(json);
   },
 
   async getPositions(): Promise<PerpsPosition[]> {
-    const res = await fetch("/api/hibachi/account");
+    const res = await fetch(apiUrl("/api/hibachi/account"));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load account");
     const positions = json.account?.positions ?? [];
@@ -95,7 +96,7 @@ export const hibachiAdapter: PerpsAdapter = {
   },
 
   async getOpenOrders(): Promise<PerpsOrder[]> {
-    const res = await fetch("/api/hibachi/account");
+    const res = await fetch(apiUrl("/api/hibachi/account"));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load account");
     const orders = json.orders ?? [];
@@ -111,7 +112,7 @@ export const hibachiAdapter: PerpsAdapter = {
   },
 
   async placeOrder(input: PlacePerpsOrderInput): Promise<PerpsOrderResult> {
-    const res = await fetch("/api/hibachi/order", {
+    const res = await fetch(apiUrl("/api/hibachi/order"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -128,7 +129,7 @@ export const hibachiAdapter: PerpsAdapter = {
   },
 
   async cancelOrder(orderId: string): Promise<PerpsOrderResult> {
-    const res = await fetch(`/api/hibachi/order?orderId=${encodeURIComponent(orderId)}`, { method: "DELETE" });
+    const res = await fetch(apiUrl(`/api/hibachi/order?orderId=${encodeURIComponent(orderId)}`), { method: "DELETE" });
     const json = await res.json();
     if (!res.ok) return { ok: false, error: json.error ?? "Cancel failed" };
     return { ok: true };
@@ -139,7 +140,7 @@ export const hibachiAdapter: PerpsAdapter = {
     // close-position endpoint — the standard way to close a perp position on
     // venues like this is to place an opposite-side market order for the
     // same size. We fetch the live position first rather than assume size/side.
-    const accountRes = await fetch("/api/hibachi/account");
+    const accountRes = await fetch(apiUrl("/api/hibachi/account"));
     const accountJson = await accountRes.json();
     if (!accountRes.ok) return { ok: false, error: accountJson.error ?? "Failed to load position" };
 

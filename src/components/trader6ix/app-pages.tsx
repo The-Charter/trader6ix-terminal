@@ -50,6 +50,7 @@ import { usePrivyOptional, useWalletsOptional } from "@/components/trader6ix/pri
 import { apiFetch, newIdempotencyKey } from "@/components/trader6ix/api-client";
 import { ARC_CHAIN_ID, ARC_CHAIN_NAME, ARC_FAUCET_URL, IS_ARC_MAINNET, arcExplorerAddressUrl, arcExplorerTxUrl } from "@/lib/arc-network";
 import logo from "@/assets/trader6ix-logo.png.asset.json";
+import { apiUrl } from "@/lib/api-base";
 
 /* ---------- shared app bar ---------- */
 const appLinks = [
@@ -1242,7 +1243,7 @@ export function SpotPage() {
   const toToken = tokens.find((t) => t.symbol === toSym);
 
   useEffect(() => {
-    fetch("/api/tower/tokens")
+    fetch(apiUrl("/api/tower/tokens"))
       .then((res) => res.json())
       .then((json) => {
         if (Array.isArray(json.data)) setTokens(json.data);

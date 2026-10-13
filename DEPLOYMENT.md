@@ -1,10 +1,81 @@
 # Deploying Trader6ix
 
-The app is a single Next.js deployment (no separate backend service): API routes
-under `/api/v1` and `/api/data`, plus the pages. Any Node host works; Vercel is
-the path of least resistance because the project is already a standard Next app.
+The app is a single Next.js codebase: API routes under `/api/v1` and `/api/data`,
+plus the pages. It runs as **one deployment** by default, and can also be split
+across two hosts (see "Split deployment" below).
 
-## 1. Environment variables
+---
+
+## Split deployment: frontend on Netlify, API on Render
+
+This is supported, but it is **two deployments of the same repository**, and it
+needs three things wired up or it fails in confusing ways.
+
+### What each host runs
+
+| Host | Runs | Why |
+| --- | --- | --- |
+| **Netlify** | the Next.js **pages** | serves the UI from its CDN |
+| **Render** | the Next.js app, used as the **API** | needs Node for `pg` and `ethers`; its pages are simply unused |
+
+Both build the same repo. Netlify must point at the API, and the API must accept
+Netlify's origin — that is the whole trick.
+
+### 1. Netlify environment
+
+`NEXT_PUBLIC_API_BASE_URL` is the one that matters. Without it the frontend calls
+its **own** origin, where the API routes are dead, and every request 404s.
+
+```
+NEXT_PUBLIC_API_BASE_URL=https://<your-api>.onrender.com   # the Render URL
+NEXT_PUBLIC_ARC_CHAIN_ID=5042
+NEXT_PUBLIC_ARC_RPC_URL=https://rpc.mainnet.arc.io
+NEXT_PUBLIC_ARC_EXPLORER_URL=https://explorer.arc.io
+NEXT_PUBLIC_FAUCET_URL=
+NEXT_PUBLIC_PRIVY_APP_ID=<same app as the API verifies>
+NEXT_PUBLIC_TOWER_ENABLED=true
+```
+
+**No secrets go on Netlify.** That is a genuine benefit of the split: the Tower
+key, RPC key, database URL and Privy verification key exist only on Render.
+
+### 2. Render environment
+
+Everything from the "Required" table below **plus**:
+
+```
+CORS_ALLOWED_ORIGINS=https://<your-site>.netlify.app,https://<your-domain>
+```
+
+Comma separated, exact origins, no trailing slash. With this unset the API sends
+**no CORS headers at all**, so a cross-origin frontend cannot call it. Auth is
+Bearer-token based rather than cookie based, so no credentials mode is involved —
+but `Idempotency-Key` is a custom header, which makes every mutating request a
+preflighted `OPTIONS`, and that preflight is answered before authentication.
+
+### 3. Privy
+
+Add **both** origins to the Privy app's allowed origins (the Netlify site and any
+custom domain). The Privy modal runs in the browser, so it is the *frontend*
+origin that must be allowed — while the API verifies the token's `aud` against
+the app ID, which is origin-independent.
+
+### Caveats of the split
+
+- The API routes are also built into the Netlify deployment. They are never
+  called (the client targets `NEXT_PUBLIC_API_BASE_URL`) but they do exist.
+- Every API call is a cross-origin request, so there is an extra preflight on
+  first contact per route.
+- `NEXT_PUBLIC_*` values are baked in at build time on **both** hosts: changing
+  one needs a rebuild, not a restart.
+- Two deploy pipelines to keep in sync. If that becomes annoying, deploying the
+  whole app to Render alone removes the split entirely — nothing else changes.
+
+---
+
+## Single deployment
+
+### 1. Environment variables
 
 Two rules decide everything below:
 
@@ -33,13 +104,15 @@ Two rules decide everything below:
 | Variable | Notes |
 | --- | --- |
 | `DIRECT_URL` | only used by `npm run migrate`; not needed by the running app |
+| `NEXT_PUBLIC_API_BASE_URL` | set only for a split deployment (see above); empty means same-origin |
+| `CORS_ALLOWED_ORIGINS` | set only on the API host in a split deployment; empty means no CORS headers |
 | `PRIVY_APP_SECRET` | enables server-side Privy lookups (linked-wallet refresh) |
 | `DATABASE_POOL_MAX` | overrides the per-instance pool size (default 2 on Vercel, 10 elsewhere) |
 | `TOWER_API_BASE_URL`, `NEXT_PUBLIC_TOWER_ENABLED` | Tower defaults are fine |
 | `HIBACHI_*`, `STABLEFX_API_KEY` | Perps and FX are "coming soon"; unused |
 | `GOLDSKY_API_KEY`, `NEXT_PUBLIC_GOLDSKY_GRAPHQL_URL` | not used — data is read straight from Arc |
 
-## 2. Privy dashboard (do this before the first deploy)
+### 2. Privy dashboard (do this before the first deploy)
 
 1. **Upgrade the app out of development mode.** The dashboard currently shows a
    "development mode" banner; production mode is what allows a real domain.
@@ -50,7 +123,7 @@ Two rules decide everything below:
 4. Copy the **verification key** again if the app is recreated — it is tied to the
    app ID, and `aud` must match `NEXT_PUBLIC_PRIVY_APP_ID` exactly.
 
-## 3. Database
+### 3. Database
 
 Migrations are **not** run by the build. Apply them explicitly against the
 production database before the first deploy:
@@ -62,7 +135,7 @@ npm run migrate
 It reads `DIRECT_URL` (falling back to `DATABASE_URL`) and is idempotent —
 already-applied files are skipped, so re-running is safe.
 
-## 4. Serverless behaviour worth knowing
+## Serverless behaviour worth knowing
 
 These are deliberate trade-offs, not bugs:
 
@@ -78,7 +151,7 @@ These are deliberate trade-offs, not bugs:
 - The DB pool defaults to **2 connections per instance on Vercel**, because many
   short-lived instances multiply into pooler pressure.
 
-## 5. Post-deploy smoke test
+## Post-deploy smoke test
 
 Run these against the deployed URL, in order:
 
@@ -92,7 +165,7 @@ Run these against the deployed URL, in order:
 6. `GET /api/v1/auth/session` **without** a token still returns **401** — the
    fail-closed behaviour must survive deployment.
 
-## 6. Before real money moves
+## Before real money moves
 
 - Rotate the Tower API key and the RPC key if they were ever pasted somewhere
   outside `.env.local`.

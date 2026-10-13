@@ -3,6 +3,7 @@ import type { SpotAdapter, SpotPool, SpotToken, SwapQuote, SwapQuoteInput, SwapR
 import { getTowerToken } from "@/lib/tower/tokens";
 import { apiFetch, newIdempotencyKey } from "@/components/trader6ix/api-client";
 import { ARC_CHAIN_ID, ARC_CHAIN_NAME, IS_ARC_MAINNET } from "@/lib/arc-network";
+import { apiUrl } from "@/lib/api-base";
 
 /**
  * Tower Exchange — Arc's native stablecoin swap aggregator. Implemented as a
@@ -89,7 +90,7 @@ export const towerAdapter: SpotAdapter = {
   },
 
   async getTokens(): Promise<SpotToken[]> {
-    const res = await fetch("/api/tower/tokens");
+    const res = await fetch(apiUrl("/api/tower/tokens"));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load Tower tokens");
     return (json.data ?? []).map((token: Record<string, unknown>): SpotToken => ({
@@ -102,7 +103,7 @@ export const towerAdapter: SpotAdapter = {
   },
 
   async getPrices(): Promise<Record<string, number>> {
-    const res = await fetch("/api/tower/prices");
+    const res = await fetch(apiUrl("/api/tower/prices"));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load Tower prices");
     // The live /prices response has a mixed shape: token symbols map directly to

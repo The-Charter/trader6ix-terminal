@@ -33,6 +33,37 @@ export type ApiHandler<P> = (req: NextRequest, ctx: RequestContext, params: P) =
 const MUTATING_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const MAX_KEY_LENGTH = 200;
 
+/**
+ * Cross-origin support for a split deployment (pages on one host, API on
+ * another). Off by default: with `CORS_ALLOWED_ORIGINS` unset, no CORS headers
+ * are emitted and the API behaves exactly as it does same-origin.
+ *
+ * Auth uses Bearer tokens rather than cookies, so no credentials mode is
+ * involved and declaring the allowed headers is the only requirement — which
+ * matters because `Idempotency-Key` is a custom header and therefore makes
+ * every mutating request a preflighted one.
+ */
+const ALLOWED_ORIGINS = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+  .split(",")
+  .map((value) => value.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
+function corsHeaders(req: NextRequest): Record<string, string> {
+  const origin = req.headers.get("origin");
+  if (!origin || ALLOWED_ORIGINS.length === 0) return {};
+
+  const normalized = origin.replace(/\/+$/, "");
+  if (!ALLOWED_ORIGINS.includes(normalized)) return {};
+
+  return {
+    "access-control-allow-origin": normalized,
+    "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    "access-control-allow-headers": "authorization,content-type,idempotency-key",
+    "access-control-max-age": "600",
+    vary: "Origin",
+  };
+}
+
 function defaultIdempotency(path: string, method: string): boolean {
   return MUTATING_METHODS.has(method) && path.startsWith("/api/v1/");
 }
@@ -111,7 +142,13 @@ export function withApi<P extends Record<string, string> = Record<string, never>
     const requestId = randomUUID();
     const path = new URL(req.url).pathname;
     const method = req.method.toUpperCase();
+    const cors = corsHeaders(req);
     let reservation: { key: string; scope: string } | null = null;
+
+    // Preflight: answered before auth, since the browser sends no token with it.
+    if (method === "OPTIONS") {
+      return new NextResponse(null, { status: 204, headers: { ...cors, "x-request-id": requestId } });
+    }
 
     try {
       enforceRateLimit(`${clientIp(req)}:${path}`, options.rateLimit?.limit, options.rateLimit?.windowMs);
@@ -151,6 +188,7 @@ export function withApi<P extends Record<string, string> = Record<string, never>
               "content-type": "application/json",
               "idempotency-replayed": "true",
               "x-request-id": requestId,
+              ...cors,
             },
           });
         }
@@ -174,12 +212,14 @@ export function withApi<P extends Record<string, string> = Record<string, never>
       }
 
       response.headers.set("x-request-id", requestId);
+      for (const [name, value] of Object.entries(cors)) response.headers.set(name, value);
       return response;
     } catch (err) {
       // A failed attempt must not poison the key.
       if (reservation) await releaseIdempotency(reservation.key, reservation.scope).catch(() => {});
       const response = jsonError(err, requestId);
       response.headers.set("x-request-id", requestId);
+      for (const [name, value] of Object.entries(cors)) response.headers.set(name, value);
       return response;
     }
   };

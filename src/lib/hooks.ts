@@ -5,6 +5,7 @@ import type { PerpsAdapter, PerpsMarket, PerpsPosition, PerpsOrder } from "@/ada
 import type { SpotAdapter, SpotToken } from "@/adapters/spot-adapter";
 import type { AdapterOrderbook, AdapterCandle } from "@/adapters/shared-types";
 import type { PriceMap } from "@/lib/prices";
+import { apiUrl } from "@/lib/api-base";
 
 interface FetchState<T> {
   data: T | null;
@@ -119,7 +120,7 @@ export function usePrices() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch("/api/prices");
+      const res = await fetch(apiUrl("/api/prices"));
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to load prices");
       setState({ data: json.prices ?? {}, loading: false, error: null });

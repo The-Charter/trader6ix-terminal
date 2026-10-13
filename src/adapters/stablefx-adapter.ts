@@ -1,4 +1,5 @@
 import type { FXAdapter, FxPair, FxQuote, FxTrade, RequestQuoteInput } from "./fx-adapter";
+import { apiUrl } from "@/lib/api-base";
 
 /**
  * Circle StableFX on Arc. This is a REAL scaffold against Circle's documented
@@ -38,7 +39,7 @@ export const stableFxAdapter: FXAdapter = {
   },
 
   async requestQuote(input: RequestQuoteInput): Promise<FxQuote> {
-    const res = await fetch("/api/stablefx/quote", {
+    const res = await fetch(apiUrl("/api/stablefx/quote"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
@@ -49,7 +50,7 @@ export const stableFxAdapter: FXAdapter = {
   },
 
   async acceptQuote(quoteId: string, walletAddress: string): Promise<FxTrade> {
-    const res = await fetch("/api/stablefx/trade", {
+    const res = await fetch(apiUrl("/api/stablefx/trade"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ quoteId, walletAddress }),
@@ -60,7 +61,7 @@ export const stableFxAdapter: FXAdapter = {
   },
 
   async getTradeStatus(tradeId: string): Promise<FxTrade> {
-    const res = await fetch(`/api/stablefx/trade/${encodeURIComponent(tradeId)}`);
+    const res = await fetch(apiUrl(`/api/stablefx/trade/${encodeURIComponent(tradeId)}`));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to get trade status");
     return json;
