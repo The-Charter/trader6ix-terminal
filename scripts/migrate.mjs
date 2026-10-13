@@ -3,10 +3,16 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadEnvConfig } from "@next/env";
 import pg from "pg";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = join(here, "..", "src", "server", "migrations");
+
+// Parse .env.local exactly the way Next.js does. `node --env-file` is NOT
+// equivalent: dotenv expands `$VAR` references inside values and it does not,
+// so the two can silently disagree about a connection string's password.
+loadEnvConfig(join(here, ".."));
 
 const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
 if (!connectionString) {
