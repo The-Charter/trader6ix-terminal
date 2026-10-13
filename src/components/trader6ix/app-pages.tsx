@@ -1209,13 +1209,15 @@ interface SpotQuote {
   outputAmount: string;
   minOut: string;
   venue: string;
+  /** Tower's gas UNITS estimate — not a fee. */
+  gasEstimate?: string;
 }
 
 export function SpotPage() {
   const session = useSession();
   const address = session?.wallet ?? null;
   const privy = usePrivyOptional();
-  const { portfolio } = usePortfolioData(address);
+  const { portfolio, trades } = usePortfolioData(address);
 
   const chainId = ARC_CHAIN_ID;
   const [tokens, setTokens] = useState<SpotToken[]>([]);
@@ -1242,6 +1244,26 @@ export function SpotPage() {
 
   const balanceFor = (symbol: string) =>
     portfolio?.balances.find((b) => b.symbol.toUpperCase() === symbol.toUpperCase())?.amount;
+
+  /**
+   * USD price derived from the portfolio's own valuation (value / amount), so
+   * the fiat hint is always backed by a real price rather than a hardcoded one.
+   * Null when the asset is not held — then no hint is shown at all.
+   */
+  const priceOf = (symbol: string): number | null => {
+    const balance = portfolio?.balances.find((b) => b.symbol.toUpperCase() === symbol.toUpperCase());
+    if (!balance) return null;
+    const held = Number(balance.amount);
+    const usd = Number(balance.usdValue ?? 0);
+    return held > 0 && usd > 0 ? usd / held : null;
+  };
+
+  const usdHint = (symbol: string, quantity: string): string | null => {
+    const price = priceOf(symbol);
+    const value = Number(quantity) * (price ?? 0);
+    if (price === null || !(value > 0)) return null;
+    return `~ $${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   useEffect(() => {
     const value = Number(amount);
@@ -1274,6 +1296,7 @@ export function SpotPage() {
           outputAmount: data.outputAmount,
           minOut: data.minOut,
           venue: data.route?.hops?.[0]?.dexName ?? data.route?.hops?.[0]?.dexId ?? "tower",
+          gasEstimate: data.gasEstimate,
         });
       } catch (err) {
         if (!cancelled) {
@@ -1378,126 +1401,269 @@ export function SpotPage() {
   const rate = quote && Number(amount) > 0 ? outAmount / Number(amount) : 0;
   const sellBalance = balanceFor(fromSym);
   const buyBalance = balanceFor(toSym);
+  const hasAmount = Number(amount) > 0;
+
+  /**
+   * Every supported asset, joined with whatever the portfolio actually returned.
+   * A missing entry means the chain did not answer for it, so it shows "—"
+   * rather than a zero that would look like a real balance.
+   */
+  const assetRows = tokens.map((token) => {
+    const balance = portfolio?.balances.find(
+      (b) => b.symbol.toUpperCase() === token.symbol.toUpperCase()
+    );
+    return {
+      symbol: token.symbol,
+      balance: balance ? balance.amount : null,
+      value: balance?.usdValue ?? null,
+    };
+  });
+
+  const buttonLabel = !address
+    ? "Connect wallet to swap"
+    : swapping
+      ? "Swapping…"
+      : !hasAmount
+        ? "Enter an amount"
+        : quoting
+          ? "Getting quote…"
+          : quote
+            ? `Swap ${fromSym} for ${toSym}`
+            : "No route available";
 
   return (
     <div className="app-page spot">
       <AppBar />
-      <main className="spot-main">
+      <main className="spot-shell">
         <div className="spot-tabs">
           <button type="button" className="on">
             Swap
           </button>
         </div>
-        <div className="spot-card">
-          <p className="spot-label">SELL</p>
-          <div className="spot-row">
-            <div>
-              <select
-                className="spot-token"
-                value={fromSym}
-                onChange={(e) => {
-                  setFromSym(e.target.value);
-                  setQuote(null);
-                }}
-                aria-label="Sell token"
-              >
-                {tokens.map((t) => (
-                  <option key={t.symbol} value={t.symbol}>
-                    {t.symbol}
-                  </option>
-                ))}
-              </select>
-              <p className="spot-bal">
-                <Wallet size={14} /> {sellBalance ? `${sellBalance} ${fromSym}` : `— ${fromSym}`}
+
+        <div className="spot-grid">
+          <section className="spot-ticket">
+            <div className="spot-card">
+              <div className="spot-panel-head">
+                <span className="spot-label">Sell</span>
+                <span className="spot-bal">
+                  Balance {sellBalance ?? "—"} {fromSym}
+                  {sellBalance && Number(sellBalance) > 0 ? (
+                    <button
+                      type="button"
+                      className="spot-max"
+                      onClick={() => setAmount(sellBalance)}
+                    >
+                      Max
+                    </button>
+                  ) : null}
+                </span>
+              </div>
+              <div className="spot-panel">
+                <label className="spot-token">
+                  <TokenIcon symbol={fromSym} />
+                  <select
+                    value={fromSym}
+                    onChange={(e) => {
+                      setFromSym(e.target.value);
+                      setQuote(null);
+                    }}
+                    aria-label="Sell token"
+                  >
+                    {tokens.map((t) => (
+                      <option key={t.symbol} value={t.symbol}>
+                        {t.symbol}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} aria-hidden="true" />
+                </label>
+                <input
+                  className="spot-amt"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  aria-label="Sell amount"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                />
+              </div>
+              <p className="spot-hint">{usdHint(fromSym, amount) ?? ""}</p>
+            </div>
+
+            <div className="spot-flip-wrap">
+              <button className="spot-flip" aria-label="Switch tokens" onClick={flip}>
+                <ArrowDownUp size={18} />
+              </button>
+            </div>
+
+            <div className="spot-card">
+              <div className="spot-panel-head">
+                <span className="spot-label">Buy</span>
+                <span className="spot-bal">
+                  Balance {buyBalance ?? "—"} {toSym}
+                </span>
+              </div>
+              <div className="spot-panel">
+                <label className="spot-token">
+                  <TokenIcon symbol={toSym} />
+                  <select
+                    value={toSym}
+                    onChange={(e) => {
+                      setToSym(e.target.value);
+                      setQuote(null);
+                    }}
+                    aria-label="Buy token"
+                  >
+                    {tokens.map((t) => (
+                      <option key={t.symbol} value={t.symbol}>
+                        {t.symbol}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={14} aria-hidden="true" />
+                </label>
+                <span className={`spot-amt readonly${quote ? "" : " empty"}`}>
+                  {quote ? outAmount.toFixed(6) : "0.00"}
+                </span>
+              </div>
+              <p className="spot-hint">
+                {quote ? (usdHint(toSym, String(outAmount)) ?? "") : ""}
               </p>
             </div>
-            <input
-              className="spot-amt"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              aria-label="Sell amount"
-              inputMode="decimal"
-              placeholder="0.00"
-            />
-          </div>
-          <div className="spot-row">
+
+            <dl className="spot-details">
+              <div>
+                <dt>Rate</dt>
+                <dd>{quote ? `1 ${fromSym} = ${rate.toFixed(6)} ${toSym}` : "—"}</dd>
+              </div>
+              <div>
+                <dt>Minimum received</dt>
+                <dd>{quote ? `${minOut.toFixed(6)} ${toSym}` : "—"}</dd>
+              </div>
+              <div>
+                <dt>Estimated gas</dt>
+                <dd>{quote?.gasEstimate ? `${Number(quote.gasEstimate).toLocaleString()} gas` : "—"}</dd>
+              </div>
+            </dl>
+
+            {error && <p className="pf-error">{error}</p>}
+            {notice && <p className="spot-ok">{notice}</p>}
+
             <button
-              className="spot-max"
+              className="spot-swap"
               type="button"
-              onClick={() => {
-                if (sellBalance) setAmount(sellBalance);
-              }}
+              onClick={runSwap}
+              disabled={!address || !quote || swapping || !hasAmount}
             >
-              MAX
+              {buttonLabel}
             </button>
-            <span className="spot-usd">{quoting ? "Getting quote…" : quote ? quote.venue : ""}</span>
-          </div>
-        </div>
-        <button className="spot-flip" aria-label="Switch tokens" onClick={flip}>
-          <ArrowDownUp size={22} />
-        </button>
-        <div className="spot-card">
-          <p className="spot-label">BUY</p>
-          <div className="spot-row">
-            <div>
-              <select
-                className="spot-token"
-                value={toSym}
-                onChange={(e) => {
-                  setToSym(e.target.value);
-                  setQuote(null);
-                }}
-                aria-label="Buy token"
-              >
-                {tokens.map((t) => (
-                  <option key={t.symbol} value={t.symbol}>
-                    {t.symbol}
-                  </option>
-                ))}
-              </select>
-              <p className="spot-bal">
-                <Wallet size={14} /> {buyBalance ? `${buyBalance} ${toSym}` : `— ${toSym}`}
+          </section>
+
+          <aside className="spot-side">
+            <div className="pf-card">
+              <header className="pf-card-head">
+                <h2>Route</h2>
+                <span className="pf-muted pf-small">{quote ? quote.venue : "Auto-routed"}</span>
+              </header>
+              <div className="spot-flow">
+                <div className="spot-flow-row">
+                  <span className="pf-muted pf-small">You pay</span>
+                  <b className="pf-mono">{hasAmount ? `${amount} ${fromSym}` : `0.00 ${fromSym}`}</b>
+                </div>
+                <span className="spot-flow-line" aria-hidden="true" />
+                <div className="spot-flow-row">
+                  <span className="pf-muted pf-small">You receive</span>
+                  <b className="pf-mono">
+                    {quote ? `${outAmount.toFixed(6)} ${toSym}` : `0.00 ${toSym}`}
+                  </b>
+                </div>
+              </div>
+              <div className="spot-pills">
+                <span className="spot-pill">Tower</span>
+                <span className="spot-pill">{quote ? quote.venue : "Auto-routed"}</span>
+                <span className="spot-pill">50 bps slippage</span>
+              </div>
+              <p className="pf-empty-body spot-note">
+                The venue, rate and minimum received are always shown before you sign.
               </p>
             </div>
-            <span className="spot-amt">{quote ? outAmount.toFixed(6) : "0.00"}</span>
-          </div>
+
+            <div className="pf-card">
+              <header className="pf-card-head">
+                <h2>Your assets</h2>
+                {(portfolio?.unavailableAssets ?? 0) > 0 && (
+                  <span className="pf-muted pf-small">{portfolio?.unavailableAssets} unreadable</span>
+                )}
+              </header>
+              {assetRows.length === 0 ? (
+                <p className="pf-empty-body">Loading supported assets…</p>
+              ) : (
+                <table className="pf-table">
+                  <thead>
+                    <tr>
+                      <th>Asset</th>
+                      <th>Balance</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {assetRows.map((row) => (
+                      <tr key={row.symbol}>
+                        <td>
+                          <span className="pf-asset">
+                            <TokenIcon symbol={row.symbol} />
+                            <b>{row.symbol}</b>
+                          </span>
+                        </td>
+                        <td className="pf-mono">
+                          {row.balance === null
+                            ? "—"
+                            : Number(row.balance).toLocaleString("en-US", { maximumFractionDigits: 6 })}
+                        </td>
+                        <td className="pf-mono pf-muted">
+                          {row.value ? `$${Number(row.value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </aside>
         </div>
-        <dl className="spot-details">
-          <div>
-            <dt>
-              Route <Info size={16} />
-            </dt>
-            <dd>{quote ? quote.venue : "—"}</dd>
-          </div>
-          <div>
-            <dt>
-              Minimum Received <Info size={16} />
-            </dt>
-            <dd>{quote ? `${minOut.toFixed(6)} ${toSym}` : "—"}</dd>
-          </div>
-          <div>
-            <dt>
-              Rate <Info size={16} />
-            </dt>
-            <dd>{quote ? `1 ${fromSym} = ${rate.toFixed(6)} ${toSym}` : "—"}</dd>
-          </div>
-          <div>
-            <dt>
-              Network Fee <Info size={16} />
-            </dt>
-            <dd>—</dd>
-          </div>
-        </dl>
-        {error && <p className="pf-error">{error}</p>}
-        {notice && <p className="spot-ok">{notice}</p>}
-        <button
-          className="spot-swap"
-          type="button"
-          onClick={runSwap}
-          disabled={!address || !quote || swapping}
-        >
-          {!address ? "Connect wallet to swap" : swapping ? "Swapping…" : "Swap"}
-        </button>
+
+        <section className="pf-card">
+          <header className="pf-card-head">
+            <h2>Recent swaps</h2>
+            <Link className="pf-muted pf-small" href="/portfolio">
+              View all
+            </Link>
+          </header>
+          {trades.length === 0 ? (
+            <div className="pf-empty-block">
+              <p className="pf-empty-title">No swaps yet</p>
+              <p className="pf-empty-body">
+                Your swaps will appear here after your first trade. This wallet needs USDC on Arc
+                mainnet to get started.
+              </p>
+            </div>
+          ) : (
+            <ul className="pf-activity">
+              {trades.slice(0, 5).map((trade, index) => (
+                <li key={`${trade.timestamp}-${index}`} className="swap">
+                  <span className="pf-act-glyph" aria-hidden="true">
+                    <ArrowRightLeft size={15} />
+                  </span>
+                  <span className="pf-act-summary">
+                    {trade.symbol} · {Number(trade.quantity).toLocaleString("en-US", { maximumFractionDigits: 6 })}{" "}
+                    at {Number(trade.price ?? 0).toFixed(6)}
+                  </span>
+                  <span className="pf-act-time pf-mono">{relativeTime(trade.timestamp)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </main>
     </div>
   );
