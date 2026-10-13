@@ -26,8 +26,16 @@ type VerificationKey = Awaited<ReturnType<typeof importSPKI>>;
  */
 
 const ISSUER = "privy.io";
-const ALGORITHM = "ES256";
+/**
+ * Privy signs access tokens with ES256. Their documentation describes the
+ * verification key as an Ed25519 key in prose while every code sample imports it
+ * for ES256, so both are attempted at import time and the JWT is then verified
+ * against whichever the key actually is. This weakens nothing: the signature
+ * still has to verify against this exact pinned key.
+ */
+const ALGORITHMS = ["ES256", "EdDSA"] as const;
 const PRIVY_API_BASE = "https://auth.privy.io/api/v1";
+const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 
 export interface PrivyIdentity {
   /** `did:privy:…` — stable, provider-issued user id. */
@@ -62,23 +70,41 @@ function verificationKeyPem(): string {
   return trimmed.includes("\n") ? trimmed : trimmed.replace(/\\n/g, "\n");
 }
 
-let cachedKey: Promise<VerificationKey> | null = null;
+interface ImportedVerificationKey {
+  key: VerificationKey;
+  algorithm: string;
+}
 
-function verificationKey(): Promise<VerificationKey> {
+async function importVerificationKey(): Promise<ImportedVerificationKey> {
+  const pem = verificationKeyPem();
+  const failures: string[] = [];
+
+  for (const algorithm of ALGORITHMS) {
+    try {
+      return { key: await importSPKI(pem, algorithm), algorithm };
+    } catch (err) {
+      failures.push(`${algorithm}: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
+  }
+
+  throw new Error(
+    `PRIVY_VERIFICATION_KEY could not be imported as a public key (${failures.join("; ")}). ` +
+      "Re-copy the key from the Privy dashboard (Configuration -> App settings)."
+  );
+}
+
+let cachedKey: Promise<ImportedVerificationKey> | null = null;
+
+function verificationKey(): Promise<ImportedVerificationKey> {
   if (!cachedKey) {
-    cachedKey = importSPKI(verificationKeyPem(), ALGORITHM).catch((err) => {
+    cachedKey = importVerificationKey().catch((err) => {
       // Do not cache a failed import: a corrected key must work without a restart.
       cachedKey = null;
-      throw new Error(
-        `PRIVY_VERIFICATION_KEY could not be imported as an ${ALGORITHM} public key ` +
-          `(${err instanceof Error ? err.message : "unknown error"}).`
-      );
+      throw err;
     });
   }
   return cachedKey;
 }
-
-const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
 
 /** Every ethereum wallet in a Privy `linked_accounts` claim, in listed order. */
 function walletsFromLinkedAccounts(raw: unknown): string[] {
@@ -133,8 +159,9 @@ async function lookupLinkedWallets(did: string): Promise<string[]> {
 
 /** Verifies a Privy access token and returns the caller's identity. Throws on any failure. */
 export async function verifyPrivyAccessToken(token: string): Promise<PrivyIdentity> {
-  const { payload } = await jwtVerify(token, await verificationKey(), {
-    algorithms: [ALGORITHM],
+  const { key, algorithm } = await verificationKey();
+  const { payload } = await jwtVerify(token, key, {
+    algorithms: [algorithm],
     issuer: ISSUER,
     audience: appId(),
   });
