@@ -24,8 +24,8 @@ const HISTORY_PAGES = 4;
 /**
  * The public Arc RPC rate-limits `eth_getLogs` aggressively (JSON-RPC -32005).
  * Measured 2026-10: a burst of 6 in parallel yields only 2 successes, while the
- * same 6 run sequentially all succeed. Queries are therefore serialised and
- * retried with backoff.
+ * same 6 run sequentially all succeed. Against the public endpoint queries are
+ * therefore serialised and retried with backoff.
  */
 const LOG_CONCURRENCY = 1;
 const LOG_RETRIES = 3;
@@ -75,12 +75,37 @@ export interface TokenTransfer {
 
 let provider: ethers.JsonRpcProvider | null = null;
 
+/**
+ * Server-side RPC endpoint.
+ *
+ * Prefers `ARC_RPC_URL`, which is deliberately NOT a NEXT_PUBLIC_ variable: a
+ * dedicated provider URL normally carries an API key, and NEXT_PUBLIC_ values
+ * are compiled into the browser bundle. Every chain read happens here, so the
+ * keyed URL never needs to reach a client. The public endpoint stays the
+ * fallback, and the browser keeps using the public one for wallet chain config.
+ */
+const SERVER_RPC_URL = process.env.ARC_RPC_URL || ARC_RPC_URL;
+const USING_DEDICATED_RPC = Boolean(process.env.ARC_RPC_URL);
+
+/**
+ * A dedicated provider (QuickNode/Alchemy/dRPC…) is not capped at two
+ * concurrent `eth_getLogs`, so the scan can fan out instead of serialising.
+ * The block range stays at the known-good 5,000 until a provider's own limit is
+ * confirmed — raising it is a one-line change once measured.
+ */
+const LOG_FANOUT = USING_DEDICATED_RPC ? 4 : LOG_CONCURRENCY;
+
 function getProvider(): ethers.JsonRpcProvider {
   if (!provider) {
     // staticNetwork skips a chain-id round trip on every request.
-    provider = new ethers.JsonRpcProvider(ARC_RPC_URL, undefined, { staticNetwork: true });
+    provider = new ethers.JsonRpcProvider(SERVER_RPC_URL, undefined, { staticNetwork: true });
   }
   return provider;
+}
+
+/** True when a dedicated provider is configured (drives the retry budget). */
+export function hasDedicatedRpc(): boolean {
+  return USING_DEDICATED_RPC;
 }
 
 function isRateLimited(err: unknown): boolean {
@@ -304,7 +329,7 @@ async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
     ]);
 
     const before = logs.length;
-    const pages = await mapLimited(filters, LOG_CONCURRENCY, getLogsWithRetry);
+    const pages = await mapLimited(filters, LOG_FANOUT, getLogsWithRetry);
     for (const pageResult of pages) {
       attempted += 1;
       if (pageResult.failed) failed += 1;
