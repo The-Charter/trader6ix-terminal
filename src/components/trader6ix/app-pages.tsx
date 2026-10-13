@@ -79,36 +79,41 @@ function AppBar() {
   const theme = useTheme();
   const [walletOpen, setWalletOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifs, setNotifs] = useState([
-    {
-      id: 1,
-      title: "Order filled",
-      body: "Buy 0.00087 BTC filled at 111,783 USDC",
-      time: "2m ago",
-      read: false,
-    },
-    {
-      id: 2,
-      title: "Funding payment",
-      body: "You paid 0.0008% funding on BTC-USDC",
-      time: "18m ago",
-      read: false,
-    },
-    {
-      id: 3,
-      title: "Price alert",
-      body: "BTC-USDC crossed above 92,000 USDC",
-      time: "1h ago",
-      read: false,
-    },
-    {
-      id: 4,
-      title: "Faucet deposit",
-      body: "2,000 testnet USDC received from the faucet",
-      time: "Yesterday",
-      read: true,
-    },
-  ]);
+  const [notifs, setNotifs] = useState<
+    { id: string; title: string; body: string; time: string; read: boolean }[]
+  >([]);
+  useEffect(() => {
+    const wallet = session?.wallet;
+    if (!wallet) {
+      setNotifs([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/data/activity?address=${encodeURIComponent(wallet)}`);
+        const json = await res.json();
+        if (cancelled || !Array.isArray(json)) return;
+        setNotifs(
+          json.slice(0, 8).map((tx: { hash: string; type: string; summary: string; timestamp: number }) => ({
+            id: tx.hash,
+            title: tx.type === "swap" ? "Swap" : tx.type,
+            body: tx.summary,
+            time: new Date(tx.timestamp * 1000).toLocaleString(),
+            read: false,
+          })),
+        );
+      } catch {
+        /* keep the current list on failure */
+      }
+    };
+    load();
+    const id = window.setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [session?.wallet]);
   const unreadCount = notifs.filter((n) => !n.read).length;
   const markAllRead = () => setNotifs((list) => list.map((n) => ({ ...n, read: true })));
   const [copied, setCopied] = useState(false);
@@ -195,7 +200,14 @@ function AppBar() {
             className="app-wallet"
             aria-expanded={walletOpen}
             aria-haspopup="menu"
-            onClick={() => setWalletOpen((v) => !v)}
+            onClick={() => {
+              if (!session) {
+                if (privy) privy.connectWallet();
+                else router.push("/auth");
+                return;
+              }
+              setWalletOpen((v) => !v);
+            }}
           >
             <Wallet size={16} /> {displayIdentity(session)}
           </button>
@@ -1157,22 +1169,9 @@ export function SpotPage() {
       <AppBar />
       <main className="spot-main">
         <div className="spot-tabs">
-          {["Swap", "Send", "Buy"].map((t) => {
-            const isSoon = t !== "Swap";
-            return (
-              <button
-                key={t}
-                type="button"
-                className={t === "Swap" ? "on" : ""}
-                disabled={isSoon}
-                aria-disabled={isSoon}
-                title={isSoon ? "Coming soon" : undefined}
-              >
-                {t}
-                {isSoon && <span className="spot-soon">Soon</span>}
-              </button>
-            );
-          })}
+          <button type="button" className="on">
+            Swap
+          </button>
         </div>
         <div className="spot-card">
           <p className="spot-label">SELL</p>
