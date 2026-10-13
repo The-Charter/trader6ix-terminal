@@ -9,6 +9,7 @@ import { ARC_TOKENS, type ArcToken } from "@/lib/arc-tokens";
 import { requireOwnedWallet } from "@/server/auth/ownership";
 import { buildTowerSwapTx, getTowerQuote } from "@/server/tower/client";
 import { toSwapApiError } from "@/server/tower/errors";
+import { getMaxFeePerGas } from "@/server/arc-rpc/client";
 import type { TowerQuoteResponseData } from "@/lib/tower/types";
 import { buildRequestSchema, quoteRequestSchema } from "./schemas";
 
@@ -75,7 +76,13 @@ export async function quoteHandler(req: NextRequest, _ctx: RequestContext) {
       chainId: ARC_CHAIN_ID,
       ...(PINNED_DEX_ID ? { dexId: PINNED_DEX_ID } : {}),
     });
-    return jsonOk(response.data);
+
+    // Attach Arc's fee parameters so the client can show the cost in USDC.
+    // Gas on Arc is priced in 18-decimal USDC wei, so gasLimit × maxFeePerGas is
+    // already a dollar amount — and the client never needs an RPC of its own.
+    const maxFeePerGasWei = await getMaxFeePerGas().catch(() => null);
+
+    return jsonOk({ ...response.data, maxFeePerGasWei });
   } catch (err) {
     throw toSwapApiError(err);
   }

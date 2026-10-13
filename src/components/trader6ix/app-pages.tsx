@@ -46,7 +46,7 @@ import {
 import { usePortfolioData } from "@/components/trader6ix/use-portfolio";
 import { TokenIcon } from "@/components/trader6ix/token-icons";
 import { toggleTheme, useTheme } from "@/components/trader6ix/theme";
-import { usePrivyOptional } from "@/components/trader6ix/privy-auth";
+import { usePrivyOptional, useWalletsOptional } from "@/components/trader6ix/privy-auth";
 import { apiFetch, newIdempotencyKey } from "@/components/trader6ix/api-client";
 import { ARC_CHAIN_ID, ARC_CHAIN_NAME, ARC_FAUCET_URL, IS_ARC_MAINNET, arcExplorerAddressUrl, arcExplorerTxUrl } from "@/lib/arc-network";
 import logo from "@/assets/trader6ix-logo.png.asset.json";
@@ -1211,12 +1211,15 @@ interface SpotQuote {
   venue: string;
   /** Tower's gas UNITS estimate — not a fee. */
   gasEstimate?: string;
+  /** Arc's maxFeePerGas in 18-decimal USDC wei, from the API. */
+  maxFeePerGasWei?: string | null;
 }
 
 export function SpotPage() {
   const session = useSession();
   const address = session?.wallet ?? null;
   const privy = usePrivyOptional();
+  const wallets = useWalletsOptional();
   const { portfolio, trades } = usePortfolioData(address);
 
   const chainId = ARC_CHAIN_ID;
@@ -1297,6 +1300,7 @@ export function SpotPage() {
           minOut: data.minOut,
           venue: data.route?.hops?.[0]?.dexName ?? data.route?.hops?.[0]?.dexId ?? "tower",
           gasEstimate: data.gasEstimate,
+          maxFeePerGasWei: data.maxFeePerGasWei ?? null,
         });
       } catch (err) {
         if (!cancelled) {
@@ -1318,6 +1322,84 @@ export function SpotPage() {
     setToSym(fromSym);
     setAmount("");
     setQuote(null);
+  };
+
+  /**
+   * Signs and sends through whichever wallet the user actually connected.
+   *
+   * Privy's `sendTransaction` only signs for PRIVY EMBEDDED wallets — calling it
+   * for an injected wallet (MetaMask, OKX…) throws "User must have an embedded
+   * wallet to send a transaction", which is exactly why swapping failed for
+   * external-wallet accounts. Those wallets sign through their own EIP-1193
+   * provider instead.
+   */
+  const sendTransaction = async (tx: {
+    to: string;
+    data: string;
+    value?: string;
+  }): Promise<string> => {
+    const value = BigInt(tx.value ?? "0");
+    const connected = wallets.find((w) => w.address?.toLowerCase() === address?.toLowerCase());
+
+    if (connected?.walletClientType === "privy") {
+      const receipt = (await privy!.sendTransaction({
+        to: tx.to,
+        data: tx.data,
+        value,
+        chainId,
+      })) as { transactionHash?: string; hash?: string };
+      return receipt?.transactionHash ?? receipt?.hash ?? "";
+    }
+
+    // External wallet: go through its provider.
+    const injected = (window as unknown as { ethereum?: unknown }).ethereum;
+    const getProvider = async (): Promise<{
+      getNetwork: () => Promise<{ chainId: bigint | number }>;
+      getSigner: (addr?: string) => Promise<ethers.Signer>;
+    }> => {
+      // Privy has shipped both of these accessors across 1.x, and the injected
+      // provider is the final fallback, so an external wallet signs on whichever
+      // version is installed.
+      const wallet = connected as unknown as
+        | {
+            getEthersProvider?: () => Promise<never>;
+            getEthereumProvider?: () => Promise<unknown>;
+          }
+        | undefined;
+
+      if (typeof wallet?.getEthersProvider === "function") {
+        return (await wallet.getEthersProvider.call(connected)) as never;
+      }
+      if (typeof wallet?.getEthereumProvider === "function") {
+        const eip1193 = await wallet.getEthereumProvider.call(connected);
+        return new ethers.BrowserProvider(eip1193 as never) as never;
+      }
+      if (!injected) {
+        throw new Error("This wallet cannot sign transactions in the browser.");
+      }
+      return new ethers.BrowserProvider(injected as never) as never;
+    };
+
+    let provider = await getProvider();
+    let network = await provider.getNetwork();
+
+    if (Number(network.chainId) !== chainId) {
+      const switcher = (connected as unknown as { switchChain?: (id: number) => Promise<void> } | undefined)
+        ?.switchChain;
+      if (typeof switcher === "function") {
+        await switcher.call(connected, chainId);
+        provider = await getProvider();
+        network = await provider.getNetwork();
+      }
+      if (Number(network.chainId) !== chainId) {
+        throw new Error(`Switch your wallet to Arc (chain ${chainId}) and try again.`);
+      }
+    }
+
+    const signer = await provider.getSigner(address ?? undefined);
+    const sent = await signer.sendTransaction({ to: tx.to, data: tx.data, value });
+    await sent.wait();
+    return sent.hash;
   };
 
   const runSwap = async () => {
@@ -1372,20 +1454,9 @@ export function SpotPage() {
       if (!build) throw new Error(lastError);
 
       if (build.approval) {
-        await privy.sendTransaction({
-          to: build.approval.to,
-          data: build.approval.data,
-          value: BigInt(build.approval.value ?? "0"),
-          chainId,
-        });
+        await sendTransaction(build.approval);
       }
-      const receipt = (await privy.sendTransaction({
-        to: build.swap.to,
-        data: build.swap.data,
-        value: BigInt(build.swap.value ?? "0"),
-        chainId,
-      })) as { transactionHash?: string; hash?: string };
-      const hash = receipt?.transactionHash ?? receipt?.hash;
+      const hash = await sendTransaction(build.swap);
       setNotice(hash ? `Swap submitted — ${hash.slice(0, 12)}…` : "Swap submitted.");
       setAmount("");
       setQuote(null);
@@ -1418,6 +1489,28 @@ export function SpotPage() {
       value: balance?.usdValue ?? null,
     };
   });
+
+  /**
+   * Network fee in USDC.
+   *
+   * Arc prices gas in 18-decimal USDC wei, so gasLimit × maxFeePerGas is
+   * already a dollar figure — no price lookup needed, and per Arc's own
+   * guidance the UI never says "Gwei" or "ETH".
+   */
+  const networkFeeUsdc = (() => {
+    if (!quote?.gasEstimate || !quote.maxFeePerGasWei) return null;
+    try {
+      return Number(ethers.formatUnits(BigInt(quote.gasEstimate) * BigInt(quote.maxFeePerGasWei), 18));
+    } catch {
+      return null;
+    }
+  })();
+  const networkFeeLabel =
+    networkFeeUsdc === null
+      ? "—"
+      : networkFeeUsdc < 0.000001
+        ? "< 0.000001 USDC"
+        : `~${networkFeeUsdc.toFixed(6)} USDC`;
 
   const buttonLabel = !address
     ? "Connect wallet to swap"
@@ -1541,8 +1634,14 @@ export function SpotPage() {
                 <dd>{quote ? `${minOut.toFixed(6)} ${toSym}` : "—"}</dd>
               </div>
               <div>
-                <dt>Estimated gas</dt>
-                <dd>{quote?.gasEstimate ? `${Number(quote.gasEstimate).toLocaleString()} gas` : "—"}</dd>
+                <dt>Network fee</dt>
+                <dd
+                  title={
+                    quote?.gasEstimate ? `${Number(quote.gasEstimate).toLocaleString()} gas` : undefined
+                  }
+                >
+                  {networkFeeLabel}
+                </dd>
               </div>
             </dl>
 

@@ -193,6 +193,24 @@ export interface TokenBalancesResult {
 }
 
 /**
+ * EIP-1559 fee parameters for Arc.
+ *
+ * USDC is the native gas token and `eth_gasPrice`/`baseFeePerGas` are quoted in
+ * 18-decimal USDC wei, so `gasLimit × maxFeePerGas` converts straight to a
+ * dollar figure with no price lookup. Arc enforces a hard 20 Gwei floor —
+ * transactions below it are rejected with no receipt — so the floor is applied
+ * here rather than at signing time.
+ */
+export async function getMaxFeePerGas(): Promise<string> {
+  const rpc = getProvider();
+  const block = await rpc.getBlock("latest");
+  const baseFee = block?.baseFeePerGas ?? 0n;
+  const doubled = baseFee * 2n;
+  const floor = 20_000_000_000n; // 20 Gwei
+  return (doubled > floor ? doubled : floor).toString();
+}
+
+/**
  * ERC-20 balances for the trusted token set.
  *
  * Reads are sequential and retried: firing them alongside the log scan was
