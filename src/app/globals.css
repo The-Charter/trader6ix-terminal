@@ -4363,3 +4363,70 @@
     font-size: 26px;
   }
 }
+
+/* swap completion — shown in place of the ticket once a swap is signed.
+   "Completed" is only claimed after the receipt confirms it. */
+.spot-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 30px 22px 22px;
+  text-align: center;
+}
+.spot-done-glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-ink) 7%, transparent);
+  color: var(--app-muted);
+}
+.spot-done-glyph.ok {
+  background: color-mix(in srgb, var(--app-up) 16%, transparent);
+  color: var(--app-up);
+}
+.spot-done-glyph.bad {
+  background: color-mix(in srgb, var(--app-down) 16%, transparent);
+  color: var(--app-down);
+}
+.spot-done-title {
+  margin: 4px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.spot-done-sub {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+.spot-done-amount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0 2px;
+  font-family: ui-monospace, SFMono-Regular, "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+}
+.spot-done-amount svg {
+  color: var(--app-muted);
+}
+.spot-done .spot-details {
+  width: 100%;
+  margin-top: 6px;
+}
+.spot-done-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--app-ink);
+  text-decoration: none;
+}
+.spot-done-link:hover {
+  color: var(--primary);
+}

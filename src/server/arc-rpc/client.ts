@@ -193,6 +193,22 @@ export interface TokenBalancesResult {
 }
 
 /**
+ * Confirmation state of a transaction the user just signed.
+ *
+ * Arc settles in under a second and its lifecycle is two-state (pending or
+ * final), so a single receipt read is enough — there is no "3 of 12
+ * confirmations" middle ground to report, and none should be implied in the UI.
+ */
+export type TransactionStatus = "pending" | "success" | "reverted";
+
+export async function getTransactionStatus(hash: string): Promise<TransactionStatus> {
+  const rpc = getProvider();
+  const receipt = await rpc.getTransactionReceipt(hash).catch(() => null);
+  if (!receipt) return "pending";
+  return receipt.status === 1 ? "success" : "reverted";
+}
+
+/**
  * EIP-1559 fee parameters for Arc.
  *
  * USDC is the native gas token and `eth_gasPrice`/`baseFeePerGas` are quoted in

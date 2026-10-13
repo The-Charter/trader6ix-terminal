@@ -24,13 +24,15 @@ export function PrivySessionSync() {
   const { ready, authenticated, user, getAccessToken } = usePrivy();
 
   // Access tokens expire, so the API client asks for a fresh one per request.
+  // The getter is deliberately NOT unregistered on re-render: clearing it in the
+  // effect's cleanup left a window in which requests went out with no token at
+  // all (every one a 401). It is cleared only when authentication ends.
   useEffect(() => {
     if (!authenticated) {
       registerAccessTokenGetter(null);
       return;
     }
     registerAccessTokenGetter(() => getAccessToken());
-    return () => registerAccessTokenGetter(null);
   }, [authenticated, getAccessToken]);
 
   useEffect(() => {

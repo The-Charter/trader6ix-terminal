@@ -34,6 +34,16 @@ export async function getAccessToken(): Promise<string | null> {
   }
 }
 
+/**
+ * True when the last response told us the caller's token was not accepted.
+ * Lets the UI ask the user to sign in again instead of retrying forever.
+ */
+let lastUnauthorized = false;
+
+export function lastRequestWasUnauthorized(): boolean {
+  return lastUnauthorized;
+}
+
 export function newIdempotencyKey(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -67,17 +77,42 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
   const method = (init.method ?? "GET").toUpperCase();
   const finalHeaders = new Headers(headers);
 
-  const token = await getAccessToken();
-  if (token) finalHeaders.set("authorization", `Bearer ${token}`);
   if (!finalHeaders.has("accept")) finalHeaders.set("accept", "application/json");
   if (init.body !== undefined && !finalHeaders.has("content-type")) {
     finalHeaders.set("content-type", "application/json");
   }
-  if (!noIdempotencyKey && MUTATING.has(method)) {
-    finalHeaders.set("idempotency-key", idempotencyKey ?? newIdempotencyKey());
+  // Generate once so a retry replays the same operation rather than a new one.
+  const idempotency = MUTATING.has(method)
+    ? noIdempotencyKey
+      ? null
+      : (idempotencyKey ?? newIdempotencyKey())
+    : null;
+  if (idempotency) finalHeaders.set("idempotency-key", idempotency);
+
+  const send = async (token: string | null) => {
+    const attemptHeaders = new Headers(finalHeaders);
+    if (token) attemptHeaders.set("authorization", `Bearer ${token}`);
+    return fetch(path, { ...init, method, headers: attemptHeaders });
+  };
+
+  const response = await send(await getAccessToken());
+
+  if (response.status === 401) {
+    // A token can lapse between being minted and being used. Mint a fresh one and
+    // retry exactly once — with the SAME idempotency key, so a mutating retry
+    // replays rather than re-executes.
+    const fresh = await getAccessToken();
+    if (fresh) {
+      const retry = await send(fresh);
+      lastUnauthorized = retry.status === 401;
+      return retry;
+    }
+    lastUnauthorized = true;
+  } else {
+    lastUnauthorized = false;
   }
 
-  return fetch(path, { ...init, method, headers: finalHeaders });
+  return response;
 }
 
 /** Like `apiFetch`, but unwraps the `{ data }` envelope and throws `ApiRequestError`. */

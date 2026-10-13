@@ -867,15 +867,10 @@ function formatUsd(value: number): string {
 export function PortfolioPage() {
   const session = useSession();
   const address = session?.wallet ?? null;
-  const { portfolio, activity, trades, loading, error, refresh } = usePortfolioData(address);
+  const { portfolio, activity, trades, loading, error, refresh, updatedAt } = usePortfolioData(address);
   const [hidden, setHidden] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!loading && portfolio) setUpdatedAt(Date.now());
-  }, [loading, portfolio]);
 
   const totalUsd = Number(portfolio?.totalUsdValue ?? 0);
   const closedTrades = trades.filter((t) => t.pnl !== undefined);
@@ -1232,6 +1227,16 @@ export function SpotPage() {
   const [swapping, setSwapping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [completed, setCompleted] = useState<{
+    fromSym: string;
+    toSym: string;
+    amountIn: string;
+    amountOut: string;
+    hash: string;
+  } | null>(null);
+  const [confirmation, setConfirmation] = useState<"confirming" | "success" | "reverted" | "unconfirmed">(
+    "confirming"
+  );
 
   const fromToken = tokens.find((t) => t.symbol === fromSym);
   const toToken = tokens.find((t) => t.symbol === toSym);
@@ -1420,6 +1425,7 @@ export function SpotPage() {
       let build:
         | { approval?: { to: string; data: string; value?: string } | null; swap: { to: string; data: string; value?: string } }
         | null = null;
+      let builtQuote: { outputAmount?: string } | null = null;
       let lastError = "Tower could not build the swap transaction.";
       for (let attempt = 1; attempt <= 6 && !build; attempt++) {
         const quoteRes = await apiFetch("/api/v1/swap/quote", {
@@ -1443,6 +1449,8 @@ export function SpotPage() {
           const candidate = buildJson.data;
           if (buildRes.ok && candidate?.swap?.to && candidate?.swap?.data) {
             build = candidate;
+            // The executed quote, not the one on screen — the build loop re-quotes.
+            builtQuote = quoteJson.data;
             break;
           }
           lastError = apiErrorMessage(buildJson, lastError);
@@ -1457,7 +1465,18 @@ export function SpotPage() {
         await sendTransaction(build.approval);
       }
       const hash = await sendTransaction(build.swap);
-      setNotice(hash ? `Swap submitted — ${hash.slice(0, 12)}…` : "Swap submitted.");
+      setCompleted({
+        fromSym,
+        toSym,
+        amountIn: amount,
+        // The quoted output for the transaction that was actually built.
+        amountOut: builtQuote?.outputAmount
+          ? Number(ethers.formatUnits(builtQuote.outputAmount, 18)).toFixed(6)
+          : "—",
+        hash,
+      });
+      setConfirmation("confirming");
+      setNotice(null);
       setAmount("");
       setQuote(null);
     } catch (err) {
@@ -1466,6 +1485,50 @@ export function SpotPage() {
       setSwapping(false);
     }
   };
+
+  /**
+   * Confirms the swap on chain.
+   *
+   * A broadcast hash is not a completed swap, so the completion screen waits for
+   * the receipt rather than assuming success. Arc finalises in under a second,
+   * so this normally settles on the first poll.
+   */
+  useEffect(() => {
+    if (!completed || confirmation !== "confirming") return;
+    let cancelled = false;
+    let attempts = 0;
+
+    const poll = async () => {
+      attempts += 1;
+      try {
+        const res = await apiFetch(`/api/v1/swap/status?hash=${completed.hash}`);
+        const json = await res.json();
+        if (cancelled) return;
+        const status = json?.data?.status;
+        if (status === "success") {
+          setConfirmation("success");
+          return;
+        }
+        if (status === "reverted") {
+          setConfirmation("reverted");
+          return;
+        }
+      } catch {
+        /* transient — keep polling */
+      }
+      if (cancelled) return;
+      if (attempts >= 15) {
+        setConfirmation("unconfirmed");
+        return;
+      }
+      window.setTimeout(poll, 1200);
+    };
+
+    poll();
+    return () => {
+      cancelled = true;
+    };
+  }, [completed, confirmation]);
 
   const outAmount = quote ? Number(ethers.formatUnits(quote.outputAmount, 18)) : 0;
   const minOut = quote ? Number(ethers.formatUnits(quote.minOut, 18)) : 0;
@@ -1536,6 +1599,77 @@ export function SpotPage() {
 
         <div className="spot-grid">
           <section className="spot-ticket">
+            {completed ? (
+              <div className="spot-card spot-done">
+                <span
+                  className={`spot-done-glyph${
+                    confirmation === "reverted" ? " bad" : confirmation === "success" ? " ok" : ""
+                  }`}
+                  aria-hidden="true"
+                >
+                  {confirmation === "reverted" ? <CircleX size={26} /> : <CircleCheck size={26} />}
+                </span>
+                <h2 className="spot-done-title">
+                  {confirmation === "success"
+                    ? "Swap completed"
+                    : confirmation === "reverted"
+                      ? "Swap reverted"
+                      : confirmation === "unconfirmed"
+                        ? "Swap submitted"
+                        : "Confirming on Arc…"}
+                </h2>
+                <p className="spot-done-sub">
+                  {confirmation === "reverted"
+                    ? "The transaction was included but failed on chain, so nothing was swapped."
+                    : confirmation === "success"
+                      ? "Finalised on Arc mainnet."
+                      : confirmation === "unconfirmed"
+                        ? "Taking longer than usual — the explorer will show the outcome."
+                        : "Arc finalises in under a second."}
+                </p>
+
+                <p className="spot-done-amount">
+                  <span>
+                    {completed.amountIn} {completed.fromSym}
+                  </span>
+                  <ArrowRightLeft size={16} aria-hidden="true" />
+                  <b>
+                    {completed.amountOut} {completed.toSym}
+                  </b>
+                </p>
+
+                <dl className="spot-details">
+                  <div>
+                    <dt>Transaction</dt>
+                    <dd>
+                      <a
+                        className="spot-done-link"
+                        href={arcExplorerTxUrl(completed.hash)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {completed.hash.slice(0, 10)}…{completed.hash.slice(-6)}
+                        <ExternalLink size={12} />
+                      </a>
+                    </dd>
+                  </div>
+                </dl>
+
+                <button
+                  className="spot-swap"
+                  type="button"
+                  onClick={() => {
+                    setCompleted(null);
+                    setConfirmation("confirming");
+                    setError(null);
+                    setNotice(null);
+                  }}
+                >
+                  Swap again
+                </button>
+              </div>
+            ) : (
+              <>
             <div className="spot-card">
               <div className="spot-panel-head">
                 <span className="spot-label">Sell</span>
@@ -1656,6 +1790,8 @@ export function SpotPage() {
             >
               {buttonLabel}
             </button>
+              </>
+            )}
           </section>
 
           <aside className="spot-side">
