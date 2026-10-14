@@ -1,7 +1,30 @@
 # Trader6ix — Status & Roadmap
 
-**Current target: Arc Mainnet (chain 5042).** Spot swaps are live through Tower;
-Perps and FX are "coming soon"; the API is Privy-authenticated and idempotent.
+**Deployed and live on Arc Mainnet (chain 5042).**
+
+| | |
+| --- | --- |
+| Frontend | **https://trader6ix.netlify.app** (Netlify, Git-connected to `main`) |
+| API | **https://trader6ix-api.onrender.com** (Render, built from the public repo) |
+| Source of truth | `main` — the two hosts build the same repository |
+
+Spot swaps are live through Tower; Perps and FX are "coming soon"; the API is
+Privy-authenticated, idempotent, and fails closed.
+
+---
+
+## Deployment shape
+
+The API routes live inside the Next app, so the two hosts run the same codebase:
+
+- **Netlify** serves the pages. It bakes in `NEXT_PUBLIC_API_BASE_URL`, which
+  `next.config.js` resolves automatically for Netlify builds — no environment
+  variables are required there at all.
+- **Render** runs the app as the API. `CORS_ALLOWED_ORIGINS` names the Netlify
+  origin; `FRONTEND_URL` (optional) makes it redirect page requests there so the
+  API host is not a second, indexable copy of the site.
+- Full detail, including the three settings that fail silently when missed, is
+  in `DEPLOYMENT.md`.
 
 ---
 
@@ -28,6 +51,17 @@ Perps and FX are "coming soon"; the API is Privy-authenticated and idempotent.
   kyberswap, uniswap all build); testnet pins `tower-dex` because nothing else builds there.
 - The faucet is hidden on mainnet, and the app bar shows which network you are on.
 
+### Things that are easy to get wrong here
+
+- **USDC history comes from Arc's native system emitter** (`0xff..fE`, 18 decimals),
+  not the ERC-20 contract. A plain native send emits *only* the system log, so
+  reading the ERC-20 contract alone silently misses it. Querying both double-counts.
+- **A failed chain read is not a zero balance.** Unreadable assets are omitted and
+  counted; a total failure returns an error rather than an empty portfolio.
+- **Privy's `sendTransaction` only signs for embedded wallets.** Injected wallets
+  (MetaMask, OKX) sign through their own provider, and sign-in is `login()`, never
+  `connectWallet()` — that only links a wallet to an existing session.
+
 ---
 
 ## Blockers (need action, not more code)
@@ -37,42 +71,32 @@ Every Hibachi endpoint returns HTTP 200 with an empty body from our deployed
 backend; most likely a WAF blocking datacenter IPs. Needs a response from
 Hibachi confirming server-to-server access, or a testnet-specific base URL.
 
-### 2. Private mainnet access (optional)
-Arc's docs describe mainnet RPC as "permissioned" during the private phase. The
-public `rpc.mainnet.arc.io` currently answers fine, but if rate limits bite,
-request node-provider credentials.
-
-### 3. Deeper history (optional)
-The public RPC caps `eth_getLogs` at ~5,000 blocks (~43 min), so activity covers
-about the last 4 hours. Deeper history needs an indexer or a subgraph.
+### 2. Deeper history (optional)
+Activity covers roughly the **last 8.6 hours** — paged `eth_getLogs`, bounded by
+the RPC's 10,000-block range limit. Anything older needs an indexer or subgraph,
+not a faster RPC.
 
 ---
 
-## What you need to fill in
+## Remaining actions
 
-| Item | Where | Needed for |
-| --- | --- | --- |
-| `PRIVY_VERIFICATION_KEY` | Privy dashboard → App settings → Verification key | **Every authenticated request.** Until it is set, the API returns 401 by design |
-| `DATABASE_URL` / `DIRECT_URL` | Supabase (pooler + direct) | Users, roles, watchlist, idempotency |
-| `ADMIN_PRIVY_DIDS` | Your own DIDs | Bootstrapping the first admin |
-| `PRIVY_APP_SECRET` | Privy dashboard | Optional: server-side user lookups |
-| Circle StableFX key | Circle (KYB/AML) | FX |
-
-After filling `DATABASE_URL`/`DIRECT_URL`: `npm run migrate`.
-
----
-
-## Remaining work
-
-### Now
-- [ ] Fill `PRIVY_VERIFICATION_KEY` + the database URLs, then run the end-to-end pass:
-      sign in → session resolves → portfolio loads → swap builds and signs on mainnet.
-- [ ] Confirm Arc mainnet is an allowed chain in the Privy dashboard.
+### Yours (dashboard work)
+- [ ] **Privy: upgrade the app out of development mode** and confirm
+      `https://trader6ix.netlify.app` is an allowed origin.
+- [ ] **Rotate the QuickNode key** — it surfaced in a diagnostic dump twice.
+      Replace `ARC_RPC_URL` on Render afterwards (runtime var, no rebuild).
+- [ ] Optional: set `FRONTEND_URL` on Render so the API host stops serving pages
+      (needs a rebuild).
+- [ ] Set `ADMIN_PRIVY_DIDS` so at least one admin exists.
 
 ### Next
 - [ ] Persist the app-bar notification read state per user instead of per session.
 - [ ] Server-side watchlist UI (the API exists; no screen uses it yet).
-- [ ] Decide whether to index history (subgraph) or keep the 4-hour RPC window.
+- [ ] Decide whether to index history or keep the ~8.6-hour RPC window.
+- [ ] Consider moving the **API to Express** (deliberately deferred). The frontend
+      reaches the API only through `apiFetch` + `NEXT_PUBLIC_API_BASE_URL`, so the
+      API can move without touching the UI — and a long-lived server makes the rate
+      limiter and chain caches correct rather than per-instance approximations.
 
 ### Blocked on third parties
 - [ ] Perps — Hibachi connectivity.
@@ -82,9 +106,11 @@ After filling `DATABASE_URL`/`DIRECT_URL`: `npm run migrate`.
 
 ## Non-negotiables established along the way
 
-- Secrets live in `.env.local` / Vercel only, never in chat and never `NEXT_PUBLIC_`.
+- Secrets live in `.env.local` and the host's dashboard only, never in chat and
+  never `NEXT_PUBLIC_`.
 - No mocked or simulated values in the UI — an empty state says "empty".
 - Signed on-chain transactions are never blind-retried; a retry replays the
   stored build so the user cannot sign two different swaps by accident.
 - Only trusted Arc tokens are shown or routable, so airdrop spam and symbol
   clones stay invisible.
+- A metric we cannot compute is shown as `—`, never as a plausible-looking zero.
