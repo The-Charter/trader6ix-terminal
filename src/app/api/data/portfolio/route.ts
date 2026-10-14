@@ -26,7 +26,7 @@ export const GET = withApi(
     if (!ADDRESS_PATTERN.test(address)) {
       throw badRequest("address query param must be a valid 0x address.");
     }
-    requireOwnedWallet(ctx.user, address);
+    await requireOwnedWallet(ctx.user, address);
 
     const { balances, unavailable } = await getTokenBalances(address);
     const trusted = balances.filter((balance) => isTrustedArcToken(balance.address));

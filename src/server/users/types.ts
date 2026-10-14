@@ -6,6 +6,8 @@ export interface UserRecord {
   /** Privy DID — the identity the auth layer verified. */
   did: string;
   wallet: string | null;
+  /** Every wallet verified for this user, from Privy. */
+  wallets: string[];
   role: Role;
   createdAt: string;
 }
@@ -15,6 +17,7 @@ export interface PublicUser {
   id: string;
   did: string;
   wallet: string | null;
+  wallets: string[];
   role: Role;
   createdAt: string;
 }

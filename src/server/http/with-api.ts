@@ -87,7 +87,7 @@ async function authenticate(req: NextRequest, requestId: string): Promise<Authen
       id: record.id,
       did: record.did,
       wallet: record.wallet,
-      wallets: identity.wallets.length > 0 ? identity.wallets : record.wallet ? [record.wallet] : [],
+      wallets: [...new Set([...identity.wallets, ...record.wallets])],
       role: record.role,
     };
   } catch (err) {

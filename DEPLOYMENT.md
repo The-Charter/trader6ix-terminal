@@ -115,9 +115,9 @@ Leaving them unset is the intended deployment.
 | Variable | Notes |
 | --- | --- |
 | `DIRECT_URL` | only used by `npm run migrate`; not needed by the running app |
+| `PRIVY_APP_SECRET` | **required** — see the note below; authorization cannot resolve a user's wallets without it |
 | `NEXT_PUBLIC_API_BASE_URL` | set only for a split deployment (see above); empty means same-origin |
 | `CORS_ALLOWED_ORIGINS` | set only on the API host in a split deployment; empty means no CORS headers |
-| `PRIVY_APP_SECRET` | enables server-side Privy lookups (linked-wallet refresh) |
 | `DATABASE_POOL_MAX` | overrides the per-instance pool size (default 2 on Vercel, 10 elsewhere) |
 | `TOWER_API_BASE_URL`, `NEXT_PUBLIC_TOWER_ENABLED` | Tower defaults are fine |
 | `HIBACHI_*`, `STABLEFX_API_KEY` | Perps and FX are "coming soon"; unused |
@@ -145,6 +145,23 @@ npm run migrate
 
 It reads `DIRECT_URL` (falling back to `DATABASE_URL`) and is idempotent —
 already-applied files are skipped, so re-running is safe.
+
+### Why `PRIVY_APP_SECRET` is required, not optional
+
+Authorization needs to know which wallets belong to a signed-in user. The Privy
+access token does **not** reliably carry that: Privy documents its claims as
+`sid`, `sub`, `iss`, `aud`, `iat` and `exp` only. So the server asks Privy's API
+for the user's linked accounts, and that call is authenticated with the app
+secret.
+
+Without it the server sees **zero wallets for every user** and rejects every
+wallet-scoped request with *"That wallet is not linked to the account making this
+request"* — while quotes and swaps still work, because those are not
+wallet-scoped. That combination is the signature of this misconfiguration.
+
+The resolved list is cached for five minutes and persisted in `users.wallets`,
+so the lookup is not paid on every request and a brief Privy outage does not lock
+anyone out.
 
 ## Serverless behaviour worth knowing
 

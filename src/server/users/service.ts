@@ -10,6 +10,7 @@ export function toPublic(user: UserRecord): PublicUser {
     id: user.id,
     did: user.did,
     wallet: user.wallet,
+    wallets: user.wallets,
     role: user.role,
     createdAt: user.createdAt,
   };
@@ -18,10 +19,10 @@ export function toPublic(user: UserRecord): PublicUser {
 /**
  * Maps a *verified* Privy identity onto a local user row, creating it on first
  * contact. Authentication itself is Privy's job; this only owns the local
- * profile and its role.
+ * profile, its role, and the wallets authorization needs.
  */
 export async function resolveIdentity(identity: PrivyIdentity): Promise<UserRecord> {
-  const user = await repository.upsertByDid(identity.did, identity.wallet);
+  const user = await repository.upsertByDid(identity.did, identity.wallet, identity.wallets);
 
   // The env allowlist can only promote, and the promotion is persisted so that
   // Postgres remains the source of truth for every later request.
@@ -32,6 +33,11 @@ export async function resolveIdentity(identity: PrivyIdentity): Promise<UserReco
   }
 
   return user;
+}
+
+/** Records wallets learned from Privy so later requests need no lookup. */
+export async function rememberWallets(userId: string, wallets: string[]): Promise<void> {
+  await repository.setWallets(userId, wallets);
 }
 
 export async function getProfile(userId: string): Promise<PublicUser> {
