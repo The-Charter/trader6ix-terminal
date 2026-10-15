@@ -67,6 +67,36 @@ function apiErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
+/**
+ * Turns a wallet/provider failure into something a trader can act on.
+ *
+ * ethers reports a reverted swap as UNPREDICTABLE_GAS_LIMIT with the entire
+ * request, revert data and documentation link inlined — a wall of text that
+ * tells the user nothing and, being unbreakable, stretches the layout on a
+ * phone. The full error still goes to the console for debugging.
+ */
+function swapErrorMessage(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+
+  const reason = /reason="([^"]+)"/.exec(raw)?.[1] ?? /reverted with reason string '([^']+)'/.exec(raw)?.[1];
+  if (reason) return reason;
+
+  if (raw.includes("UNPREDICTABLE_GAS_LIMIT") || raw.includes("cannot estimate gas")) {
+    return "The swap could not be simulated. The wallet probably does not hold enough of the token being sold, or has no USDC to pay the network fee.";
+  }
+  if (raw.includes("INSUFFICIENT_FUNDS")) return "Not enough USDC to cover the network fee.";
+  if (raw.includes("ACTION_REJECTED") || raw.includes("4001")) return "Transaction rejected in your wallet.";
+  if (raw.toLowerCase().includes("slippage")) {
+    return "The market moved beyond your slippage tolerance. Refresh the quote and try again.";
+  }
+  if (raw.includes("Failed to fetch") || raw.includes("NetworkError")) {
+    return "Network error talking to Arc. Check your connection and try again.";
+  }
+
+  // Never surface more than a line of raw diagnostics.
+  return raw.split("\n")[0].slice(0, 200);
+}
+
 /* A tap with a falling drop — lucide has no "faucet" glyph of its own. */
 const faucetNode: IconNode = [
   ["path", { d: "M8 3.5h6", key: "faucet-handle" }],
@@ -868,7 +898,10 @@ function formatUsd(value: number): string {
 export function PortfolioPage() {
   const session = useSession();
   const address = session?.wallet ?? null;
-  const { portfolio, activity, trades, loading, error, refresh, updatedAt } = usePortfolioData(address);
+  const { portfolio, activity, trades, loading, error, refresh, updatedAt, authExpired } =
+    usePortfolioData(address);
+  const privy = usePrivyOptional();
+  const router = useRouter();
   const [hidden, setHidden] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -1016,6 +1049,26 @@ export function PortfolioPage() {
             </span>
           </div>
         </section>
+
+        {authExpired && (
+          <section className="pf-card pf-auth-expired">
+            <p className="pf-empty-title">Your session has expired</p>
+            <p className="pf-empty-body">
+              Sign in again to see this wallet&rsquo;s balances and activity. Nothing has changed
+              on chain.
+            </p>
+            <button
+              type="button"
+              className="pf-empty-cta"
+              onClick={() => {
+                if (privy) privy.login();
+                else router.push("/auth");
+              }}
+            >
+              Sign in again
+            </button>
+          </section>
+        )}
 
         {hasAllocation && (
           <section className="pf-card">
@@ -1481,7 +1534,9 @@ export function SpotPage() {
       setAmount("");
       setQuote(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Swap failed");
+      // Full detail to the console; a single actionable line to the user.
+      console.error("Swap failed:", err);
+      setError(swapErrorMessage(err));
     } finally {
       setSwapping(false);
     }
@@ -1539,6 +1594,15 @@ export function SpotPage() {
   const hasAmount = Number(amount) > 0;
 
   /**
+   * Block a swap we already know cannot work. Selling more than the wallet holds
+   * reverts inside the transaction simulation, which the user experiences as an
+   * opaque "cannot estimate gas" error after signing — better to say so up front.
+   * Only enforced when the balance is actually known: an unread balance must not
+   * block a legitimate trade.
+   */
+  const insufficient = hasAmount && sellBalance !== undefined && Number(amount) > Number(sellBalance);
+
+  /**
    * Every supported asset, joined with whatever the portfolio actually returned.
    * A missing entry means the chain did not answer for it, so it shows "—"
    * rather than a zero that would look like a real balance.
@@ -1578,15 +1642,17 @@ export function SpotPage() {
 
   const buttonLabel = !address
     ? "Connect wallet to swap"
-    : swapping
-      ? "Swapping…"
-      : !hasAmount
-        ? "Enter an amount"
-        : quoting
-          ? "Getting quote…"
-          : quote
-            ? `Swap ${fromSym} for ${toSym}`
-            : "No route available";
+    : insufficient
+      ? `Insufficient ${fromSym} balance`
+      : swapping
+        ? "Swapping…"
+        : !hasAmount
+          ? "Enter an amount"
+          : quoting
+            ? "Getting quote…"
+            : quote
+              ? `Swap ${fromSym} for ${toSym}`
+              : "No route available";
 
   return (
     <div className="app-page spot">
@@ -1787,7 +1853,7 @@ export function SpotPage() {
               className="spot-swap"
               type="button"
               onClick={runSwap}
-              disabled={!address || !quote || swapping || !hasAmount}
+              disabled={!address || !quote || swapping || !hasAmount || insufficient}
             >
               {buttonLabel}
             </button>

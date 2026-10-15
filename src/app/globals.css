@@ -4430,3 +4430,26 @@
 .spot-done-link:hover {
   color: var(--primary);
 }
+
+/* session expired — a sign-in problem, not a data problem, so it gets its own
+   prompt rather than the API's internal message. */
+.pf-auth-expired {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 26px 20px;
+  text-align: center;
+}
+
+/* A long unbreakable string — an RPC error, a hex blob, a URL — must never widen
+   the page. On a phone it otherwise pushes every right-aligned value (amounts,
+   balances, rate) off the right edge, which looks like the data is missing. */
+.pf-error,
+.pf-note,
+.spot-ok,
+.spot-note,
+.pf-empty-body,
+.pf-empty-title {
+  overflow-wrap: anywhere;
+}

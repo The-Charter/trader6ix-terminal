@@ -41,6 +41,8 @@ interface PortfolioState {
   /** True only while there is nothing to show yet. */
   loading: boolean;
   error: string | null;
+  /** The API rejected our credentials — a sign-in problem, not a data problem. */
+  authExpired: boolean;
   /** When the data on screen was last confirmed by the server. */
   updatedAt: number | null;
 }
@@ -51,6 +53,7 @@ const EMPTY: PortfolioState = {
   trades: [],
   loading: false,
   error: null,
+  authExpired: false,
   updatedAt: null,
 };
 
@@ -152,16 +155,37 @@ export function usePortfolioData(address: string | null) {
           activityRes.json(),
           tradesRes.json(),
         ]);
+        if (!mounted.current) return;
+
+        // A 401 is a sign-in problem, not a data problem: the client sent no
+        // token, or the token was rejected. Surfacing the API's internal message
+        // ("Missing bearer token") tells the user nothing they can act on.
+        if ([portfolioRes, activityRes, tradesRes].some((response) => response.status === 401)) {
+          setState((prev) =>
+            prev.portfolio
+              ? { ...prev, loading: false, error: null, authExpired: true }
+              : { ...EMPTY, authExpired: true }
+          );
+          return;
+        }
+
         if (!portfolioRes.ok) throw new Error(errorText(portfolioJson, "Failed to load portfolio"));
         if (!activityRes.ok) throw new Error(errorText(activityJson, "Failed to load activity"));
         if (!tradesRes.ok) throw new Error(errorText(tradesJson, "Failed to load trades"));
-        if (!mounted.current) return;
 
         const portfolio = portfolioJson as PortfolioSnapshot;
         const activity = activityJson as ActivityItem[];
         const trades = tradesJson as TradeItem[];
 
-        setState({ portfolio, activity, trades, loading: false, error: null, updatedAt: Date.now() });
+        setState({
+          portfolio,
+          activity,
+          trades,
+          loading: false,
+          error: null,
+          authExpired: false,
+          updatedAt: Date.now(),
+        });
         writeCache(address, { portfolio, activity, trades });
       } catch (err) {
         if (!mounted.current) return;
@@ -191,6 +215,7 @@ export function usePortfolioData(address: string | null) {
         trades: cached.trades,
         loading: false,
         error: null,
+        authExpired: false,
         updatedAt: cached.at,
       });
     } else {

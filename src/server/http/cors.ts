@@ -15,7 +15,7 @@ import { NextResponse, type NextRequest } from "next/server";
 function allowedOrigins(): string[] {
   return (process.env.CORS_ALLOWED_ORIGINS ?? "")
     .split(",")
-    .map((value) => value.trim().replace(/\/+$/, ""))
+    .map((value) => value.trim().replace(/\/+$/, "")) 
     .filter(Boolean);
 }
 
