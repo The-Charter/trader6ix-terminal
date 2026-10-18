@@ -70,6 +70,20 @@
   --glass-shadow: inset 0 0 14px oklch(0.75 0.09 26 / 0.28), 0 0 0 1px oklch(0.76 0.09 26 / 0.13);
   --panel-gradient: radial-gradient(ellipse at top, oklch(0.46 0.12 42 / 0.28), transparent 70%);
 }
+/*
+ * Landing-page-only palette. Scoped to .t6-landing (the homepage <main>) so the
+ * green accent and glass refinements apply to the marketing homepage without
+ * touching the shared header/footer or any other route's tokens.
+ */
+.t6-landing {
+  --t6-elevated: #111512;
+  --primary: #20c878;
+  --primary-foreground: #06120d;
+  --eyebrow-arrow: #20c878;
+  --cta-gradient: linear-gradient(180deg, #27dd87, #117a4a);
+  --glass-shadow: inset 0 0 16px oklch(0.75 0.17 160 / 0.14), 0 0 0 1px oklch(0.75 0.17 160 / 0.14);
+  --panel-gradient: radial-gradient(ellipse at top, oklch(0.56 0.14 160 / 0.16), transparent 70%);
+}
 @layer base {
   * {
     border-color: var(--border);
@@ -683,6 +697,99 @@
   font-size: 18px;
   max-width: 660px;
   margin: 0 auto 40px;
+}
+/* ---- Landing page visual refinement (scoped to .t6-landing) ---- */
+.t6-landing .hero {
+  background: radial-gradient(ellipse 70% 55% at 18% 18%, oklch(0.56 0.14 160 / 0.1), transparent 60%),
+    var(--background);
+}
+.t6-landing .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/assets/trader6ix-logo-watermark.png");
+  background-repeat: no-repeat;
+  background-position: right -120px center;
+  background-size: 760px 760px;
+  opacity: 0.1;
+  mix-blend-mode: screen;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40%, #000 85%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 40%, #000 85%, transparent);
+  pointer-events: none;
+}
+.t6-landing .eyebrow {
+  background: oklch(0.2 0.02 160 / 0.55);
+  border-color: oklch(0.75 0.17 160 / 0.22);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 oklch(1 0 0 / 0.05);
+  backdrop-filter: blur(10px);
+}
+.t6-landing .hero-actions .inline-flex {
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.14) inset, 0 10px 24px oklch(0 0 0 / 0.35);
+  transition: filter 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.t6-landing .hero-actions .inline-flex:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.t6-landing .hero-actions .inline-flex:active {
+  transform: translateY(0);
+  filter: brightness(0.97);
+}
+.t6-landing .stat strong {
+  text-shadow: 0 0 24px oklch(0.75 0.17 160 / 0.25);
+}
+.t6-landing .round-icon {
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.18) inset, 0 8px 20px oklch(0.56 0.14 160 / 0.25);
+}
+.t6-landing .why-row {
+  transition: border-color 0.2s ease;
+}
+.t6-landing .why-row:hover {
+  border-color: oklch(0.75 0.17 160 / 0.3);
+}
+.t6-landing .feature-card {
+  background: var(--t6-elevated);
+  border-color: oklch(0.99 0 0 / 0.08);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.04);
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+.t6-landing .feature-card:hover {
+  border-color: oklch(0.75 0.17 160 / 0.28);
+  transform: translateY(-2px);
+}
+.t6-landing .faq-question {
+  border-radius: 8px;
+  transition: background 0.2s ease, padding 0.2s ease;
+}
+.t6-landing .faq-question:hover {
+  background: oklch(0.75 0.17 160 / 0.06);
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.t6-landing .faq-question svg {
+  color: var(--primary);
+}
+.t6-landing .cta {
+  border-color: oklch(0.75 0.17 160 / 0.22);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.05), 0 20px 60px oklch(0 0 0 / 0.4);
+}
+.t6-landing .cta-background {
+  filter: grayscale(1) brightness(0.85);
+  opacity: 0.3;
+  mix-blend-mode: screen;
+}
+@media (prefers-reduced-motion: reduce) {
+  .t6-landing .hero-actions .inline-flex,
+  .t6-landing .feature-card {
+    transition: none;
+  }
+}
+@media (max-width: 900px) {
+  .t6-landing .hero::before {
+    background-position: center 60%;
+    background-size: 480px 480px;
+    opacity: 0.04;
+  }
 }
 .back-to-top {
   position: fixed;

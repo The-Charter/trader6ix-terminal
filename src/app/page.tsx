@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <SiteLayout>
-      <main>
+      <main className="t6-landing">
         <Hero />
         <Trust />
         <div className="site-container">
