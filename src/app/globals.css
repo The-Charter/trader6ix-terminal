@@ -77,12 +77,16 @@
  */
 .t6-landing {
   --t6-elevated: #111512;
-  --primary: #20c878;
-  --primary-foreground: #06120d;
-  --eyebrow-arrow: #20c878;
-  --cta-gradient: linear-gradient(180deg, #27dd87, #117a4a);
-  --glass-shadow: inset 0 0 16px oklch(0.75 0.17 160 / 0.14), 0 0 0 1px oklch(0.75 0.17 160 / 0.14);
-  --panel-gradient: radial-gradient(ellipse at top, oklch(0.56 0.14 160 / 0.16), transparent 70%);
+  --primary: #245b43;
+  --primary-foreground: #f5f6f3;
+  --eyebrow-arrow: #245b43;
+  --cta-gradient: linear-gradient(180deg, #2c6b4f, #193f30);
+  --glass-shadow: inset 0 0 16px rgba(36, 91, 67, 0.16), 0 0 0 1px rgba(36, 91, 67, 0.2);
+  --panel-gradient: radial-gradient(ellipse at top, rgba(36, 91, 67, 0.18), transparent 70%);
+  /* Deep, desaturated outline-only red — distinct from --destructive (used for
+     negative P&L / sell-side states elsewhere) so the two never get confused. */
+  --t6-line-red: #6e2a2a;
+  --t6-line-red-strong: #8c3636;
 }
 @layer base {
   * {
@@ -700,7 +704,7 @@
 }
 /* ---- Landing page visual refinement (scoped to .t6-landing) ---- */
 .t6-landing .hero {
-  background: radial-gradient(ellipse 70% 55% at 18% 18%, oklch(0.56 0.14 160 / 0.1), transparent 60%),
+  background: radial-gradient(ellipse 70% 55% at 18% 18%, rgba(36, 91, 67, 0.12), transparent 60%),
     var(--background);
 }
 .t6-landing .hero::before {
@@ -718,8 +722,8 @@
   pointer-events: none;
 }
 .t6-landing .eyebrow {
-  background: oklch(0.2 0.02 160 / 0.55);
-  border-color: oklch(0.75 0.17 160 / 0.22);
+  background: rgba(20, 28, 24, 0.6);
+  border-color: rgba(110, 42, 42, 0.38);
   box-shadow: var(--glass-shadow), inset 0 1px 0 oklch(1 0 0 / 0.05);
   backdrop-filter: blur(10px);
 }
@@ -735,26 +739,32 @@
   transform: translateY(0);
   filter: brightness(0.97);
 }
+/* A whisper of the red lining on the neutral (black/white) CTA only — the
+   green button stays clean so green keeps sole ownership of "primary". */
+.t6-landing .hero-actions a:first-child {
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.14) inset, 0 10px 24px oklch(0 0 0 / 0.35),
+    0 0 0 1px rgba(110, 42, 42, 0.3) inset;
+}
 .t6-landing .stat strong {
-  text-shadow: 0 0 24px oklch(0.75 0.17 160 / 0.25);
+  text-shadow: 0 0 24px rgba(36, 91, 67, 0.3);
 }
 .t6-landing .round-icon {
-  box-shadow: 0 1px 0 oklch(1 0 0 / 0.18) inset, 0 8px 20px oklch(0.56 0.14 160 / 0.25);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.18) inset, 0 8px 20px rgba(36, 91, 67, 0.3);
 }
 .t6-landing .why-row {
   transition: border-color 0.2s ease;
 }
 .t6-landing .why-row:hover {
-  border-color: oklch(0.75 0.17 160 / 0.3);
+  border-color: rgba(36, 91, 67, 0.45);
 }
 .t6-landing .feature-card {
   background: var(--t6-elevated);
-  border-color: oklch(0.99 0 0 / 0.08);
+  border-color: rgba(110, 42, 42, 0.22);
   box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.04);
   transition: border-color 0.25s ease, transform 0.25s ease;
 }
 .t6-landing .feature-card:hover {
-  border-color: oklch(0.75 0.17 160 / 0.28);
+  border-color: rgba(36, 91, 67, 0.45);
   transform: translateY(-2px);
 }
 .t6-landing .faq-question {
@@ -762,15 +772,23 @@
   transition: background 0.2s ease, padding 0.2s ease;
 }
 .t6-landing .faq-question:hover {
-  background: oklch(0.75 0.17 160 / 0.06);
+  background: rgba(36, 91, 67, 0.08);
   padding-left: 12px;
   padding-right: 12px;
 }
 .t6-landing .faq-question svg {
   color: var(--primary);
 }
+/* Open FAQ row reads as the "selected tab" — thin red line, not a full border. */
+.t6-landing .faq-item:has(.faq-answer) {
+  border-bottom-color: rgba(110, 42, 42, 0.4);
+}
+.t6-landing .faq-item:has(.faq-answer) .faq-question {
+  box-shadow: -2px 0 0 var(--t6-line-red) inset;
+  padding-left: 12px;
+}
 .t6-landing .cta {
-  border-color: oklch(0.75 0.17 160 / 0.22);
+  border-color: rgba(110, 42, 42, 0.3);
   box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.05), 0 20px 60px oklch(0 0 0 / 0.4);
 }
 .t6-landing .cta-background {
