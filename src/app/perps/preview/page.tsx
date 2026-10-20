@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PerpsPage } from "@/components/trader6ix/app-pages";
+import { PerpsMobile } from "@/components/trader6ix/perps-mobile";
 
 export const metadata: Metadata = {
   title: "Perps design preview — Trader6ix",
@@ -10,20 +11,25 @@ export const metadata: Metadata = {
 /**
  * Design preview of the perpetuals terminal.
  *
- * `PerpsPage` is the original layout: hardcoded markets, a generated candle
- * series and sample statistics — no API calls. It is mounted here rather than at
- * `/perps` so the shipped page keeps telling the truth about Perps being
- * unconnected (Hibachi is still unresolved), while the design stays reviewable.
- *
- * The badge is deliberate: nothing on this screen is live data.
+ * Phones get `PerpsMobile` — the compact, full-height, zero-page-scroll terminal
+ * (markets, chart, trade sheet, positions, history, tools). Wider screens keep
+ * the original desktop `PerpsPage`. Both use hardcoded demo values and make no
+ * API calls; it is mounted here rather than at `/perps` so the shipped page
+ * keeps telling the truth about Perps being unconnected (Hibachi is still
+ * unresolved). The badge is deliberate: nothing on this screen is live data.
  */
 export default function PerpsPreviewRoute() {
   return (
     <>
-      <PerpsPage />
-      <p className="preview-badge" role="note">
-        Design preview · demo values, not live data
-      </p>
+      <div className="pm-wrap-desktop">
+        <PerpsPage />
+        <p className="preview-badge" role="note">
+          Design preview · demo values, not live data
+        </p>
+      </div>
+      <div className="pm-wrap-mobile">
+        <PerpsMobile />
+      </div>
     </>
   );
 }
