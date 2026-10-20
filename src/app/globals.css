@@ -4453,3 +4453,21 @@
 .pf-empty-title {
   overflow-wrap: anywhere;
 }
+
+/* Preview badge — makes it impossible to mistake a demo screen for live data. */
+.preview-badge {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid #ff6a2b;
+  background: rgba(20, 23, 27, 0.92);
+  color: #ffb27a;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(6px);
+}
