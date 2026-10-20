@@ -4809,3 +4809,154 @@
   letter-spacing: 0.02em;
   backdrop-filter: blur(6px);
 }
+
+/* Mobile terminal shell — compact, full-height, zero page scroll.
+   Layout principles from the compact reference: slim header, a flexible
+   screen area, and navigation anchored to the bottom of the *actual* browser
+   viewport (100dvh follows the address bar as it shows and hides; safe-area
+   insets cover the home indicator). Only the content area may scroll, and only
+   internally. No fake status bar or phone frame — the real browser supplies
+   those. Desktop is untouched (phone widths only). */
+@media (max-width: 700px) {
+  html:has(.app-page),
+  body:has(.app-page) {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .app-page {
+    --app-nav-h: 56px;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  /* compact header: logo mark, network pill and tools only */
+  .app-bar {
+    position: relative;
+    flex: 0 0 auto;
+    gap: 10px;
+    flex-wrap: nowrap;
+    padding: 8px 12px;
+    /* backdrop-filter would make this the containing block of the fixed nav */
+    backdrop-filter: none;
+    background: var(--app-bar);
+  }
+  .app-brand span {
+    display: none;
+  }
+  .app-brand img {
+    width: 28px;
+    height: 28px;
+  }
+  .app-bar-right {
+    gap: 8px;
+  }
+  .app-network-pill {
+    height: 28px;
+  }
+  .app-bar .app-icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+  /* bottom navigation, anchored inside the available viewport */
+  .app-bar nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: flex;
+    gap: 0;
+    height: calc(var(--app-nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--app-bar);
+    border-top: 1px solid var(--app-line);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.05);
+  }
+  .app-bar nav a {
+    flex: 1 1 0;
+    justify-content: center;
+    height: auto;
+    padding: 0;
+    border-radius: 0;
+    font-size: 13px;
+  }
+  .app-bar nav a.active {
+    color: var(--app-ink);
+    box-shadow: inset 0 2px 0 var(--app-accent-red);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+  }
+  /* the screen area: fills what is left; it is the only thing that may scroll */
+  .app-page > main,
+  .app-page > div:not(.app-bar) {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(var(--app-nav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  .preview-badge {
+    bottom: calc(var(--app-nav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+    right: 8px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  /* Spot: the swap ticket is the primary screen — keep it above the fold */
+  .spot-shell {
+    gap: 8px;
+    padding: 8px 12px 0;
+  }
+  .spot-tabs {
+    display: none;
+  }
+  .spot-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .spot-ticket,
+  .spot-side {
+    gap: 8px;
+    min-width: 0;
+  }
+  .spot-card,
+  .spot-amt {
+    min-width: 0;
+  }
+  .spot-card {
+    padding: 10px 14px;
+    border-radius: 14px;
+  }
+  .spot-amt {
+    font-size: 24px;
+  }
+  .spot-swap {
+    height: 44px;
+    margin-top: 0;
+  }
+  .pf-wrap {
+    padding: 12px 12px 0;
+    gap: 12px;
+  }
+}
+@media (max-width: 700px) and (max-height: 640px) {
+  .app-page {
+    --app-nav-h: 50px;
+  }
+  .app-bar {
+    padding: 5px 12px;
+  }
+  .spot-card {
+    padding: 8px 12px;
+  }
+  .spot-amt {
+    font-size: 22px;
+  }
+  .spot-swap {
+    height: 40px;
+  }
+}
