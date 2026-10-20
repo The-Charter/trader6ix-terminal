@@ -4282,6 +4282,72 @@
   }
 }
 
+/* Perps theme pass — same glass, forest-green and restrained red-outline
+   language as the landing page, Spot and Portfolio. Layout, the Long/Short
+   colours (--app-up / --app-down) and the Place Order button stay as designed;
+   only chrome, surfaces and interaction states change. */
+.perps-panel {
+  background: color-mix(in srgb, var(--app-panel) 94%, transparent);
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.05);
+}
+.perps-market-menu,
+.perps-select-menu {
+  background: color-mix(in srgb, var(--app-menu) 92%, transparent);
+  box-shadow: var(--app-shadow), inset 0 1px 0 oklch(1 0 0 / 0.05);
+  backdrop-filter: blur(16px);
+}
+.perps-tabs button {
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.perps-tabs button:hover:not(.on):not(:disabled) {
+  color: var(--app-ink);
+}
+.perps-tabs button.on {
+  box-shadow: inset 0 -2px 0 var(--app-accent-red);
+}
+.perps-ranges button:hover {
+  border-color: var(--app-accent-red);
+  color: var(--primary);
+}
+.perps-select > button {
+  background: color-mix(in srgb, var(--app-panel) 94%, transparent);
+  transition: border-color 0.15s ease;
+}
+.perps-select > button:hover {
+  border-color: var(--app-accent-red);
+}
+.perps-input {
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+.perps-input:focus-within {
+  border-color: var(--primary);
+}
+.perps-place {
+  box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.22), 0 6px 16px -8px color-mix(in srgb, var(--app-up) 70%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.perps-place:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.perps-place:active:not(:disabled) {
+  transform: translateY(0);
+}
+.perps-table tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .perps-tabs button,
+  .perps-select > button,
+  .perps-input,
+  .perps-place {
+    transition: none;
+  }
+  .perps-place:hover:not(:disabled) {
+    transform: none;
+  }
+}
+
 @media (max-width: 1100px) {
   .pf-columns {
     grid-template-columns: 1fr;
