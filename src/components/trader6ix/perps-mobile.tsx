@@ -17,6 +17,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "@/components/trader6ix/theme";
+import { useSession } from "@/components/trader6ix/session";
+import { usePortfolioData, type TradeItem } from "@/components/trader6ix/use-portfolio";
 import { perpsVenueLabel } from "@/lib/perps-provider";
 import "./perps-mobile.css";
 
@@ -33,7 +35,7 @@ type Pair = {
 
 const VENUE_LABEL = perpsVenueLabel();
 // Chart accents per theme (the canvas needs concrete colours).
-const ACCENT = { dark: "#00D4FF", light: "#0099BB" };
+const ACCENT = { dark: "#3f8a68", light: "#245b43" };
 
 
 const SEED_PAIRS: Pair[] = [
@@ -54,15 +56,6 @@ const SEED_POSITIONS = [
   { id: "p1", sym: "EUR/USD", dir: "BUY", lots: 0.1, open: 1.0821, sl: 1.078, tp: 1.09, pl: 36.2, openVal: 10821 },
   { id: "p2", sym: "BTC/USD", dir: "SELL", lots: 0.01, open: 104100, sl: 105000, tp: 101000, pl: -6.8, openVal: 1041 },
   { id: "p3", sym: "GBP/USD", dir: "BUY", lots: 0.05, open: 1.27041, sl: 1.265, tp: 1.28, pl: 93.8, openVal: 6352 },
-];
-
-const HISTORY = [
-  { sym: "EUR/USD", dir: "BUY", lots: 0.2, open: 1.07841, close: 1.0832, pl: 95.8, pct: 2.11, date: "2026-06-25 14:32" },
-  { sym: "BTC/USD", dir: "BUY", lots: 0.005, open: 99200, close: 102400, pl: 160.0, pct: 3.55, date: "2026-06-24 09:17" },
-  { sym: "GBP/USD", dir: "SELL", lots: 0.1, open: 1.2814, close: 1.272, pl: 94.0, pct: 2.08, date: "2026-06-23 16:45" },
-  { sym: "USD/JPY", dir: "BUY", lots: 0.15, open: 148.2, close: 148.05, pl: -22.5, pct: -0.5, date: "2026-06-22 11:03" },
-  { sym: "XAU/USD", dir: "BUY", lots: 0.02, open: 2298.0, close: 2341.5, pl: 87.0, pct: 1.89, date: "2026-06-20 08:55" },
-  { sym: "ETH/USD", dir: "SELL", lots: 0.05, open: 3920.0, close: 3841.2, pl: 39.4, pct: 0.87, date: "2026-06-18 13:20" },
 ];
 
 const NEWS = [
@@ -523,12 +516,12 @@ export function PerpsMobile() {
                 <div className="pm-eq-card">
                   <div className="pm-eq-label">Balance</div>
                   <div className="pm-eq-val">$4,820.00</div>
-                  <div className="pm-eq-sub pm-up">+7.1% start</div>
+                  <div className="pm-eq-sub pm-up">+7.1% from start</div>
                 </div>
                 <div className="pm-eq-card">
                   <div className="pm-eq-label">Equity</div>
                   <div className="pm-eq-val">${(4820 + totalPl).toFixed(2)}</div>
-                  <div className="pm-eq-sub pm-up">+9.8% all-time</div>
+                  <div className="pm-eq-sub pm-up">+9.8% all time</div>
                 </div>
                 <div className="pm-eq-card">
                   <div className="pm-eq-label">Floating P/L</div>
@@ -590,58 +583,7 @@ export function PerpsMobile() {
           </section>
         )}
 
-        {page === "history" && (
-          <section className="pm-page">
-            <div className="pm-head-block">
-              <div className="pm-eq-grid">
-                {(
-                  [
-                    ["Total P/L", "+$1,284.50", true],
-                    ["Win rate", "67.3%", false],
-                    ["Trades", "41", false],
-                    ["Avg R:R", "1 : 2.1", false],
-                  ] as const
-                ).map(([label, value, up]) => (
-                  <div className="pm-eq-card" key={label}>
-                    <div className="pm-eq-label">{label}</div>
-                    <div className={`pm-eq-val${up ? " pm-up" : ""}`}>{value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="pm-list pm-pad">
-              {HISTORY.map((h) => {
-                const cls = h.pl >= 0 ? "pm-up" : "pm-dn";
-                const s = h.pl >= 0 ? "+" : "";
-                return (
-                  <div className="pm-card pm-card-sm" key={h.date + h.sym}>
-                    <div className="pm-card-top">
-                      <div className="pm-inline">
-                        <span className="pm-card-sym pm-sm">{h.sym}</span>
-                        <span className={`pm-dir ${h.dir === "BUY" ? "pm-dir-buy" : "pm-dir-sell"}`}>{h.dir}</span>
-                      </div>
-                      <div className="pm-right">
-                        <div className={`pm-pl-val pm-sm ${cls}`}>
-                          {s}${Math.abs(h.pl).toFixed(2)}
-                        </div>
-                        <div className={`pm-pl-pct ${cls}`}>
-                          {s}
-                          {h.pct.toFixed(2)}%
-                        </div>
-                      </div>
-                    </div>
-                    <div className="pm-cell-grid pm-cell-grid-tight">
-                      <Cell label="Lots" value={String(h.lots)} />
-                      <Cell label="Open" value={fp(h.open, h.sym)} />
-                      <Cell label="Close" value={fp(h.close, h.sym)} />
-                    </div>
-                    <div className="pm-date">{h.date}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
+        {page === "history" && <HistoryPanel />}
 
         {page === "tools" && (
           <section className="pm-page">
@@ -744,6 +686,142 @@ export function PerpsMobile() {
         ))}
       </nav>
     </div>
+  );
+}
+
+/* --- history ------------------------------------------------------------
+ * Real data only: the wallet's executed trades from the app's own
+ * /api/data/trades (via usePortfolioData). Nothing is invented — when the API
+ * has no records, or the user is signed out / expired / offline, the matching
+ * empty or error state is shown instead. Perps-specific fills will appear here
+ * once the Hibachi integration exposes them. */
+
+function relTime(unixSeconds: number): string {
+  const diff = Math.max(0, Math.floor(Date.now() / 1000) - unixSeconds);
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86_400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604_800) return `${Math.floor(diff / 86_400)}d ago`;
+  return new Date(unixSeconds * 1000).toLocaleDateString();
+}
+const usd = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const titleCase = (v: string) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : v);
+
+function HistoryPanel() {
+  const session = useSession();
+  const address = session?.wallet ?? null;
+  const { trades, loading, error, refresh, authExpired } = usePortfolioData(address);
+
+  const closed = trades.filter((t) => t.pnl !== undefined);
+  const wins = closed.filter((t) => Number(t.pnl) > 0).length;
+  const realised = closed.reduce((sum, t) => sum + Number(t.pnl ?? 0), 0);
+  const volume = trades.reduce((sum, t) => sum + Number(t.quantity) * Number(t.price ?? 0), 0);
+  const stats: { label: string; value: string; cls?: string }[] = [
+    {
+      label: "Realised P/L",
+      value: closed.length ? `${realised >= 0 ? "+" : "-"}$${usd(Math.abs(realised))}` : "—",
+      cls: closed.length ? (realised >= 0 ? "pm-up" : "pm-dn") : undefined,
+    },
+    { label: "Win rate", value: closed.length ? `${((wins / closed.length) * 100).toFixed(1)}%` : "—" },
+    { label: "Volume", value: volume > 0 ? `$${usd(volume)}` : "—" },
+    { label: "Trades", value: String(trades.length) },
+  ];
+
+  let empty: { title: string; body: string; action?: React.ReactNode } | null = null;
+  if (!address) {
+    empty = {
+      title: "Connect your wallet",
+      body: "Sign in to see the trades executed from your wallet.",
+      action: (
+        <Link href="/auth" className="pm-empty-cta">
+          Connect wallet
+        </Link>
+      ),
+    };
+  } else if (authExpired) {
+    empty = {
+      title: "Your session has expired",
+      body: "Sign in again to see your history. Nothing has changed on chain.",
+      action: (
+        <Link href="/auth" className="pm-empty-cta">
+          Sign in again
+        </Link>
+      ),
+    };
+  } else if (loading && trades.length === 0) {
+    empty = { title: "Loading history…", body: "Fetching your executed trades." };
+  } else if (error && trades.length === 0) {
+    empty = {
+      title: "Couldn’t load history",
+      body: "Your trades are safe — this is only a loading problem.",
+      action: (
+        <button type="button" className="pm-empty-cta" onClick={() => void refresh()}>
+          Try again
+        </button>
+      ),
+    };
+  } else if (trades.length === 0) {
+    empty = {
+      title: "No trade history yet",
+      body: "Trades executed from your wallet will appear here. Perpetuals fills will show once Perps trading is connected.",
+    };
+  }
+
+  return (
+    <section className="pm-page">
+      <div className="pm-hist-stats" aria-label="History summary">
+        {stats.map((st) => (
+          <div className="pm-hist-stat" key={st.label}>
+            <div className="pm-hist-stat-label">{st.label}</div>
+            <div className={`pm-hist-stat-val ${st.cls ?? ""}`}>{st.value}</div>
+          </div>
+        ))}
+      </div>
+      {empty ? (
+        <div className="pm-empty" role="status">
+          <span className="pm-empty-glyph" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="12 8 12 12 14 14" />
+              <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
+            </svg>
+          </span>
+          <h2 className="pm-empty-title">{empty.title}</h2>
+          <p className="pm-empty-body">{empty.body}</p>
+          {empty.action}
+        </div>
+      ) : (
+        <ul className="pm-list pm-pad pm-h-list">
+          {trades.map((t: TradeItem, i: number) => {
+            const side = t.side.toLowerCase();
+            const sideCls = side === "buy" ? "pm-dir-buy" : side === "sell" ? "pm-dir-sell" : "pm-dir-flat";
+            const qty = Number(t.quantity);
+            const hasPnl = t.pnl !== undefined;
+            const pnl = Number(t.pnl ?? 0);
+            return (
+              <li className="pm-card pm-h-row" key={`${t.timestamp}-${i}`}>
+                <div className="pm-h-top">
+                  <span className="pm-card-sym pm-sm">{t.symbol}</span>
+                  <span className={`pm-dir ${sideCls}`}>{t.side.toUpperCase()}</span>
+                  <span className="pm-h-venue">{titleCase(t.venue)}</span>
+                  {hasPnl && (
+                    <span className={`pm-h-pl ${pnl >= 0 ? "pm-up" : "pm-dn"}`}>
+                      {pnl >= 0 ? "+" : "-"}${usd(Math.abs(pnl))}
+                    </span>
+                  )}
+                </div>
+                <div className="pm-h-sub">
+                  <span>
+                    {qty.toLocaleString("en-US", { maximumFractionDigits: 6 })}
+                    {t.price !== undefined ? ` @ ${Number(t.price).toLocaleString("en-US", { maximumFractionDigits: 6 })}` : ""}
+                  </span>
+                  <span title={new Date(t.timestamp * 1000).toLocaleString()}>{relTime(t.timestamp)}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -860,10 +938,10 @@ function CandleChart({ pair, tf, light, accent }: { pair: Pair; tf: string; ligh
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const bg = light ? "#F0F0F0" : "#000";
+    const bg = light ? "#f1f2ee" : "#000";
     const grid = light ? "rgba(0,0,0,0.07)" : "rgba(255,255,255,0.04)";
-    const up = light ? "#16A34A" : "#22C55E";
-    const dn = light ? "#DC2626" : "#EF4444";
+    const up = light ? "#00a874" : "#00dfa2";
+    const dn = light ? "#d23a44" : "#e6424c";
     const bw = W / BARS;
 
     // The last candle follows the live simulated price; the rest are fixed.
@@ -934,7 +1012,7 @@ function CandleChart({ pair, tf, light, accent }: { pair: Pair; tf: string; ligh
     ctx.setLineDash([]);
     ctx.fillStyle = accent;
     ctx.fillRect(W - 60, ly - 9, 58, 18);
-    ctx.fillStyle = light ? "#fff" : "#000";
+    ctx.fillStyle = "#f5f6f3";
     ctx.font = "700 9px JetBrains Mono, monospace";
     ctx.textAlign = "center";
     ctx.fillText(fp(lastC.c, pair.sym), W - 31, ly + 4);
