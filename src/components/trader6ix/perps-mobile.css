@@ -110,73 +110,58 @@
 .pm-tophead {
   background: var(--pm-bg);
   border-bottom: 1px solid var(--pm-bd);
-  padding: 7px 16px;
-  padding-top: calc(7px + env(safe-area-inset-top, 0px));
+  padding: 3px 12px;
+  padding-top: calc(3px + env(safe-area-inset-top, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   flex-shrink: 0;
+  min-height: 28px;
 }
 .pm-logo {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--pm-font-mono);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  color: var(--pm-accent);
+  gap: 7px;
   text-decoration: none;
+  min-height: 22px;
 }
-.pm-demo {
-  font-size: 8px;
-  letter-spacing: 1px;
-  padding: 1px 5px;
-  border-radius: 999px;
-  border: 1px solid var(--pm-amber);
-  color: var(--pm-amber);
-  font-weight: 600;
-}
-.pm-plat-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--pm-p1);
-  border: 1px solid var(--pm-bd);
-  border-radius: 20px;
-  padding: 4px 11px;
-  cursor: pointer;
-  text-align: left;
-}
-.pm-plat-chip:active {
-  opacity: 0.7;
-}
-.pm-plat-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+.pm-logo-mark {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  object-fit: cover;
   flex-shrink: 0;
 }
-.pm-plat-name {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
+/* Refined, compact wordmark: clean geometric sans, modest tracking, no glow. */
+.pm-wordmark {
+  font-family: var(--pm-font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
   color: var(--pm-text);
 }
-.pm-plat-chain {
-  display: block;
-  font-size: 9px;
-  color: var(--pm-text3);
-}
-.pm-icon-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--pm-p1);
-  border: 1px solid var(--pm-bd);
-  display: flex;
+.pm-venue {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--pm-bd);
+  background: var(--pm-p1);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pm-text2);
+  white-space: nowrap;
+}
+/* Neutral dot: names the configured venue, does not claim a live connection. */
+.pm-venue-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pm-text3);
 }
 
 /* screen */
@@ -343,26 +328,41 @@
 
 /* chart */
 .pm-chart-topbar {
-  padding: 7px 14px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 12px;
   border-bottom: 1px solid var(--pm-bd);
   flex-shrink: 0;
 }
-.pm-pair-row {
+.pm-pair-block {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 3px;
+  flex-direction: column;
+  gap: 1px;
+}
+.pm-stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-end;
+}
+.pm-stat-line {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
 }
 .pm-cp-sym {
   font-family: var(--pm-font-mono);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 500;
   color: var(--pm-text2);
   letter-spacing: 1px;
+  line-height: 1;
 }
 .pm-cp-price {
   font-family: var(--pm-font-mono);
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--pm-text);
   line-height: 1;
@@ -375,7 +375,6 @@
 .pm-cp-spread {
   font-size: 9px;
   color: var(--pm-text3);
-  margin-top: 1px;
 }
 .pm-ohlc {
   display: flex;
@@ -394,13 +393,14 @@
 .pm-tf-row {
   display: flex;
   gap: 3px;
-  padding: 5px 10px;
+  padding: 3px 8px;
   background: var(--pm-p1);
   border-bottom: 1px solid var(--pm-bd);
   flex-shrink: 0;
 }
 .pm-tf {
   padding: 4px 8px;
+  min-height: 26px;
   border-radius: 5px;
   font-family: var(--pm-font-mono);
   font-size: 10px;
@@ -1103,4 +1103,92 @@
   .pm-tf {
     transition: none;
   }
+}
+
+/* Positions / History summary: one compact row instead of a 2x2 block. */
+.pm-head-block {
+  padding: 4px 12px;
+}
+.pm-eq-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+.pm-eq-card {
+  padding: 5px 7px;
+  border-radius: 8px;
+  min-width: 0;
+}
+.pm-eq-label {
+  font-size: 8px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-eq-val {
+  font-size: 12px;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+.pm-eq-sub {
+  font-size: 8px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Open positions: two tight rows per position. */
+.pm-pad {
+  padding: 6px 12px;
+}
+.pm-pos {
+  padding: 6px 9px;
+  margin-bottom: 5px;
+}
+.pm-pos-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pm-pos-top .pm-dir {
+  padding: 1px 6px;
+  font-size: 9px;
+}
+.pm-pos-size {
+  font-family: var(--pm-font-mono);
+  font-size: 10px;
+  color: var(--pm-text2);
+}
+.pm-pos-pl {
+  margin-left: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.pm-pos-pl .pm-pl-val {
+  font-size: 13px;
+}
+.pm-pos-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.pm-cell-grid-pos {
+  flex: 1;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+}
+.pm-cell-grid-pos .pm-cell-val {
+  font-size: 10px;
+  white-space: nowrap;
+}
+.pm-close-sm {
+  width: auto;
+  flex-shrink: 0;
+  min-height: 30px;
+  padding: 4px 12px;
 }

@@ -9,7 +9,7 @@
  * real mobile browser viewport. The reference's mock phone frame and fake
  * status bar are intentionally NOT reproduced — the real browser supplies those.
  *
- * Everything here is DEMO data held in local state. No order, fee, wallet or
+ * Everything here is placeholder data held in local state. No order, fee, wallet or
  * network call is made; buttons only show the same confirmations the reference
  * does. It is mounted at /perps/preview only; /perps still says "Coming soon".
  */
@@ -17,6 +17,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "@/components/trader6ix/theme";
+import { perpsVenueLabel } from "@/lib/perps-provider";
 import "./perps-mobile.css";
 
 type Cat = "fx" | "crypto" | "comm";
@@ -30,11 +31,10 @@ type Pair = {
   spread: number;
 };
 
-const PLATFORMS = [
-  { name: "Avantis", chain: "Base Network", accent: "#00D4FF", accentL: "#0099BB", soon: false },
-  { name: "Hibachi", chain: "Arc Network", accent: "#C85A1A", accentL: "#A34515", soon: true },
-  { name: "Hyperliquid", chain: "HyperEVM", accent: "#34D399", accentL: "#16A34A", soon: true },
-];
+const VENUE_LABEL = perpsVenueLabel();
+// Chart accents per theme (the canvas needs concrete colours).
+const ACCENT = { dark: "#00D4FF", light: "#0099BB" };
+
 
 const SEED_PAIRS: Pair[] = [
   { sym: "EUR/USD", cat: "fx", icon: "€/$", bid: 1.08542, ask: 1.0855, chg: 0.12, spread: 0.8 },
@@ -177,7 +177,6 @@ export function PerpsMobile() {
   const [mktTab, setMktTab] = useState<"all" | Cat>("all");
   const [filter, setFilter] = useState("");
   const [tf, setTf] = useState("M1");
-  const [platIdx, setPlatIdx] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [sizeMode, setSizeMode] = useState<"lots" | "leverage">("lots");
@@ -190,8 +189,7 @@ export function PerpsMobile() {
   const [risk, setRisk] = useState({ bal: "5000", pct: "1", entry: "1.08542", stop: "1.07500" });
 
   const sel = pairs.find((p) => p.sym === selSym) ?? pairs[0];
-  const plat = PLATFORMS[platIdx];
-  const accent = light ? plat.accentL : plat.accent;
+  const accent = light ? ACCENT.light : ACCENT.dark;
 
   const toastTimer = useRef<number | undefined>(undefined);
   const showToast = useCallback((msg: string, col: string) => {
@@ -247,18 +245,12 @@ export function PerpsMobile() {
     };
   }, [risk, sel.sym]);
 
-  const cyclePlatform = () => {
-    const next = (platIdx + 1) % PLATFORMS.length;
-    setPlatIdx(next);
-    if (PLATFORMS[next].soon) showToast(`${PLATFORMS[next].name} — coming soon`, "#F59E0B");
-  };
-
   const execute = (dir: "BUY" | "SELL") => {
     // Demo only: mirrors the reference's confirmation, sends nothing anywhere.
     setSheetOpen(false);
     showToast(
-      `${OT_TOAST[orderType]} ${dir} ${sel.sym} @ ${fp(dir === "BUY" ? sel.ask : sel.bid, sel.sym)} · demo`,
-      dir === "BUY" ? (light ? "#16A34A" : "#22C55E") : light ? "#DC2626" : "#EF4444",
+      `${OT_TOAST[orderType]} ${dir} ${sel.sym} not sent — Perps trading isn't connected yet`,
+      "#F59E0B",
     );
   };
 
@@ -305,25 +297,16 @@ export function PerpsMobile() {
   return (
     <div
       className={`pm-root ${light ? "pm-light" : "pm-dark"}`}
-      style={{ ["--pm-accent" as string]: accent }}
     >
       <header className="pm-tophead">
-        <Link href="/spot" className="pm-logo" aria-label="Back to Spot">
-          TRADER6IX
-          <span className="pm-demo">DEMO</span>
+        <Link href="/spot" className="pm-logo" aria-label="TRADER6IX — back to Spot">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/trader6ix-logo.png" alt="" className="pm-logo-mark" />
+          <span className="pm-wordmark">TRADER6IX</span>
         </Link>
-        <button type="button" className="pm-plat-chip" onClick={cyclePlatform}>
-          <span className="pm-plat-dot" style={{ background: accent }} />
-          <span>
-            <span className="pm-plat-name">{plat.name}</span>
-            <span className="pm-plat-chain">{plat.chain}</span>
-          </span>
-        </button>
-        <span className="pm-icon-btn" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--pm-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 12V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" />
-            <path d="M16 12h4v4h-4a2 2 0 0 1 0-4z" />
-          </svg>
+        <span className="pm-venue" title={VENUE_LABEL}>
+          <span className="pm-venue-dot" aria-hidden="true" />
+          {VENUE_LABEL}
         </span>
       </header>
 
@@ -390,7 +373,7 @@ export function PerpsMobile() {
 
         {page === "chart" && (
           <section className="pm-page">
-            <ChartHeader sel={sel} platName={plat.name} />
+            <ChartHeader sel={sel} />
             <div className="pm-tf-row">
               {TIMEFRAMES.map((t) => (
                 <button
@@ -421,9 +404,7 @@ export function PerpsMobile() {
                 <div className="pm-sheet-hdr">
                   <div>
                     <div className="pm-sheet-pair">{sel.sym}</div>
-                    <div className="pm-sheet-plat">
-                      {plat.name} · {plat.chain}
-                    </div>
+                    <div className="pm-sheet-plat">{VENUE_LABEL}</div>
                   </div>
                   <button type="button" className="pm-sheet-close" onClick={() => setSheetOpen(false)} aria-label="Close trade panel">
                     ×
@@ -528,7 +509,7 @@ export function PerpsMobile() {
                   </button>
                 </div>
                 <div className="pm-fee-note">
-                  Fee: <span>0.05 USDC flat</span> · <span>{plat.name} · {plat.chain.replace(" Network", "")}</span>
+                  Fee: <span>0.05 USDC flat</span> · <span>{VENUE_LABEL}</span>
                 </div>
               </div>
             </div>
@@ -542,12 +523,12 @@ export function PerpsMobile() {
                 <div className="pm-eq-card">
                   <div className="pm-eq-label">Balance</div>
                   <div className="pm-eq-val">$4,820.00</div>
-                  <div className="pm-eq-sub pm-up">+7.1% from start</div>
+                  <div className="pm-eq-sub pm-up">+7.1% start</div>
                 </div>
                 <div className="pm-eq-card">
                   <div className="pm-eq-label">Equity</div>
                   <div className="pm-eq-val">${(4820 + totalPl).toFixed(2)}</div>
-                  <div className="pm-eq-sub pm-up">+9.8% all time</div>
+                  <div className="pm-eq-sub pm-up">+9.8% all-time</div>
                 </div>
                 <div className="pm-eq-card">
                   <div className="pm-eq-label">Floating P/L</div>
@@ -570,38 +551,38 @@ export function PerpsMobile() {
               {positions.map((p) => {
                 const pct = (p.pl / p.openVal) * 100;
                 const cls = p.pl >= 0 ? "pm-up" : "pm-dn";
+                const mark = pairs.find((x) => x.sym === p.sym);
                 return (
-                  <div className="pm-card" key={p.id}>
-                    <div className="pm-card-top">
-                      <div className="pm-inline">
-                        <span className="pm-card-sym">{p.sym}</span>
-                        <span className={`pm-dir ${p.dir === "BUY" ? "pm-dir-buy" : "pm-dir-sell"}`}>{p.dir}</span>
-                      </div>
-                      <div className="pm-right">
-                        <div className={`pm-pl-val ${cls}`}>
+                  <div className="pm-card pm-pos" key={p.id}>
+                    <div className="pm-pos-top">
+                      <span className="pm-card-sym">{p.sym}</span>
+                      <span className={`pm-dir ${p.dir === "BUY" ? "pm-dir-buy" : "pm-dir-sell"}`}>{p.dir}</span>
+                      <span className="pm-pos-size">{p.lots} lots</span>
+                      <span className="pm-pos-pl">
+                        <span className={`pm-pl-val ${cls}`}>
                           {p.pl >= 0 ? "+" : "-"}${Math.abs(p.pl).toFixed(2)}
-                        </div>
-                        <div className={`pm-pl-pct ${cls}`}>
+                        </span>
+                        <span className={`pm-pl-pct ${cls}`}>
                           {pct >= 0 ? "+" : ""}
                           {pct.toFixed(2)}%
-                        </div>
+                        </span>
+                      </span>
+                    </div>
+                    <div className="pm-pos-bottom">
+                      <div className="pm-cell-grid pm-cell-grid-pos">
+                        <Cell label="Entry" value={fp(p.open, p.sym)} />
+                        <Cell label="Mark" value={fp(mark ? (p.dir === "BUY" ? mark.bid : mark.ask) : undefined, p.sym)} />
+                        <Cell label="SL" value={String(p.sl)} cls="pm-dn" />
+                        <Cell label="TP" value={String(p.tp)} cls="pm-up" />
                       </div>
+                      <button
+                        type="button"
+                        className="pm-close-pos pm-close-sm"
+                        onClick={() => showToast("Close not sent — Perps trading isn't connected yet", "#F59E0B")}
+                      >
+                        Close
+                      </button>
                     </div>
-                    <div className="pm-cell-grid">
-                      <Cell label="Lots" value={String(p.lots)} />
-                      <Cell label="Open" value={fp(p.open, p.sym)} />
-                      <Cell label="Platform" value={plat.name} />
-                      <Cell label="SL" value={String(p.sl)} cls="pm-dn" />
-                      <Cell label="TP" value={String(p.tp)} cls="pm-up" />
-                      <Cell label="Fee" value="0.05 USDC" />
-                    </div>
-                    <button
-                      type="button"
-                      className="pm-close-pos"
-                      onClick={() => showToast(`Closing position · ${plat.name} · demo`, "#F59E0B")}
-                    >
-                      Close position
-                    </button>
                   </div>
                 );
               })}
@@ -802,39 +783,37 @@ function buildCandles(sym: string, tf: string, base: number) {
   return out;
 }
 
-function ChartHeader({ sel, platName }: { sel: Pair; platName: string }) {
+function ChartHeader({ sel }: { sel: Pair }) {
   // O / H / L come from the same deterministic series the canvas draws.
   const { o, h, l } = useOhl(sel);
   return (
     <div className="pm-chart-topbar">
-      <div className="pm-pair-row">
-        <div>
-          <div className="pm-cp-sym">{sel.sym}</div>
-          <div className="pm-cp-price">{fp(sel.bid, sel.sym)}</div>
-        </div>
-        <div className="pm-right">
-          <div className={`pm-cp-chg ${sel.chg >= 0 ? "pm-up" : "pm-dn"}`}>
+      <div className="pm-pair-block">
+        <div className="pm-cp-sym">{sel.sym}</div>
+        <div className="pm-cp-price">{fp(sel.bid, sel.sym)}</div>
+      </div>
+      <div className="pm-right pm-stat-block">
+        <div className="pm-stat-line">
+          <span className={`pm-cp-chg ${sel.chg >= 0 ? "pm-up" : "pm-dn"}`}>
             {sel.chg >= 0 ? "+" : ""}
             {sel.chg.toFixed(2)}%
-          </div>
-          <div className="pm-cp-spread">
-            Spread {sel.spread} · {platName}
-          </div>
+          </span>
+          <span className="pm-cp-spread">Spread {sel.spread}</span>
         </div>
-      </div>
-      <div className="pm-ohlc">
-        <span className="pm-ohlc-item">
-          <span className="pm-ohlc-lbl">O </span>
-          <span className="pm-ohlc-val">{fp(o, sel.sym)}</span>
-        </span>
-        <span className="pm-ohlc-item">
-          <span className="pm-ohlc-lbl">H </span>
-          <span className="pm-ohlc-val">{fp(h, sel.sym)}</span>
-        </span>
-        <span className="pm-ohlc-item">
-          <span className="pm-ohlc-lbl">L </span>
-          <span className="pm-ohlc-val">{fp(l, sel.sym)}</span>
-        </span>
+        <div className="pm-ohlc">
+          <span className="pm-ohlc-item">
+            <span className="pm-ohlc-lbl">O </span>
+            <span className="pm-ohlc-val">{fp(o, sel.sym)}</span>
+          </span>
+          <span className="pm-ohlc-item">
+            <span className="pm-ohlc-lbl">H </span>
+            <span className="pm-ohlc-val">{fp(h, sel.sym)}</span>
+          </span>
+          <span className="pm-ohlc-item">
+            <span className="pm-ohlc-lbl">L </span>
+            <span className="pm-ohlc-val">{fp(l, sel.sym)}</span>
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -887,9 +866,9 @@ function CandleChart({ pair, tf, light, accent }: { pair: Pair; tf: string; ligh
     const dn = light ? "#DC2626" : "#EF4444";
     const bw = W / BARS;
 
-    // The last candle follows the live (demo) price; the rest are fixed.
-    // The whole demo series is anchored so its last close equals the current
-    // (demo) bid — the chart's price tag always agrees with the header price.
+    // The last candle follows the live simulated price; the rest are fixed.
+    // The whole simulated series is anchored so its last close equals the current
+    // simulated bid — the chart's price tag always agrees with the header price.
     const offset = pair.bid - candles[BARS - 1].c;
     const series = candles.map((c) => ({ o: c.o + offset, c: c.c + offset, h: c.h + offset, l: c.l + offset }));
     const lastC = series[BARS - 1];
@@ -974,7 +953,7 @@ function CandleChart({ pair, tf, light, accent }: { pair: Pair; tf: string; ligh
 
   return (
     <div className="pm-chart-wrap" ref={wrapRef}>
-      <canvas ref={canvasRef} className="pm-canvas" role="img" aria-label={`${pair.sym} demo candlestick chart, ${tf}`} />
+      <canvas ref={canvasRef} className="pm-canvas" role="img" aria-label={`${pair.sym} candlestick chart, ${tf}`} />
     </div>
   );
 }
