@@ -1386,3 +1386,287 @@
 .pm-empty-cta:active {
   filter: brightness(0.92);
 }
+
+/* ==========================================================================
+   Desktop workspace (≥701px) — same components and state as the phone
+   terminal, arranged as markets | chart + account | order ticket.
+   ========================================================================== */
+.pm-desk .pm-tophead {
+  padding: 8px 20px;
+  min-height: 52px;
+  gap: 20px;
+  justify-content: flex-start;
+}
+.pm-desk .pm-logo-mark {
+  height: 28px;
+  width: 28px;
+}
+.pm-desk .pm-wordmark {
+  font-size: 17px;
+}
+.pm-desk-links {
+  display: flex;
+  gap: 4px;
+  margin-left: 12px;
+}
+.pm-desk-links a {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--pm-text2);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.pm-desk-links a:hover {
+  color: var(--pm-text);
+  background: var(--pm-p1);
+}
+.pm-desk-links a:focus-visible,
+.pm-acct-btn:focus-visible,
+.pm-acct-wallet:focus-visible,
+.pm-acct-item:focus-visible,
+.pm-desk-tab:focus-visible {
+  outline: 2px solid var(--pm-accent);
+  outline-offset: 2px;
+}
+.pm-desk-links a.active {
+  color: var(--pm-text);
+  background: var(--pm-p1);
+  border-color: var(--pm-bd);
+}
+.pm-desk .pm-venue {
+  margin-left: auto;
+}
+.pm-desk .pm-venue + .pm-acct {
+  margin-left: 0;
+}
+.pm-acct {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pm-acct-btn,
+.pm-acct-wallet {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--pm-bd);
+  background: var(--pm-p1);
+  color: var(--pm-text);
+  font-size: 12px;
+  font-family: var(--pm-font-mono);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.pm-acct-btn {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+  font-size: 14px;
+}
+.pm-acct-btn:hover,
+.pm-acct-wallet:hover {
+  border-color: var(--pm-accent);
+}
+.pm-acct-menu {
+  position: absolute;
+  right: 0;
+  top: 40px;
+  width: 260px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--pm-p1);
+  border: 1px solid var(--pm-bd);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  z-index: 300;
+}
+.pm-acct-title {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pm-text3);
+  padding: 8px 8px 4px;
+}
+.pm-acct-item {
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pm-acct-item:hover {
+  background: var(--pm-p2);
+}
+.pm-acct-out {
+  color: var(--pm-red);
+  margin-top: 4px;
+  border-top: 1px solid var(--pm-bd);
+  border-radius: 0 0 8px 8px;
+}
+.pm-acct-bal {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 8px;
+  font-family: var(--pm-font-mono);
+  font-size: 12px;
+  color: var(--pm-text2);
+}
+.pm-acct-empty {
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--pm-text3);
+}
+
+.pm-desk-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr) minmax(300px, 340px);
+}
+.pm-desk-markets {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--pm-bd);
+}
+.pm-desk-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.pm-desk-chart {
+  flex: 1 1 58%;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--pm-bd);
+}
+.pm-desk-chart .pm-chart-topbar {
+  padding: 10px 18px;
+}
+.pm-desk-chart .pm-tf-row {
+  margin: 0 18px 8px;
+}
+.pm-desk-lower {
+  flex: 1 1 42%;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+.pm-desk-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--pm-bd);
+  flex-shrink: 0;
+}
+.pm-desk-tab {
+  padding: 10px 16px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--pm-tab-idle);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.pm-desk-tab:hover {
+  color: var(--pm-text);
+}
+.pm-desk-tab.active {
+  color: var(--pm-text);
+  border-bottom-color: var(--pm-accent);
+}
+.pm-desk-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.pm-desk-panel > .pm-page {
+  overflow: visible;
+  flex: none;
+}
+.pm-desk-panel .pm-eq-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.pm-desk-panel .pm-list {
+  overflow: visible;
+}
+.pm-desk-trade {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 16px;
+  border-left: 1px solid var(--pm-bd);
+  background: var(--pm-p1);
+}
+.pm-desk-trade .pm-sheet-hdr {
+  padding: 0 0 10px;
+}
+.pm-desk-form {
+  flex: 1;
+}
+.pm-desk .pm-toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  right: auto;
+  width: max-content;
+  max-width: 520px;
+  transform: translate(-50%, -60px);
+}
+.pm-desk .pm-toast.show {
+  transform: translate(-50%, 0);
+}
+.pm-desk .pm-exec-row {
+  position: static;
+}
+.pm-desk .pm-exec-sell,
+.pm-desk .pm-exec-buy,
+.pm-desk .pm-close-pos,
+.pm-desk .pm-ot-btn,
+.pm-desk .pm-sz-btn {
+  cursor: pointer;
+}
+@media (max-width: 1100px) {
+  .pm-desk-grid {
+    grid-template-columns: 240px minmax(0, 1fr) 300px;
+  }
+  .pm-desk-panel .pm-eq-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.pm-desk-chart .pm-cp-sym {
+  font-size: 12px;
+}
+.pm-desk-chart .pm-cp-price {
+  font-size: 28px;
+}
+.pm-desk-chart .pm-cp-chg {
+  font-size: 14px;
+}
+.pm-desk-chart .pm-cp-spread {
+  font-size: 11px;
+}
+.pm-desk-chart .pm-ohlc-item {
+  font-size: 12px;
+}
+.pm-desk-chart .pm-chart-wrap {
+  margin: 0 18px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--pm-bd);
+}
+.pm-desk-panel .pm-hist-stats {
+  padding: 10px 14px 0;
+}

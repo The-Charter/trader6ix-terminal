@@ -15,9 +15,11 @@
  */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTheme } from "@/components/trader6ix/theme";
-import { useSession } from "@/components/trader6ix/session";
+import { toggleTheme, useTheme } from "@/components/trader6ix/theme";
+import { usePrivyOptional } from "@/components/trader6ix/privy-auth";
+import { clearSession, shortAddress, useSession } from "@/components/trader6ix/session";
 import { usePortfolioData, type TradeItem } from "@/components/trader6ix/use-portfolio";
 import { perpsVenueLabel } from "@/lib/perps-provider";
 import "./perps-mobile.css";
@@ -163,6 +165,15 @@ const NAV: { id: Page; label: string }[] = [
 export function PerpsMobile() {
   const theme = useTheme();
   const light = theme === "light";
+  // Desktop layout above the phone breakpoint; phones keep the single-screen terminal.
+  const [desk, setDesk] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 701px)");
+    const sync = () => setDesk(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const [page, setPage] = useState<Page>("markets");
   const [pairs, setPairs] = useState<Pair[]>(SEED_PAIRS);
@@ -267,7 +278,7 @@ export function PerpsMobile() {
       className="pm-mkt-row"
       onClick={() => {
         setSelSym(p.sym);
-        go("chart");
+        if (!desk) go("chart");
       }}
     >
       <span className="pm-mkt-icon">{p.icon}</span>
@@ -287,40 +298,8 @@ export function PerpsMobile() {
     </button>
   );
 
-  return (
-    <div
-      className={`pm-root ${light ? "pm-light" : "pm-dark"}`}
-    >
-      <header className="pm-tophead">
-        <Link href="/spot" className="pm-logo" aria-label="TRADER6IX — back to Spot">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/trader6ix-logo.png" alt="" className="pm-logo-mark" />
-          <span className="pm-wordmark">TRADER6IX</span>
-        </Link>
-        <span className="pm-venue" title={VENUE_LABEL}>
-          <span className="pm-venue-dot" aria-hidden="true" />
-          {VENUE_LABEL}
-        </span>
-      </header>
-
-      <div className="pm-screen">
-        <div
-          className={`pm-toast${toast ? " show" : ""}`}
-          style={
-            toast
-              ? {
-                  background: toast.col,
-                  color: ["#22C55E", "#16A34A", "#F59E0B"].includes(toast.col) ? "#000" : "#fff",
-                }
-              : undefined
-          }
-          role="status"
-        >
-          {toast?.msg}
-        </div>
-
-        {page === "markets" && (
-          <section className="pm-page">
+  const marketsBody = (
+    <>
             <div className="pm-search-wrap">
               <input
                 className="pm-search"
@@ -361,11 +340,10 @@ export function PerpsMobile() {
                   })
                 : visiblePairs.map(priceRow)}
             </div>
-          </section>
-        )}
-
-        {page === "chart" && (
-          <section className="pm-page">
+    </>
+  );
+  const chartBody = (
+    <>
             <ChartHeader sel={sel} />
             <div className="pm-tf-row">
               {TIMEFRAMES.map((t) => (
@@ -380,29 +358,10 @@ export function PerpsMobile() {
               ))}
             </div>
             <CandleChart pair={sel} tf={tf} light={light} accent={accent} />
-            <div className="pm-trade-strip">
-              <button type="button" className="pm-trade-handle" onClick={() => setSheetOpen((v) => !v)} aria-expanded={sheetOpen}>
-                <span className={`pm-tth-arrow${sheetOpen ? " up" : ""}`}>▲</span>
-                <span className="pm-tth-label">Trade</span>
-                <span className="pm-tth-prices">
-                  <span className="pm-tth-sell">Sell {fp(sel.bid, sel.sym)}</span>
-                  <span className="pm-tth-buy">Buy {fp(sel.ask, sel.sym)}</span>
-                </span>
-              </button>
-            </div>
-
-            <div className={`pm-sheet${sheetOpen ? " open" : ""}`} aria-hidden={!sheetOpen}>
-              <div className="pm-sheet-scroll">
-                <div className="pm-sheet-handle" />
-                <div className="pm-sheet-hdr">
-                  <div>
-                    <div className="pm-sheet-pair">{sel.sym}</div>
-                    <div className="pm-sheet-plat">{VENUE_LABEL}</div>
-                  </div>
-                  <button type="button" className="pm-sheet-close" onClick={() => setSheetOpen(false)} aria-label="Close trade panel">
-                    ×
-                  </button>
-                </div>
+    </>
+  );
+  const tradeForm = (
+    <>
                 <div className="pm-ot-grid">
                   <button
                     type="button"
@@ -504,13 +463,10 @@ export function PerpsMobile() {
                 <div className="pm-fee-note">
                   Fee: <span>0.05 USDC flat</span> · <span>{VENUE_LABEL}</span>
                 </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {page === "positions" && (
-          <section className="pm-page">
+    </>
+  );
+  const positionsBody = (
+    <>
             <div className="pm-head-block">
               <div className="pm-eq-grid">
                 <div className="pm-eq-card">
@@ -580,13 +536,10 @@ export function PerpsMobile() {
                 );
               })}
             </div>
-          </section>
-        )}
-
-        {page === "history" && <HistoryPanel />}
-
-        {page === "tools" && (
-          <section className="pm-page">
+    </>
+  );
+  const toolsBody = (
+    <>
             <div className="pm-list pm-tools">
               <div className="pm-tsect-title">Risk calculator</div>
               <div className="pm-tool-card pm-tool-pad">
@@ -667,6 +620,158 @@ export function PerpsMobile() {
                 </div>
               </div>
             </div>
+    </>
+  );
+
+  const toastEl = (
+    <div
+      className={`pm-toast${toast ? " show" : ""}`}
+      style={
+        toast
+          ? {
+              background: toast.col,
+              color: ["#22C55E", "#16A34A", "#F59E0B"].includes(toast.col) ? "#000" : "#fff",
+            }
+          : undefined
+      }
+      role="status"
+    >
+      {toast?.msg}
+    </div>
+  );
+
+  const headerEl = (
+    <header className="pm-tophead">
+      <Link href="/spot" className="pm-logo" aria-label="TRADER6IX — back to Spot">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/trader6ix-logo.png" alt="" className="pm-logo-mark" />
+        <span className="pm-wordmark">TRADER6IX</span>
+      </Link>
+      {desk && (
+        <nav className="pm-desk-links" aria-label="Sections">
+          <Link href="/spot">Spot</Link>
+          <Link href="/perps/preview" className="active" aria-current="page">
+            Perps
+          </Link>
+          <Link href="/portfolio">Portfolio</Link>
+        </nav>
+      )}
+      <span className="pm-venue" title={VENUE_LABEL}>
+        <span className="pm-venue-dot" aria-hidden="true" />
+        {VENUE_LABEL}
+      </span>
+      {desk && <DeskAccount light={light} />}
+    </header>
+  );
+
+  if (desk) {
+    const lower: Page = page === "history" || page === "tools" ? page : "positions";
+    return (
+      <div className={`pm-root pm-desk ${light ? "pm-light" : "pm-dark"}`}>
+        {headerEl}
+        <div className="pm-desk-grid">
+          <aside className="pm-desk-markets" aria-label="Markets">
+            <section className="pm-page">{marketsBody}</section>
+          </aside>
+          <main className="pm-desk-main">
+            <section className="pm-desk-chart" aria-label="Chart">
+              {chartBody}
+            </section>
+            <section className="pm-desk-lower" aria-label="Account">
+              <div className="pm-desk-tabs" role="tablist">
+                {(["positions", "history", "tools"] as const).map((id) => (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={lower === id}
+                    key={id}
+                    className={`pm-desk-tab${lower === id ? " active" : ""}`}
+                    onClick={() => setPage(id)}
+                  >
+                    {id === "positions" ? "Positions" : id === "history" ? "History" : "Tools"}
+                  </button>
+                ))}
+              </div>
+              <div className="pm-desk-panel">
+                {lower === "positions" && <section className="pm-page">{positionsBody}</section>}
+                {lower === "history" && <HistoryPanel />}
+                {lower === "tools" && <section className="pm-page">{toolsBody}</section>}
+              </div>
+            </section>
+          </main>
+          <aside className="pm-desk-trade" aria-label="Order ticket">
+            <div className="pm-sheet-hdr">
+              <div>
+                <div className="pm-sheet-pair">{sel.sym}</div>
+                <div className="pm-sheet-plat">{VENUE_LABEL}</div>
+              </div>
+            </div>
+            <div className="pm-desk-form">{tradeForm}</div>
+          </aside>
+        </div>
+        {toastEl}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`pm-root ${light ? "pm-light" : "pm-dark"}`}
+    >
+      {headerEl}
+
+      <div className="pm-screen">
+        {toastEl}
+
+        {page === "markets" && (
+          <section className="pm-page">
+              {marketsBody}
+          </section>
+        )}
+
+        {page === "chart" && (
+          <section className="pm-page">
+            {chartBody}
+            <div className="pm-trade-strip">
+              <button type="button" className="pm-trade-handle" onClick={() => setSheetOpen((v) => !v)} aria-expanded={sheetOpen}>
+                <span className={`pm-tth-arrow${sheetOpen ? " up" : ""}`}>▲</span>
+                <span className="pm-tth-label">Trade</span>
+                <span className="pm-tth-prices">
+                  <span className="pm-tth-sell">Sell {fp(sel.bid, sel.sym)}</span>
+                  <span className="pm-tth-buy">Buy {fp(sel.ask, sel.sym)}</span>
+                </span>
+              </button>
+            </div>
+
+            <div className={`pm-sheet${sheetOpen ? " open" : ""}`} aria-hidden={!sheetOpen}>
+              <div className="pm-sheet-scroll">
+                <div className="pm-sheet-handle" />
+                <div className="pm-sheet-hdr">
+                  <div>
+                    <div className="pm-sheet-pair">{sel.sym}</div>
+                    <div className="pm-sheet-plat">{VENUE_LABEL}</div>
+                  </div>
+                  <button type="button" className="pm-sheet-close" onClick={() => setSheetOpen(false)} aria-label="Close trade panel">
+                    ×
+                  </button>
+                </div>
+                {tradeForm}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {page === "positions" && (
+          <section className="pm-page">
+            {positionsBody}
+          </section>
+        )}
+
+        {page === "history" && <HistoryPanel />}
+
+        {page === "tools" && (
+          <section className="pm-page">
+            {toolsBody}
           </section>
         )}
       </div>
@@ -685,6 +790,102 @@ export function PerpsMobile() {
           </button>
         ))}
       </nav>
+    </div>
+  );
+}
+
+/* --- desktop account controls: wallet, balances, disconnect, theme ------- */
+
+function DeskAccount({ light }: { light: boolean }) {
+  const session = useSession();
+  const router = useRouter();
+  const privy = usePrivyOptional();
+  const address = session?.wallet ?? null;
+  const { portfolio } = usePortfolioData(address);
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const signOut = () => {
+    clearSession();
+    void privy?.logout().catch(() => {});
+    router.replace("/auth");
+  };
+  const copy = async () => {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+
+  return (
+    <div className="pm-acct" ref={ref}>
+      <button
+        type="button"
+        className="pm-acct-btn"
+        onClick={() => toggleTheme()}
+        aria-label={light ? "Switch to dark theme" : "Switch to light theme"}
+        title={light ? "Dark theme" : "Light theme"}
+      >
+        {light ? "☾" : "☀"}
+      </button>
+      {address ? (
+        <>
+          <button
+            type="button"
+            className="pm-acct-wallet"
+            aria-haspopup="true"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+          >
+            {shortAddress(address)}
+          </button>
+          {open && (
+            <div className="pm-acct-menu" role="menu">
+              <div className="pm-acct-title">Wallet</div>
+              <button type="button" role="menuitem" className="pm-acct-item" onClick={copy}>
+                {copied ? "Copied" : "Copy address"}
+              </button>
+              <div className="pm-acct-title">Balances</div>
+              {portfolio?.balances?.length ? (
+                portfolio.balances.map((b) => (
+                  <div className="pm-acct-bal" key={b.symbol}>
+                    <span>{b.symbol}</span>
+                    <span>{b.amount}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="pm-acct-empty">No balances available</div>
+              )}
+              <button type="button" role="menuitem" className="pm-acct-item pm-acct-out" onClick={signOut}>
+                Disconnect
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <Link href="/auth" className="pm-acct-wallet">
+          Connect wallet
+        </Link>
+      )}
     </div>
   );
 }
