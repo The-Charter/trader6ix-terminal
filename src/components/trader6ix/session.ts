@@ -2,7 +2,10 @@
 
 import { useSyncExternalStore } from "react";
 
-/** Where a finished sign-in lands. Spot — Perps is still "coming soon". */
+/**
+ * Where a "Get Started" sign-in lands (marketing pages). Sign-in from inside the
+ * app keeps the user on the screen they were on. Spot — Perps is still "coming soon".
+ */
 export const AUTH_REDIRECT_PATH = "/spot" as const;
 
 const STORAGE_KEY = "trader6ix-session";

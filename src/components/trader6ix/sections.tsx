@@ -15,6 +15,7 @@ import {
   Minus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConnectWalletButton } from "@/components/trader6ix/connect-wallet-button";
 import { images } from "@/assets/images";
 import { partners } from "@/assets/partners";
 
@@ -46,11 +47,9 @@ export function Hero() {
             precision.
           </p>
           <div className="hero-actions">
-            <Button variant="hero" size="hero" asChild>
-              <Link href="/auth">
-                Get Started <ArrowUpRight />
-              </Link>
-            </Button>
+            <ConnectWalletButton variant="hero" size="hero">
+              Get Started <ArrowUpRight />
+            </ConnectWalletButton>
             <Button variant="orange" size="hero" asChild>
               <Link href="/features">
                 <Play fill="currentColor" /> How it works
@@ -392,7 +391,8 @@ export function FAQ() {
     </section>
   );
 }
-export function CTA({ to = "/contact" }: { to?: string }) {
+/** `connect` makes "Get Started" open the wallet modal instead of linking to `to`. */
+export function CTA({ to = "/contact", connect = false }: { to?: string; connect?: boolean }) {
   return (
     <section className="cta">
       <img src={images[15]} className="cta-background" alt="" />
@@ -403,11 +403,17 @@ export function CTA({ to = "/contact" }: { to?: string }) {
           Connect your wallet in minutes and start exploring spot markets, perpetuals, real-time
           analytics, and risk-management tools on {ARC_CHAIN_NAME}.
         </p>
-        <Button variant="hero" size="hero" asChild>
-          <Link href={to}>
+        {connect ? (
+          <ConnectWalletButton variant="hero" size="hero">
             Get Started <ArrowUpRight />
-          </Link>
-        </Button>
+          </ConnectWalletButton>
+        ) : (
+          <Button variant="hero" size="hero" asChild>
+            <Link href={to}>
+              Get Started <ArrowUpRight />
+            </Link>
+          </Button>
+        )}
       </div>
     </section>
   );

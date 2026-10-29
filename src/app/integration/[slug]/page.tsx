@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SiteLayout } from "@/components/trader6ix/site-layout";
 import { CTA } from "@/components/trader6ix/sections";
-import { Button } from "@/components/ui/button";
+import { ConnectWalletButton } from "@/components/trader6ix/connect-wallet-button";
 
 type Props = { params: { slug: string } };
 
@@ -29,11 +28,11 @@ export default function IntegrationSlugPage({ params }: Props) {
         <h1 className="page-title">{name} Integration</h1>
         <div className="center-heading">
           <p className="page-intro">Bring your favorite tools together with Trader6ix.</p>
-          <Button asChild variant="orange" size="hero">
-            <Link href="/auth">Get Started</Link>
-          </Button>
+          <ConnectWalletButton variant="orange" size="hero">
+            Get Started
+          </ConnectWalletButton>
         </div>
-        <CTA to="/auth" />
+        <CTA connect />
       </main>
     </SiteLayout>
   );

@@ -15,7 +15,7 @@ export default function BlogPage() {
         <BlogHero />
         <BlogPosts />
         <div className="site-container">
-          <CTA to="/auth" />
+          <CTA connect />
         </div>
       </main>
     </SiteLayout>

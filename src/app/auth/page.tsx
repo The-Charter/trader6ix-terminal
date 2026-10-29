@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
-import { SignInPage } from "@/components/trader6ix/signin-page";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Sign In — Trader6ix",
-  description:
-    "Sign in to your Trader6ix account to access your trading dashboard and market analytics tools.",
-};
-
-export default function AuthPage() {
-  return <SignInPage />;
+/**
+ * There is no sign-in page: "Connect Wallet" opens the Privy modal wherever it
+ * is clicked. Old links and bookmarks to /auth land on the home page.
+ */
+export default function AuthRedirect() {
+  redirect("/");
 }

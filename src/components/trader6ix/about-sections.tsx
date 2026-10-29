@@ -255,7 +255,7 @@ export function AboutEvents() {
 export function AboutCTA() {
   return (
     <div className="site-container about-cta">
-      <CTA to="/auth" />
+      <CTA connect />
     </div>
   );
 }

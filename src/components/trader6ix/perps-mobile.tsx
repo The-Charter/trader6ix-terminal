@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toggleTheme, useTheme } from "@/components/trader6ix/theme";
-import { usePrivyOptional } from "@/components/trader6ix/privy-auth";
+import { useConnectWallet, usePrivyOptional } from "@/components/trader6ix/privy-auth";
 import { clearSession, shortAddress, useSession } from "@/components/trader6ix/session";
 import { usePortfolioData, type TradeItem } from "@/components/trader6ix/use-portfolio";
 import { perpsVenueLabel } from "@/lib/perps-provider";
@@ -800,6 +800,7 @@ function DeskAccount({ light }: { light: boolean }) {
   const session = useSession();
   const router = useRouter();
   const privy = usePrivyOptional();
+  const connectWallet = useConnectWallet();
   const address = session?.wallet ?? null;
   const { portfolio } = usePortfolioData(address);
   const [open, setOpen] = useState(false);
@@ -823,7 +824,7 @@ function DeskAccount({ light }: { light: boolean }) {
   const signOut = () => {
     clearSession();
     void privy?.logout().catch(() => {});
-    router.replace("/auth");
+    router.replace("/");
   };
   const copy = async () => {
     if (!address) return;
@@ -882,9 +883,9 @@ function DeskAccount({ light }: { light: boolean }) {
           )}
         </>
       ) : (
-        <Link href="/auth" className="pm-acct-wallet">
+        <button type="button" className="pm-acct-wallet" onClick={connectWallet}>
           Connect wallet
-        </Link>
+        </button>
       )}
     </div>
   );
@@ -912,6 +913,8 @@ function HistoryPanel() {
   const session = useSession();
   const address = session?.wallet ?? null;
   const { trades, loading, error, refresh, authExpired } = usePortfolioData(address);
+  const privy = usePrivyOptional();
+  const connectWallet = useConnectWallet();
 
   const closed = trades.filter((t) => t.pnl !== undefined);
   const wins = closed.filter((t) => Number(t.pnl) > 0).length;
@@ -934,9 +937,9 @@ function HistoryPanel() {
       title: "Connect your wallet",
       body: "Sign in to see the trades executed from your wallet.",
       action: (
-        <Link href="/auth" className="pm-empty-cta">
+        <button type="button" className="pm-empty-cta" onClick={connectWallet}>
           Connect wallet
-        </Link>
+        </button>
       ),
     };
   } else if (authExpired) {
@@ -944,9 +947,9 @@ function HistoryPanel() {
       title: "Your session has expired",
       body: "Sign in again to see your history. Nothing has changed on chain.",
       action: (
-        <Link href="/auth" className="pm-empty-cta">
+        <button type="button" className="pm-empty-cta" onClick={() => privy?.login()}>
           Sign in again
-        </Link>
+        </button>
       ),
     };
   } else if (loading && trades.length === 0) {

@@ -37,7 +37,7 @@ export default function HomePage() {
             <FAQ />
           </Reveal>
           <Reveal>
-            <CTA to="/auth" />
+            <CTA connect />
           </Reveal>
         </div>
       </main>

@@ -201,7 +201,7 @@ export function FeaturesSolutions() {
 export function FeaturesCTA() {
   return (
     <div className="site-container features-cta">
-      <CTA to="/auth" />
+      <CTA connect />
     </div>
   );
 }

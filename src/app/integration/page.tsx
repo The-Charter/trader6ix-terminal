@@ -21,7 +21,7 @@ export default function IntegrationPage() {
           <FAQ />
         </div>
         <div className="site-container">
-          <CTA to="/auth" />
+          <CTA connect />
         </div>
       </main>
     </SiteLayout>

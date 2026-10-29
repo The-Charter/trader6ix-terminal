@@ -8,15 +8,15 @@ import { ArrowRight, ChevronDown, LogOut, Menu, X } from "lucide-react";
 import { clearSession, useSession } from "@/components/trader6ix/session";
 import { usePrivyOptional } from "@/components/trader6ix/privy-auth";
 import { Button } from "@/components/ui/button";
+import { ConnectWalletButton } from "@/components/trader6ix/connect-wallet-button";
 import logo from "@/assets/trader6ix-logo.png.asset.json";
 
 const mainLinks = [
   { label: "Home", to: "/" },
   { label: "About", to: "/about" },
   { label: "Features", to: "/features" },
-  { label: "Sign Up", to: "/auth" },
 ] as const;
-const headerLinks = mainLinks.filter((l) => l.to !== "/auth");
+const headerLinks = mainLinks;
 const pageLinks = [
   { label: "Blog And News", to: "/blog", soon: false },
   { label: "Integration", to: "/integration", soon: true },
@@ -126,11 +126,13 @@ export function SiteHeader() {
             </Button>
           </>
         ) : (
-          <Button variant="hero" className="quote-button" asChild>
-            <Link href="/auth" onClick={() => setMenu(false)}>
-              Sign Up
-            </Link>
-          </Button>
+          <ConnectWalletButton
+            variant="hero"
+            className="quote-button"
+            onClick={() => setMenu(false)}
+          >
+            Connect Wallet
+          </ConnectWalletButton>
         )}
         <Button
           variant="ghost"
@@ -223,9 +225,7 @@ export function SiteFooter() {
       <div className="footer-links">
         <div className="footer-column">
           <h3>Quick Links</h3>
-          {mainLinks
-            .filter((l) => l.to != "/auth")
-            .map((l) => (
+          {mainLinks.map((l) => (
               <Link key={l.to} href={l.to}>
                 {l.label}
               </Link>

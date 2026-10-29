@@ -51,7 +51,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <PrivyProvider
       appId={appId}
       config={{
-        loginMethods: ["wallet", "email"],
+        // Wallet-only for now: social login comes later (Circle wallets under evaluation).
+        loginMethods: ["wallet"],
         appearance: { theme: "dark", accentColor: "#22D3EE" },
         defaultChain: ARC_CHAIN,
         supportedChains: [ARC_CHAIN],

@@ -46,7 +46,11 @@ import {
 import { usePortfolioData } from "@/components/trader6ix/use-portfolio";
 import { TokenIcon } from "@/components/trader6ix/token-icons";
 import { toggleTheme, useTheme } from "@/components/trader6ix/theme";
-import { usePrivyOptional, useWalletsOptional } from "@/components/trader6ix/privy-auth";
+import {
+  useConnectWallet,
+  usePrivyOptional,
+  useWalletsOptional,
+} from "@/components/trader6ix/privy-auth";
 import { apiFetch, newIdempotencyKey } from "@/components/trader6ix/api-client";
 import { ARC_CHAIN_ID, ARC_CHAIN_NAME, ARC_FAUCET_URL, IS_ARC_MAINNET, arcExplorerAddressUrl, arcExplorerTxUrl } from "@/lib/arc-network";
 import logo from "@/assets/trader6ix-logo.png.asset.json";
@@ -167,7 +171,7 @@ function AppBar() {
   const signOut = () => {
     clearSession();
     void privy?.logout().catch(() => {});
-    router.replace("/auth");
+    router.replace("/");
   };
   const copyAddress = async () => {
     let ok = true;
@@ -259,8 +263,7 @@ function AppBar() {
               if (!session) {
                 // login(), not connectWallet(): the latter only links an extra
                 // wallet to an already-authenticated user and never signs in.
-                if (privy) privy.login();
-                else router.push("/auth");
+                privy?.login();
                 return;
               }
               setWalletOpen((v) => !v);
@@ -901,7 +904,7 @@ export function PortfolioPage() {
   const { portfolio, activity, trades, loading, error, refresh, updatedAt, authExpired } =
     usePortfolioData(address);
   const privy = usePrivyOptional();
-  const router = useRouter();
+  const connectWallet = useConnectWallet();
   const [hidden, setHidden] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -982,9 +985,9 @@ export function PortfolioPage() {
         <div className="pf-connect">
           <h1>Connect your wallet</h1>
           <p>Connect a wallet to view your on-chain portfolio.</p>
-          <Link href="/auth" className="pf-connect-btn">
+          <button type="button" className="pf-connect-btn" onClick={connectWallet}>
             Connect wallet
-          </Link>
+          </button>
         </div>
       </div>
     );
@@ -1060,10 +1063,7 @@ export function PortfolioPage() {
             <button
               type="button"
               className="pf-empty-cta"
-              onClick={() => {
-                if (privy) privy.login();
-                else router.push("/auth");
-              }}
+              onClick={() => privy?.login()}
             >
               Sign in again
             </button>
