@@ -17,7 +17,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConnectWalletButton } from "@/components/trader6ix/connect-wallet-button";
 import { images } from "@/assets/images";
-import { partners } from "@/assets/partners";
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -30,21 +29,18 @@ export function Eyebrow({ children }: { children: React.ReactNode }) {
 export function Hero() {
   return (
     <section className="hero">
-      {/* Background and candlestick artwork hidden — plain black hero for now.
-      <img className="hero-bg" src={images[0]} alt="" />
-      <img className="hero-bg hero-candles" src={images[1]} alt="" />
-      */}
       <div className="hero-inner site-container">
         <div className="hero-copy">
-          <Eyebrow>Real-Time Trading Intelligence</Eyebrow>
+          <Eyebrow>Onchain trading, without the compromise</Eyebrow>
           <h1>
-            Analyze Better.
+            A Professional
             <br />
-            Trade Faster.
+            Trading Terminal.
           </h1>
           <p>
-            Everything you need to analyze markets, manage positions, and trade crypto with maximum
-            precision.
+            Trader6ix brings multiple markets and onchain liquidity into one familiar trading
+            environment: choose a market, analyze the chart, define your risk, execute, and manage
+            the position from one interface. Built on {ARC_CHAIN_NAME}.
           </p>
           <div className="hero-actions">
             <ConnectWalletButton variant="hero" size="hero">
@@ -57,13 +53,6 @@ export function Hero() {
             </Button>
           </div>
         </div>
-        {/* Side dashboard card hidden for now.
-        <img
-          className="hero-card"
-          src={images[2]}
-          alt="Trader6ix live trading dashboard showing crypto staking rewards and market performance"
-        />
-        */}
       </div>
     </section>
   );
@@ -120,65 +109,79 @@ export function CountUp({ value }: { value: string }) {
   }, [num, decimals]);
   return <strong ref={ref}>{m ? m[1] + text + m[3] : value}</strong>;
 }
-export function Trust() {
+type Status = "live" | "building" | "planned";
+const STATUS_LABEL: Record<Status, string> = {
+  live: "Live",
+  building: "In development",
+  planned: "Planned",
+};
+function StatusChip({ status }: { status: Status }) {
+  return <span className={`t6c-chip t6c-chip-${status}`}>{STATUS_LABEL[status]}</span>;
+}
+
+/** Current integrations only. Official logos have not been supplied yet, so the
+ * names are set as plain text — swap in the logo files when they arrive. */
+export function Integrations() {
   return (
-    <section className="trust site-container">
-      <div className="stats">
-        {(
-          [
-            ["50+", "Tradable Assets"],
-            ["10K+", "Market Signals"],
-            ["1.2K+", "Active Traders"],
-            ["50K+", "Simulated Trades"],
-            ["$25M+", "Demo Volume"],
-          ] as const
-        ).map(([v, l]) => (
-          <div className="stat" key={l}>
-            <CountUp value={v} />
-            <p>{l}</p>
-          </div>
-        ))}
+    <section className="t6c-section" aria-labelledby="t6c-integrations">
+      <div className="split-heading">
+        <h2 className="section-heading" id="t6c-integrations">
+          Current Integrations
+        </h2>
+        <p>The infrastructure Trader6ix is built around today.</p>
       </div>
-      <div className="partners">
-        <p>Trusted By 240+ Companies</p>
-        <div className="partner-logos">
-          <div className="partner-track">
-            {[0, 1].map((copy) => (
-              <div className="partner-set" key={copy} aria-hidden={copy === 1}>
-                {partners.map((src, i) => (
-                  <img key={i} src={src} alt={copy === 0 ? "Logoipsum partner" : ""} />
-                ))}
-              </div>
-            ))}
+      <div className="t6c-grid t6c-grid-2">
+        <article className="t6c-card">
+          <div className="t6c-card-top">
+            <span className="t6c-brand">Hibachi</span>
+            <StatusChip status="building" />
           </div>
-        </div>
+          <h3>Perpetuals infrastructure</h3>
+          <p>
+            Hibachi is the perpetuals infrastructure Trader6ix is building around, so the terminal
+            can focus on charts, execution, positions, leverage and risk management. The
+            integration is still being connected and perpetual trading is not live yet.
+          </p>
+        </article>
+        <article className="t6c-card">
+          <div className="t6c-card-top">
+            <span className="t6c-brand">Tower Exchange</span>
+            <StatusChip status="live" />
+          </div>
+          <h3>Spot swap integration</h3>
+          <p>
+            Spot swaps on {ARC_CHAIN_NAME} route through Tower Exchange. On Arc mainnet they settle
+            in USDC, EURC and cirBTC, signed from your own wallet.
+          </p>
+        </article>
       </div>
     </section>
   );
 }
+
 export function WhyChooseUs() {
   const reasons = [
     [
-      "Real-Time Market Insights",
-      "Stay informed with live market data, order books, price charts, and portfolio updates — all brought together in one streamlined trading terminal for faster, more confident decisions.",
-      Brain,
+      "Familiar Trading Workflow",
+      "Onchain trading shouldn't feel like a compromise. Trader6ix is designed around the workflow traders already know from platforms like MetaTrader and centralized exchanges: markets, charts, order entry, positions and risk in one place.",
+      ChartCandlestick,
     ],
     [
-      "One Terminal, Every Opportunity",
-      "Trade spot markets and perpetuals from one streamlined interface. Monitor prices, analyze charts, manage positions, and execute trades without switching between multiple platforms.",
+      "One Terminal, Multiple Markets",
+      "The goal is crypto and FX perpetuals, crypto and FX spot markets, stablecoin markets and decentralized liquidity in a single terminal. The trader shouldn't have to understand the infrastructure underneath every trade.",
       SquareChevronRight,
     ],
     [
-      "Non-Custodial Trading",
-      "Trade with confidence while keeping control of your assets. Connect your wallet, review every transaction, and sign trades directly on Arc without handing your funds to a centralized platform.",
-      ChartCandlestick,
+      "Non-Custodial By Design",
+      `Connect your wallet, review each transaction, and sign directly on ${ARC_CHAIN_NAME}. Trader6ix never takes custody of your funds.`,
+      Brain,
     ],
   ] as const;
   return (
     <section className="why">
       <div className="split-heading">
-        <h2 className="section-heading">Why Choose Us</h2>
-        <p>Backed By A Suite Of Powerful Tools At Your Fingertips.</p>
+        <h2 className="section-heading">What Trader6ix Is Building</h2>
+        <p>A trader-focused terminal for onchain markets.</p>
       </div>
       <div className="why-list">
         {reasons.map(([title, desc, Icon], i) => (
@@ -197,6 +200,111 @@ export function WhyChooseUs() {
     </section>
   );
 }
+
+export function Markets() {
+  const rows: [string, string, Status][] = [
+    [
+      "Spot swaps",
+      `Tower Exchange on ${ARC_CHAIN_NAME}${IS_ARC_MAINNET ? " mainnet" : ""}`,
+      "live",
+    ],
+    ["Crypto and FX perpetuals", "Hibachi", "building"],
+    ["Stablecoin markets", "USDC, EURC and cirBTC are the assets Tower routes on Arc mainnet today", "live"],
+    ["FX spot markets", "Not yet available", "planned"],
+    ["Additional decentralized liquidity", "More venues through the modular adapter layer", "planned"],
+  ];
+  return (
+    <section className="t6c-section" aria-labelledby="t6c-markets">
+      <div className="split-heading">
+        <h2 className="section-heading" id="t6c-markets">
+          Markets: Live Today And What&apos;s Next
+        </h2>
+        <p>Current functionality is labelled separately from planned capability.</p>
+      </div>
+      <ul className="t6c-rows">
+        {rows.map(([name, detail, status]) => (
+          <li className="t6c-row" key={name}>
+            <span className="t6c-row-name">{name}</span>
+            <span className="t6c-row-detail">{detail}</span>
+            <StatusChip status={status} />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function RiskSizing() {
+  return (
+    <section className="t6c-section" aria-labelledby="t6c-risk">
+      <div className="split-heading">
+        <h2 className="section-heading" id="t6c-risk">
+          Risk-Based Position Sizing
+        </h2>
+        <p>
+          Not just &ldquo;you are risking 2%&rdquo;: the terminal works out the size that matches
+          your risk.
+        </p>
+      </div>
+      <div className="t6c-grid t6c-grid-2">
+        <article className="t6c-card">
+          <div className="t6c-card-top">
+            <h3>Size from risk</h3>
+            <StatusChip status="building" />
+          </div>
+          <p>
+            Enter your account balance, risk percentage, entry and stop-loss. Trader6ix calculates
+            the position size, normalised around USD so the result stays in lots across markets
+            instead of forcing you to think in BTC, ETH or SOL quantities.
+          </p>
+        </article>
+        <article className="t6c-card">
+          <div className="t6c-card-top">
+            <h3>Leverage mode</h3>
+            <StatusChip status="building" />
+          </div>
+          <p>
+            Traders from crypto think in 5x, 10x, 20x. Leverage mode accommodates that, showing the
+            resulting position exposure and the actual account risk, because leverage on its own
+            isn&apos;t the risk.
+          </p>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+export function ArchitectureArc() {
+  return (
+    <section className="t6c-section" aria-labelledby="t6c-arch">
+      <div className="split-heading">
+        <h2 className="section-heading" id="t6c-arch">
+          Modular By Design, Built On Arc
+        </h2>
+        <p>Adapters keep the terminal independent of any single protocol.</p>
+      </div>
+      <div className="t6c-grid t6c-grid-2">
+        <article className="t6c-card">
+          <h3>Modular adapters</h3>
+          <p>
+            Perpetuals, FX and spot markets each sit behind their own adapter, so different
+            execution and liquidity providers can be integrated without rebuilding the terminal
+            around a single protocol.
+          </p>
+        </article>
+        <article className="t6c-card">
+          <h3>Why Arc</h3>
+          <p>
+            Stablecoins are increasingly becoming financial infrastructure, and Arc is an
+            interesting foundation for applications built around stablecoin-native financial
+            activity. Trader6ix is exploring what that looks like applied to professional trading.
+          </p>
+        </article>
+      </div>
+    </section>
+  );
+}
+
 export function Reveal({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<"idle" | "hidden" | "in">("idle");
@@ -226,47 +334,34 @@ export function Reveal({ children }: { children: React.ReactNode }) {
   );
 }
 export function Features() {
+  const items = [
+    "Advanced order types",
+    "Portfolio analytics",
+    "Watchlists",
+    "Alerts",
+    "Multi-wallet support",
+    "AI-assisted trading insights",
+    "Additional market integrations",
+  ];
   return (
-    <section className="section features">
-      <div className="center-heading">
-        <Eyebrow>Our Features</Eyebrow>
-        <h2 className="section-heading">
-          Our Powerfull Dashboard Enable Over 234.000 Analytics Everyday
+    <section className="section features t6c-section" aria-labelledby="t6c-roadmap">
+      <div className="split-heading">
+        <h2 className="section-heading" id="t6c-roadmap">
+          Where It&apos;s Headed
         </h2>
+        <p>
+          The longer-term goal is an onchain trading workstation. Everything below is planned or
+          under development, and the product is still being built.
+        </p>
       </div>
-      <div className="feature-grid">
-        <article className="feature-card">
-          <h3>Real-time Market Insight</h3>
-          <p>
-            At Trader6ix, We Ensure Fast, Reliable Payouts With Robust Model And Verified Proof On
-            Blockchain And Social Media.
-          </p>
-          <img src={images[4]} className="feature-art" alt="Real-time market analytics dashboard" />
-        </article>
-        <article className="feature-card">
-          <h3>Advanced Account Analysis</h3>
-          <p>Customize Your Business Journey Effortlessly With Trader6ix Dashboard</p>
-          <img src={images[6]} className="feature-art" alt="Account transactions and analysis" />
-          <img src={images[5]} className="feature-float" alt="ASIX account insights" />
-        </article>
-        <article className="feature-card">
-          <h3>Portofolio Management</h3>
-          <p>Easily Tweak Your Business Journey With Trader6ix's Dashboard!</p>
-          <img src={images[8]} className="feature-art" alt="Portfolio market watchlist" />
-        </article>
-        <article className="feature-card">
-          <h3>Advanced Charting Tools</h3>
-          <p>
-            At Blue Guardian, We Ensure Fast, Reliable Payouts With Robust Model And Verified Proof
-            On Blockchain And Social Media.
-          </p>
-          <img
-            src={images[7]}
-            className="feature-art"
-            alt="Advanced cryptocurrency candlestick chart"
-          />
-        </article>
-      </div>
+      <ul className="t6c-pills">
+        {items.map((item) => (
+          <li className="t6c-pill" key={item}>
+            {item}
+            <StatusChip status="planned" />
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -332,11 +427,11 @@ export function Testimonials() {
 export const faqItems = [
   [
     "What is Trader6ix?",
-    "Trader6ix is an all-in-one trading terminal for crypto and FX markets. It brings market data, charts, order books, risk-management tools, portfolio tracking, spot swaps, and perpetual trading into one streamlined interface.",
+    "Trader6ix is a trader-focused terminal being built to bring crypto and FX markets and onchain liquidity into one familiar trading environment. Today it offers wallet-based access, portfolio tracking and spot swaps through Tower Exchange on Arc; perpetuals (via Hibachi), risk-based position sizing and more are in development.",
   ],
   [
     "Which markets can I trade on Trader6ix?",
-    "Trader6ix is designed to support crypto assets, perpetual futures, stablecoin swaps, and FX markets. Available markets depend on the connected venue, the current integrations, and the network the terminal is pointed at.",
+    "The goal is crypto and FX perpetuals, crypto and FX spot markets, and stablecoin markets. Right now spot swaps are live through Tower Exchange on Arc; perpetuals are being connected to Hibachi and FX spot is planned. See the Markets section for the current status.",
   ],
   [
     "Do I need to create a separate exchange account?",
@@ -397,11 +492,11 @@ export function CTA({ to = "/contact", connect = false }: { to?: string; connect
     <section className="cta">
       <img src={images[15]} className="cta-background" alt="" />
       <div className="cta-content">
-        <Eyebrow>Introducing our Insights</Eyebrow>
-        <h2>Trade Smarter From One Terminal</h2>
+        <Eyebrow>Get started</Eyebrow>
+        <h2>Onchain Trading Without The Compromise</h2>
         <p>
-          Connect your wallet in minutes and start exploring spot markets, perpetuals, real-time
-          analytics, and risk-management tools on {ARC_CHAIN_NAME}.
+          Connect your wallet to swap on {ARC_CHAIN_NAME} through Tower Exchange today, with
+          perpetuals and risk-based sizing on the way.
         </p>
         {connect ? (
           <ConnectWalletButton variant="hero" size="hero">

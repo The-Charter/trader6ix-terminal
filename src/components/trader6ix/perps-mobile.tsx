@@ -167,6 +167,9 @@ export function PerpsMobile() {
   const light = theme === "light";
   // Desktop layout above the phone breakpoint; phones keep the single-screen terminal.
   const [desk, setDesk] = useState(false);
+  // Desktop only: slide the markets watchlist out to give the chart more room.
+  // Collapsing only hides it; the selected market and list state are untouched.
+  const [mkOpen, setMkOpen] = useState(true);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 701px)");
     const sync = () => setDesk(mq.matches);
@@ -669,10 +672,21 @@ export function PerpsMobile() {
     return (
       <div className={`pm-root pm-desk ${light ? "pm-light" : "pm-dark"}`}>
         {headerEl}
-        <div className="pm-desk-grid">
-          <aside className="pm-desk-markets" aria-label="Markets">
+        <div className={`pm-desk-grid${mkOpen ? "" : " pm-mk-collapsed"}`}>
+          <aside className="pm-desk-markets" id="pm-desk-markets" aria-label="Markets" aria-hidden={!mkOpen}>
             <section className="pm-page">{marketsBody}</section>
           </aside>
+          <button
+            type="button"
+            className="pm-mk-handle"
+            aria-controls="pm-desk-markets"
+            aria-expanded={mkOpen}
+            aria-label={mkOpen ? "Collapse watchlist" : "Expand watchlist"}
+            title={mkOpen ? "Collapse watchlist" : "Expand watchlist"}
+            onClick={() => setMkOpen((v) => !v)}
+          >
+            <span aria-hidden="true">{mkOpen ? "‹" : "›"}</span>
+          </button>
           <main className="pm-desk-main">
             <section className="pm-desk-chart" aria-label="Chart">
               {chartBody}

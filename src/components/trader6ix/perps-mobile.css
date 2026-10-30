@@ -1214,7 +1214,7 @@
   background: color-mix(in srgb, var(--pm-primary) 12%, transparent);
 }
 .pm-nav-item.active .pm-nav-icon {
-  border-color: color-mix(in srgb, var(--pm-line-red) 75%, transparent);
+  border-color: #000;
   box-shadow:
     0 2px 12px color-mix(in srgb, var(--pm-primary) 45%, transparent),
     0 0 0 1px color-mix(in srgb, var(--pm-primary) 25%, transparent),
@@ -1669,4 +1669,82 @@
 }
 .pm-desk-panel .pm-hist-stats {
   padding: 10px 14px 0;
+}
+
+/* Collapsible watchlist (desktop). The grid column and handle animate together. */
+.pm-desk-grid {
+  position: relative;
+  --pm-mk-w: clamp(240px, 21vw, 300px);
+  grid-template-columns: var(--pm-mk-w) minmax(0, 1fr) minmax(300px, 340px);
+  transition: grid-template-columns 0.25s ease;
+}
+.pm-desk-grid.pm-mk-collapsed {
+  grid-template-columns: 0px minmax(0, 1fr) minmax(300px, 340px);
+}
+.pm-desk-markets {
+  overflow: hidden;
+  min-width: 0;
+  transition: visibility 0s linear 0s;
+}
+.pm-desk-markets > .pm-page {
+  min-width: 240px;
+}
+.pm-mk-collapsed .pm-desk-markets {
+  visibility: hidden;
+  border-right-color: transparent;
+  transition: visibility 0s linear 0.25s;
+}
+.pm-mk-handle {
+  position: absolute;
+  z-index: 5;
+  top: 50%;
+  left: var(--pm-mk-w);
+  transform: translateY(-50%);
+  width: 18px;
+  height: 56px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pm-bd);
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  background: var(--pm-p1);
+  color: var(--pm-text2);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: left 0.25s ease, color 0.15s, border-color 0.15s;
+}
+.pm-mk-collapsed .pm-mk-handle {
+  left: 0;
+}
+.pm-mk-handle:hover {
+  color: var(--pm-text);
+  border-color: var(--pm-accent);
+}
+.pm-mk-handle:focus-visible {
+  outline: 2px solid var(--pm-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 1100px) {
+  .pm-desk-grid {
+    --pm-mk-w: 240px;
+    grid-template-columns: var(--pm-mk-w) minmax(0, 1fr) 300px;
+  }
+  .pm-desk-grid.pm-mk-collapsed {
+    grid-template-columns: 0px minmax(0, 1fr) 300px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pm-desk-grid,
+  .pm-mk-handle {
+    transition: none;
+  }
+}
+
+/* Bottom-nav active outline is black in both themes. */
+.pm-dark .pm-nav-item.active .pm-nav-icon,
+.pm-light .pm-nav-item.active .pm-nav-icon {
+  border-color: #000;
 }

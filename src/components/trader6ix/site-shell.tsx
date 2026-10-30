@@ -163,11 +163,10 @@ export function SiteFooter() {
             <img src={logo.url} alt="" />
             <span>Trader6ix</span>
           </Link>
-          <h2>Conquer the Markets With Confidence</h2>
+          <h2>Onchain Trading, Without The Compromise</h2>
           <p>
-            Customize your trading experience with Trader6ix’s unified terminal, combining real-time
-            market data, advanced analytics, risk-management tools, and seamless trade execution in
-            one powerful dashboard.
+            A trader-focused terminal bringing multiple markets and onchain liquidity into one
+            familiar trading environment. Still being built.
           </p>
         </div>
         <form
