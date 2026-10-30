@@ -3,8 +3,8 @@
 import { isRevealPath } from "./page-reveal";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { ArrowRight, ChevronDown, LogOut, Menu, X } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, LogOut, Menu, X } from "lucide-react";
 import { clearSession, useSession } from "@/components/trader6ix/session";
 import { usePrivyOptional } from "@/components/trader6ix/privy-auth";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,10 @@ const mainLinks = [
   { label: "About", to: "/about" },
   { label: "Features", to: "/features" },
 ] as const;
-const headerLinks = mainLinks;
-const pageLinks = [
-  { label: "Blog And News", to: "/blog", soon: false },
-  { label: "Integration", to: "/integration", soon: true },
-  { label: "Career", to: "/career", soon: true },
-  { label: "FAQ", to: "/faq", soon: false },
-  { label: "Contact Us", to: "/contact", soon: false },
+const headerLinks = [
+  ...mainLinks,
+  { label: "FAQ", to: "/faq" },
+  { label: "Contact", to: "/contact" },
 ] as const;
 function SoonLink({ label, className }: { label: string; className?: string }) {
   return (
@@ -34,7 +31,6 @@ function SoonLink({ label, className }: { label: string; className?: string }) {
 }
 export function SiteHeader() {
   const [menu, setMenu] = useState(false);
-  const [pages, setPages] = useState(false);
   const pathname = usePathname();
   const session = useSession();
   const router = useRouter();
@@ -44,18 +40,6 @@ export function SiteHeader() {
     void privy?.logout().catch(() => {});
     setMenu(false);
     router.replace("/");
-  };
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const openPages = () => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-    setPages(true);
-  };
-  const closePages = () => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    closeTimer.current = setTimeout(() => setPages(false), 200);
   };
   return (
     <header
@@ -71,42 +55,6 @@ export function SiteHeader() {
               {l.label}
             </Link>
           ))}
-          <div className="pages-menu" onMouseEnter={openPages} onMouseLeave={closePages}>
-            <Button
-              variant="ghost"
-              className="pages-trigger"
-              onClick={() => {
-                if (closeTimer.current) {
-                  clearTimeout(closeTimer.current);
-                  closeTimer.current = null;
-                }
-                setPages(!pages);
-              }}
-              aria-expanded={pages}
-            >
-              Pages <ChevronDown size={12} />
-            </Button>
-            {pages && (
-              <div className="pages-popover">
-                {pageLinks.map((l) =>
-                  l.soon ? (
-                    <SoonLink key={l.to} label={l.label} />
-                  ) : (
-                    <Link
-                      key={l.to}
-                      href={l.to}
-                      onClick={() => {
-                        setPages(false);
-                        setMenu(false);
-                      }}
-                    >
-                      {l.label}
-                    </Link>
-                  ),
-                )}
-              </div>
-            )}
-          </div>
         </div>
         {session ? (
           <>
@@ -234,10 +182,8 @@ export function SiteFooter() {
         </div>
         <div className="footer-column">
           <h3>Company</h3>
-          <Link href="/blog">Blog And News</Link>
           <SoonLink label="Integration" />
           <Link href="/faq">FAQ</Link>
-          <SoonLink label="Career" />
         </div>
         <div className="footer-column">
           <h3>Social</h3>

@@ -6,7 +6,6 @@ export const revealPaths = [
   "/about",
   "/features",
   "/integration",
-  "/blog",
   "/career",
   "/faq",
   "/contact",
@@ -22,9 +21,7 @@ export function usePageReveal(path: string) {
     if (!isRevealPath(path)) return;
     const main = document.querySelector("main");
     if (!main) return;
-    const blocks = (Array.from(main.children) as HTMLElement[]).filter(
-      (el) => !el.classList.contains("int-backdrop"),
-    );
+    const blocks = Array.from(main.children) as HTMLElement[];
     // Pages wrapped in one section container: animate that container's children instead.
     const targets =
       blocks.length === 1 && blocks[0] ? (Array.from(blocks[0].children) as HTMLElement[]) : blocks;

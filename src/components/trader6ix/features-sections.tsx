@@ -3,29 +3,20 @@
 import { useState } from "react";
 import { Workflow, PanelsTopLeft, Gauge, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Eyebrow, CTA, CountUp } from "./sections";
+import { Eyebrow, CTA } from "./sections";
 import { ARC_CHAIN_NAME } from "@/lib/arc-network";
-import { images } from "@/assets/images";
-import hero from "@/assets/about-hero.png.asset.json";
-import cardGlow from "@/assets/about-card-glow.png.asset.json";
 import technicals from "@/assets/features-technicals.png.asset.json";
 import watchlist from "@/assets/features-watchlist.png.asset.json";
 import account from "@/assets/features-account.png.asset.json";
 import platform from "@/assets/features-platform.png.asset.json";
-import solutionsBackdrop from "@/assets/features-solutions-bg.png.asset.json";
 import monitoring from "@/assets/features-monitoring.png.asset.json";
 import analytics from "@/assets/features-analytics.png.asset.json";
 import performance from "@/assets/features-performance.png.asset.json";
 import feedback from "@/assets/features-feedback.png.asset.json";
 
-function Backdrop({ src }: { src: string }) {
-  return <img className="features-backdrop" src={src} alt="" aria-hidden="true" />;
-}
-
 export function FeaturesHero() {
   return (
     <section className="features-hero">
-      <Backdrop src={hero.url} />
       <div className="site-container features-hero-copy">
         <Eyebrow>Features</Eyebrow>
         <h1>All Your Trading. In One Place.</h1>
@@ -34,28 +25,6 @@ export function FeaturesHero() {
           real-time market data to risk management, trade execution, portfolio tracking, and
           seamless on-chain settlement on {ARC_CHAIN_NAME}.
         </p>
-      </div>
-    </section>
-  );
-}
-
-export function FeaturesSuccess() {
-  const stats = [
-    ["50+", "Tradable Assets"],
-    ["10K+", "Market Signals"],
-    ["1.2K+", "Active Traders"],
-    ["50K+", "Simulated Trades"],
-    ["$25M+", "Demo Volume"],
-  ] as const;
-  return (
-    <section className="features-success site-container">
-      <div className="stats">
-        {stats.map(([value, label]) => (
-          <div className="stat" key={label}>
-            <CountUp value={value} />
-            <p>{label}</p>
-          </div>
-        ))}
       </div>
     </section>
   );
@@ -72,7 +41,6 @@ export function FeaturesBenefits() {
       </div>
       <div className="features-benefit-grid">
         <article className="features-payout">
-          <Backdrop src={cardGlow.url} />
           <div className="features-card-content">
             <h3>Real-Time Market Access</h3>
             <p>
@@ -88,7 +56,6 @@ export function FeaturesBenefits() {
           />
         </article>
         <article className="features-conditions">
-          <Backdrop src={cardGlow.url} />
           <div className="features-card-content">
             <h3>Advanced Risk Management</h3>
             <p>
@@ -104,7 +71,6 @@ export function FeaturesBenefits() {
           />
         </article>
         <article className="features-platform">
-          <Backdrop src={images[3] ?? ""} />
           <div className="features-card-content">
             <h3>Unified Trading Experience</h3>
             <p>
@@ -143,7 +109,6 @@ export function FeaturesSolutions() {
   const active = dashboardTabs[selected] ?? dashboardTabs[0];
   return (
     <section className="features-solutions">
-      <Backdrop src={solutionsBackdrop.url} />
       <div className="site-container features-solutions-content">
         <div className="features-heading">
           <h2>

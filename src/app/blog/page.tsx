@@ -1,23 +1,6 @@
-import type { Metadata } from "next";
-import { SiteLayout } from "@/components/trader6ix/site-layout";
-import { BlogHero, BlogPosts } from "@/components/trader6ix/blog-sections";
-import { CTA } from "@/components/trader6ix/sections";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Blog And News — Trader6ix",
-  description: "Trading insights, market trends and tutorials from the Trader6ix team.",
-};
-
-export default function BlogPage() {
-  return (
-    <SiteLayout>
-      <main className="blogpage">
-        <BlogHero />
-        <BlogPosts />
-        <div className="site-container">
-          <CTA connect />
-        </div>
-      </main>
-    </SiteLayout>
-  );
+/** The blog was removed; old links land on the home page. */
+export default function BlogRedirect() {
+  redirect("/");
 }

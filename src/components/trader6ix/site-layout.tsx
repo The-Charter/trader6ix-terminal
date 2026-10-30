@@ -9,11 +9,11 @@ export function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   usePageReveal(pathname);
   return (
-    <>
+    <div className="t6-landing">
       <SiteHeader />
       {children}
       <SiteFooter />
       <BackToTop />
-    </>
+    </div>
   );
 }

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { SiteLayout } from "@/components/trader6ix/site-layout";
 import {
   FeaturesHero,
-  FeaturesSuccess,
   FeaturesBenefits,
   FeaturesSolutions,
   FeaturesCTA,
@@ -19,7 +18,6 @@ export default function FeaturesPage() {
     <SiteLayout>
       <main className="features-page">
         <FeaturesHero />
-        <FeaturesSuccess />
         <FeaturesBenefits />
         <FeaturesSolutions />
         <FeaturesCTA />

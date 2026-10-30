@@ -15,7 +15,6 @@ import {
   Plane,
 } from "lucide-react";
 import { Eyebrow } from "./sections";
-import hero from "@/assets/about-hero.png.asset.json";
 
 const positions = [
   ["Product Manager", "On-site"],
@@ -79,7 +78,6 @@ const perks = [
 export function CareerHero() {
   return (
     <section className="int-hero career-hero">
-      <img className="int-backdrop" src={hero.url} alt="" />
       <div className="site-container int-hero-content">
         <Eyebrow>Career</Eyebrow>
         <h1>Join the Team Powering the Next Generation of Traders</h1>

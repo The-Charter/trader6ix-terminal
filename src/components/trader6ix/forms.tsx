@@ -4,12 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Eyebrow } from "./sections";
-import hero from "@/assets/about-hero.png.asset.json";
 
 export function ContactHero() {
   return (
     <section className="int-hero faqpage-hero">
-      <img className="int-backdrop" src={hero.url} alt="" />
       <div className="site-container int-hero-content">
         <Eyebrow>Contact Us</Eyebrow>
         <h1>Hit us up!</h1>

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Eyebrow } from "./sections";
-import hero from "@/assets/about-hero.png.asset.json";
 import a0 from "@/assets/integration-0.svg.asset.json";
 import a1 from "@/assets/integration-1.svg.asset.json";
 import a2 from "@/assets/integration-2.svg.asset.json";
@@ -28,7 +27,6 @@ const apps = [
 export function IntegrationHero() {
   return (
     <section className="int-hero">
-      <img className="int-backdrop" src={hero.url} alt="" />
       <div className="site-container int-hero-content">
         <Eyebrow>Integrations</Eyebrow>
         <h1>Integrations</h1>

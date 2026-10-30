@@ -5,7 +5,6 @@ import { Minus, Plus } from "lucide-react";
 import { Eyebrow, faqItems } from "./sections";
 import { Button } from "@/components/ui/button";
 import { ARC_CHAIN_NAME, IS_ARC_MAINNET } from "@/lib/arc-network";
-import hero from "@/assets/about-hero.png.asset.json";
 
 const categories = [
   {
@@ -45,7 +44,6 @@ const categories = [
 export function FaqHero() {
   return (
     <section className="int-hero faqpage-hero">
-      <img className="int-backdrop" src={hero.url} alt="" />
       <div className="site-container int-hero-content">
         <Eyebrow>FAQ</Eyebrow>
         <h1>Frequently asked questions</h1>

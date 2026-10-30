@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConnectWalletButton } from "@/components/trader6ix/connect-wallet-button";
-import { images } from "@/assets/images";
 
 export function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
@@ -56,58 +55,6 @@ export function Hero() {
       </div>
     </section>
   );
-}
-export function CountUp({ value }: { value: string }) {
-  const m = value.match(/^([^\d]*)(\d+(?:\.\d+)?)(.*)$/);
-  const raw = m?.[2];
-  const num = raw !== undefined ? parseFloat(raw) : null;
-  // Preserve the source value's decimal places so "1.2K" counts through 0.4K,
-  // 0.9K… instead of jumping on the integer part alone.
-  const decimals = raw !== undefined ? (raw.split(".")[1]?.length ?? 0) : 0;
-  const ref = useRef<HTMLElement>(null);
-  const [text, setText] = useState(num === null || !m ? value : (0).toFixed(decimals));
-  useEffect(() => {
-    if (num === null) return;
-    const el = ref.current;
-    if (!el) return;
-    let raf = 0;
-    let running = false;
-    const stop = () => {
-      cancelAnimationFrame(raf);
-      running = false;
-    };
-    // Restarts from zero on every entry, so the count replays whichever
-    // direction the section is scrolled from — not just on first load.
-    const play = () => {
-      if (running) return;
-      running = true;
-      setText((0).toFixed(decimals));
-      const t0 = performance.now();
-      const dur = 1400;
-      const tick = (t: number) => {
-        const p = Math.min(1, (t - t0) / dur);
-        setText((num * (1 - Math.pow(1 - p, 3))).toFixed(decimals));
-        if (p < 1) raf = requestAnimationFrame(tick);
-        else running = false;
-      };
-      raf = requestAnimationFrame(tick);
-    };
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) play();
-          else stop();
-        }
-      },
-      { threshold: 0.7 },
-    );
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      cancelAnimationFrame(raf);
-    };
-  }, [num, decimals]);
-  return <strong ref={ref}>{m ? m[1] + text + m[3] : value}</strong>;
 }
 type Status = "live" | "building" | "planned";
 const STATUS_LABEL: Record<Status, string> = {
@@ -216,7 +163,7 @@ export function Markets() {
       "live",
     ],
     ["Crypto and FX perpetuals", "Hibachi", "building"],
-    ["Stablecoin markets", "USDC, EURC and cirBTC are the assets Tower routes on Arc mainnet today", "live"],
+    ["Spot assets", "USDC, EURC and cirBTC are the assets Tower routes on Arc mainnet today", "live"],
     ["FX spot markets", "Not yet available", "planned"],
     ["Additional decentralized liquidity", "More venues through the modular adapter layer", "planned"],
   ];
@@ -372,65 +319,6 @@ export function Features() {
     </section>
   );
 }
-const names = [
-  "Colin Hamill",
-  "Jonathon Friesen",
-  "Yvonne Baumbach",
-  "Carole Kiehn",
-  "Liam Everhart",
-  "Carmen Waters",
-];
-const quotes = [
-  "Using the Trader6ix system has enhanced our payment operations greatly. Each transaction runs smoothly now, bringing measurable growth in daily performance.",
-  "With Trader6ix technology, our business functions have improved noticeably. Processes are seamless today, and we’ve gained outstanding results in time management.",
-  "The Trader6ix platform has revolutionized our transaction processes. Everything flows seamlessly now, and we've experienced remarkable gains in operational efficiency.",
-];
-export function Testimonials() {
-  const rows = [names.slice(0, 3), names.slice(3)];
-  return (
-    <section className="section testimonials">
-      <Eyebrow>Testimonials</Eyebrow>
-      <div className="split-heading">
-        <h2 className="section-heading">What Traders Think About Trader6ix</h2>
-        <p>
-          A Smarter Way to Analyze Markets and Execute Trades. Here’s What Traders Are Saying About
-          Their Trader6ix Experience
-        </p>
-      </div>
-      <div className="review-rows">
-        {rows.map((row, r) => {
-          const items = [...row, ...row, ...row];
-          return (
-            <div className={`review-marquee ${r === 1 ? "reverse" : ""}`} key={r}>
-              <div className="review-track">
-                {items.map((name, k) => {
-                  const i = names.indexOf(name);
-                  return (
-                    <article className="review" key={`${name}-${k}`} aria-hidden={k >= row.length}>
-                      <div className="review-person">
-                        <img src={images[9 + i]} alt={name} />
-                        <div>
-                          <strong>{name}</strong>
-                          <div className="review-stars" aria-label="5 out of 5 stars">
-                            ★★★★★
-                          </div>
-                        </div>
-                      </div>
-                      <p>“{quotes[i % 3]}”</p>
-                      <time dateTime="2024-06-10">
-                        June {i === 2 ? "09" : i === 4 ? "12" : "10"}, 2024
-                      </time>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
 export const faqItems = [
   [
     "What is Trader6ix?",
@@ -442,7 +330,7 @@ export const faqItems = [
   ],
   [
     "Do I need to create a separate exchange account?",
-    "Trader6ix uses wallet-based access through Privy. You can connect an existing wallet or create an embedded wallet, depending on your login method. Some external trading venues may still require additional account credentials for backend integrations.",
+    "No. You sign in by connecting your own wallet, such as MetaMask or OKX, and spot swaps run from that wallet. There is no username or password to create.",
   ],
   [
     "Is Trader6ix safe to use?",
@@ -497,7 +385,6 @@ export function FAQ() {
 export function CTA({ to = "/contact", connect = false }: { to?: string; connect?: boolean }) {
   return (
     <section className="cta">
-      <img src={images[15]} className="cta-background" alt="" />
       <div className="cta-content">
         <Eyebrow>Get started</Eyebrow>
         <h2>Onchain Trading Without The Compromise</h2>

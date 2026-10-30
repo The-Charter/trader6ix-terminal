@@ -5,18 +5,9 @@ import { ArrowUpRight, Unplug, Telescope, SquareChartGantt, FileTerminal } from 
 import { Button } from "@/components/ui/button";
 import { Eyebrow, CTA } from "./sections";
 import { ARC_CHAIN_NAME } from "@/lib/arc-network";
-import hero from "@/assets/about-hero.png.asset.json";
-import cardGlow from "@/assets/about-card-glow.png.asset.json";
 import payout from "@/assets/about-payout.png.asset.json";
 import watchlist from "@/assets/about-watchlist.png.asset.json";
-import platformGlow from "@/assets/about-platform-glow.jpg.asset.json";
 import platforms from "@/assets/about-platforms.png.asset.json";
-import founderBackdrop from "@/assets/about-alex.png.asset.json";
-import alex from "@/assets/about-jeremy.png.asset.json";
-import jeremy from "@/assets/about-founder-jeremy.png.asset.json";
-import eventsBackdrop from "@/assets/about-events-bg.png.asset.json";
-import events from "@/assets/about-events.png.asset.json";
-import sectionGlow from "@/assets/about-section-glow.png.asset.json";
 
 const summary =
   "Our Unified Trading Terminal Is Transforming the Way People Analyze Markets and Execute Trades.";
@@ -34,7 +25,6 @@ function AboutHeading({ badge, children }: { badge: string; children: React.Reac
 export function AboutHero() {
   return (
     <section className="about-hero">
-      <img className="about-backdrop" src={hero.url} alt="" />
       <div className="site-container about-hero-content">
         <Eyebrow>Introducing our Insights</Eyebrow>
         <h1>We’re Making Multi-Asset Trading Simpler, Faster, and More Accessible.</h1>
@@ -50,7 +40,6 @@ export function AboutHero() {
 export function AboutMission() {
   return (
     <section className="about-mission">
-      <img className="about-backdrop" src={sectionGlow.url} alt="" />
       <div className="site-container about-section-content">
         <div className="about-mission-copy">
           <h2>
@@ -121,14 +110,12 @@ export function AboutProcess() {
 export function AboutBenefits() {
   return (
     <section className="about-benefits">
-      <img className="about-backdrop" src={sectionGlow.url} alt="" />
       <div className="site-container about-section-content">
         <AboutHeading badge="Our Features">
           Our <span>Benefit</span>
         </AboutHeading>
         <div className="about-benefit-grid">
           <article className="about-benefit-small">
-            <img className="about-backdrop" src={cardGlow.url} alt="" />
             <div>
               <h3>Real-Time Market Access</h3>
               <p>
@@ -144,7 +131,6 @@ export function AboutBenefits() {
             />
           </article>
           <article className="about-benefit-small">
-            <img className="about-backdrop" src={cardGlow.url} alt="" />
             <div>
               <h3>Advanced Risk Management</h3>
               <p>
@@ -160,7 +146,6 @@ export function AboutBenefits() {
             />
           </article>
           <article className="about-benefit-platform">
-            <img className="about-backdrop" src={platformGlow.url} alt="" />
             <div>
               <h3>Unified Trading Experience</h3>
               <p>
@@ -177,76 +162,6 @@ export function AboutBenefits() {
             />
           </article>
         </div>
-      </div>
-    </section>
-  );
-}
-
-export function AboutFounders() {
-  const founders = [
-    {
-      name: "Alex Timothy",
-      image: alex.url,
-      bio: "Alex Timothy first foray into investing was at age 18, when he discovered he had a knack for the financial markets. His early experiences trading sparked a passion that he pursued at University, studying banking, finance, and investments while honing his skills in various investment.",
-    },
-    {
-      name: "Jeremy",
-      image: jeremy.url,
-      bio: "While at university, Jeremy discovered proprietary trading through an ad. The idea of leveraging a firm's capital to amplify his potential profits was appealing. However, in the different firms he trialled, he noticed that some excelled in evaluations, and others boasted superior technology.",
-    },
-  ];
-  return (
-    <section className="about-founders site-container">
-      <AboutHeading badge="Our Team">
-        Meet The <span>Founders</span>
-      </AboutHeading>
-      <div className="about-founder-grid">
-        {founders.map((founder) => (
-          <article key={founder.name}>
-            <div className="about-founder-photo">
-              <img className="about-backdrop" src={founderBackdrop.url} alt="" />
-              <img
-                className="about-founder-person"
-                src={founder.image}
-                alt={founder.name}
-                loading="lazy"
-              />
-            </div>
-            <p>{founder.bio}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function AboutEvents() {
-  return (
-    <section className="about-events site-container">
-      <div className="about-events-band">
-        <img className="about-backdrop" src={eventsBackdrop.url} alt="" />
-        <div className="about-events-copy">
-          <Eyebrow>Events</Eyebrow>
-          <h2>
-            Recent <span>Events</span>
-          </h2>
-          <p>
-            Stay ahead of the market with practical insights, trading strategies, and product
-            updates from Trader6ix. Explore smarter ways to analyze markets, manage risk, and trade
-            across crypto and FX.
-          </p>
-          <Button variant="hero" size="hero" asChild>
-            <Link href="/blog">
-              Explore Now <ArrowUpRight />
-            </Link>
-          </Button>
-        </div>
-        <img
-          className="about-events-photo"
-          src={events.url}
-          alt="Audience capturing a live event with bright stage lights"
-          loading="lazy"
-        />
       </div>
     </section>
   );
