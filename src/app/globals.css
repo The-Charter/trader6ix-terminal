@@ -4641,3 +4641,37 @@
 .t6c-section + .why {
   margin-top: 72px;
 }
+.t6c-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.t6c-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* ===== Light theme for the signed-in app pages (Spot / Portfolio) ===== */
+html[data-app-theme="light"] .app-page,
+html[data-app-theme="light"] .app-page.spot,
+html[data-app-theme="light"] .app-page.portfolio {
+  --app-bg: #f5f6f3;
+  --app-bar: #f5f6f3;
+  --app-panel: #ffffff;
+  --app-line: rgba(17, 21, 18, 0.14);
+  --app-ink: #111512;
+  --app-muted: #5c615d;
+  --app-up: #00a874;
+  --app-down: #d23a44;
+  color-scheme: light;
+}
+html[data-app-theme="light"] .app-page {
+  --app-active-ink: #111512;
+}
+html[data-app-theme="light"] .app-page .spot-swap:disabled {
+  color: rgba(245, 246, 243, 0.92);
+  background: color-mix(in srgb, #245b43 55%, #f5f6f3);
+  opacity: 1;
+}

@@ -119,8 +119,7 @@ function StatusChip({ status }: { status: Status }) {
   return <span className={`t6c-chip t6c-chip-${status}`}>{STATUS_LABEL[status]}</span>;
 }
 
-/** Current integrations only. Official logos have not been supplied yet, so the
- * names are set as plain text — swap in the logo files when they arrive. */
+/** Current integrations only: Hibachi and Tower Exchange. */
 export function Integrations() {
   return (
     <section className="t6c-section" aria-labelledby="t6c-integrations">
@@ -133,7 +132,11 @@ export function Integrations() {
       <div className="t6c-grid t6c-grid-2">
         <article className="t6c-card">
           <div className="t6c-card-top">
-            <span className="t6c-brand">Hibachi</span>
+            <span className="t6c-brand">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/hibachi-logo.png" alt="" className="t6c-logo" />
+              Hibachi
+            </span>
             <StatusChip status="building" />
           </div>
           <h3>Perpetuals infrastructure</h3>
@@ -145,7 +148,11 @@ export function Integrations() {
         </article>
         <article className="t6c-card">
           <div className="t6c-card-top">
-            <span className="t6c-brand">Tower Exchange</span>
+            <span className="t6c-brand">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/tower-logo.jpg" alt="" className="t6c-logo" />
+              Tower Exchange
+            </span>
             <StatusChip status="live" />
           </div>
           <h3>Spot swap integration</h3>
