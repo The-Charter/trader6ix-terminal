@@ -10,7 +10,7 @@
 [build.environment]
   # Next 14 needs Node >= 18.17. Pinned so a Netlify default change cannot break
   # the build silently.
-  NODE_VERSION = "20"
+  NODE_VERSION = "26"
 
 # The Next.js Runtime is auto-detected for Next projects; the publish directory
 # is managed by it and must not be overridden.
