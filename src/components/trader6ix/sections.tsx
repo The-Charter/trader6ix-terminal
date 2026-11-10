@@ -57,13 +57,13 @@ export function Hero() {
     </section>
   );
 }
-type Status = "live" | "building" | "planned";
+export type Status = "live" | "building" | "planned";
 const STATUS_LABEL: Record<Status, string> = {
   live: "Live",
   building: "In development",
   planned: "Planned",
 };
-function StatusChip({ status }: { status: Status }) {
+export function StatusChip({ status }: { status: Status }) {
   return <span className={`t6c-chip t6c-chip-${status}`}>{STATUS_LABEL[status]}</span>;
 }
 
