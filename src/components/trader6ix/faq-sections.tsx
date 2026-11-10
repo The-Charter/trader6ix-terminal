@@ -37,7 +37,12 @@ const categories = [
   },
   {
     name: "Plans & Pricing",
-    items: [["Is Trader6ix free to use?", "Trader6ix is 100% free to use."]],
+    items: [
+      [
+        "Does Trader6ix cost anything?",
+        "There is no subscription or sign-up fee. Trades pay the underlying venue's fees and Arc network fees, and the network fee is shown before you sign.",
+      ],
+    ],
   },
 ] as const;
 
@@ -46,8 +51,8 @@ export function FaqHero() {
     <section className="int-hero faqpage-hero">
       <div className="site-container int-hero-content">
         <Eyebrow>FAQ</Eyebrow>
-        <h1>Frequently asked questions</h1>
-        <p>Get the lowdown on the most frequently asked questions about Trader6ix's platform!</p>
+        <h1>Frequently Asked Questions</h1>
+        <p>What Trader6ix is, what is live today and what is still being built.</p>
       </div>
     </section>
   );

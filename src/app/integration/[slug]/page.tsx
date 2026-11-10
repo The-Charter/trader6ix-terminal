@@ -32,7 +32,7 @@ export default function IntegrationSlugPage({ params }: Props) {
             Get Started
           </ConnectWalletButton>
         </div>
-        <CTA connect />
+        <CTA />
       </main>
     </SiteLayout>
   );

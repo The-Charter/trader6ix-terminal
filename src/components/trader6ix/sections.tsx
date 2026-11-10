@@ -32,14 +32,15 @@ export function Hero() {
         <div className="hero-copy">
           <Eyebrow>Onchain trading, without the compromise</Eyebrow>
           <h1>
-            A Professional
+            The Professional Trading
             <br />
-            Trading Terminal.
+            Terminal For Onchain Markets.
           </h1>
           <p>
-            Trader6ix brings multiple markets and onchain liquidity into one familiar trading
-            environment: choose a market, analyze the chart, define your risk, execute, and manage
-            the position from one interface. Built on {ARC_CHAIN_NAME}.
+            Onchain trading shouldn&apos;t have to feel like a compromise. Trader6ix brings crypto
+            and FX markets and onchain liquidity into one professional terminal, with the workflow
+            traders already know from MetaTrader and centralized exchanges: choose a market, analyze
+            the chart, define your risk, execute and manage the position. Built on {ARC_CHAIN_NAME}.
           </p>
           <div className="hero-actions">
             <ConnectWalletButton variant="hero" size="hero">
@@ -66,7 +67,7 @@ function StatusChip({ status }: { status: Status }) {
   return <span className={`t6c-chip t6c-chip-${status}`}>{STATUS_LABEL[status]}</span>;
 }
 
-/** Current integrations only: Hibachi and Tower Exchange. */
+/** Current integrations: Hibachi (perpetuals), Tower Exchange and Curve Finance (spot). */
 export function Integrations() {
   return (
     <section className="t6c-section" aria-labelledby="t6c-integrations">
@@ -74,9 +75,12 @@ export function Integrations() {
         <h2 className="section-heading" id="t6c-integrations">
           Current Integrations
         </h2>
-        <p>The infrastructure Trader6ix is built around today.</p>
+        <p>
+          Specialized infrastructure underneath, so the terminal can focus on the trader
+          experience.
+        </p>
       </div>
-      <div className="t6c-grid t6c-grid-2">
+      <div className="t6c-grid t6c-grid-3">
         <article className="t6c-card">
           <div className="t6c-card-top">
             <span className="t6c-brand">
@@ -108,6 +112,18 @@ export function Integrations() {
             in USDC, EURC and cirBTC, signed from your own wallet.
           </p>
         </article>
+        <article className="t6c-card">
+          <div className="t6c-card-top">
+            <span className="t6c-brand">Curve Finance</span>
+            <StatusChip status="building" />
+          </div>
+          <h3>Stablecoin liquidity</h3>
+          <p>
+            Curve&apos;s stablecoin pools are being integrated as another source of onchain spot
+            liquidity alongside Tower Exchange, with stablecoins at the centre of the trading
+            experience. Not live yet.
+          </p>
+        </article>
       </div>
     </section>
   );
@@ -122,7 +138,7 @@ export function WhyChooseUs() {
     ],
     [
       "One Terminal, Multiple Markets",
-      "The goal is crypto and FX perpetuals, crypto and FX spot markets, stablecoin markets and decentralized liquidity in a single terminal. The trader shouldn't have to understand the infrastructure underneath every trade.",
+      "Crypto and FX perpetuals, crypto and FX spot markets, stablecoin markets and decentralized liquidity in a single terminal. Separate adapters for perpetuals, FX and spot mean new venues plug in without rebuilding the terminal, and the trader never has to understand the infrastructure underneath a trade.",
       SquareChevronRight,
     ],
     [
@@ -163,6 +179,7 @@ export function Markets() {
       "live",
     ],
     ["Crypto and FX perpetuals", "Hibachi", "building"],
+    ["Stablecoin liquidity", "Curve Finance pools on Arc", "building"],
     ["Spot assets", "USDC, EURC and cirBTC are the assets Tower routes on Arc mainnet today", "live"],
     ["FX spot markets", "Not yet available", "planned"],
     ["Additional decentralized liquidity", "More venues through the modular adapter layer", "planned"],
@@ -301,11 +318,11 @@ export function Features() {
     <section className="section features t6c-section" aria-labelledby="t6c-roadmap">
       <div className="split-heading">
         <h2 className="section-heading" id="t6c-roadmap">
-          Where It&apos;s Headed
+          Toward An Onchain Trading Workstation
         </h2>
         <p>
-          The longer-term goal is an onchain trading workstation. Everything below is planned or
-          under development, and the product is still being built.
+          The product is still being built: some integrations are being tested and some components
+          are still evolving. This is where it&apos;s headed.
         </p>
       </div>
       <ul className="t6c-pills">
@@ -381,28 +398,22 @@ export function FAQ() {
     </section>
   );
 }
-/** `connect` makes "Get Started" open the wallet modal instead of linking to `to`. */
-export function CTA({ to = "/contact", connect = false }: { to?: string; connect?: boolean }) {
+/** Closing banner: "Get Started" opens the wallet modal. */
+export function CTA() {
   return (
     <section className="cta">
       <div className="cta-content">
         <Eyebrow>Get started</Eyebrow>
-        <h2>Onchain Trading Without The Compromise</h2>
+        <h2>Professional Trading, Onchain</h2>
         <p>
-          Connect your wallet to swap on {ARC_CHAIN_NAME} through Tower Exchange today, with
-          perpetuals and risk-based sizing on the way.
+          The professional trading experience traders already understand, with the liquidity,
+          settlement and composability of onchain markets. Connect your wallet to swap on{" "}
+          {ARC_CHAIN_NAME} through Tower Exchange today; perpetuals and risk-based sizing are on
+          the way.
         </p>
-        {connect ? (
-          <ConnectWalletButton variant="hero" size="hero">
-            Get Started <ArrowUpRight />
-          </ConnectWalletButton>
-        ) : (
-          <Button variant="hero" size="hero" asChild>
-            <Link href={to}>
-              Get Started <ArrowUpRight />
-            </Link>
-          </Button>
-        )}
+        <ConnectWalletButton variant="hero" size="hero">
+          Get Started <ArrowUpRight />
+        </ConnectWalletButton>
       </div>
     </section>
   );

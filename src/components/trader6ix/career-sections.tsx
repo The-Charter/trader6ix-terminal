@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import {
-  ArrowUpRight,
   Briefcase,
   Globe,
   TrendingUp,
@@ -106,9 +104,9 @@ export function CareerPositions() {
               <strong>{role}</strong>
               <span className="career-mode">{mode}</span>
             </div>
-            <Link href="/contact" className="career-apply">
-              Apply Now <ArrowUpRight size={18} />
-            </Link>
+            <span className="career-apply" aria-disabled="true">
+              Opening soon
+            </span>
           </div>
         ))}
       </div>

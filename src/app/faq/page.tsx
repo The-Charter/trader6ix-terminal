@@ -5,7 +5,7 @@ import { CTA } from "@/components/trader6ix/sections";
 
 export const metadata: Metadata = {
   title: "FAQ — Trader6ix",
-  description: "Find answers to your questions about Trader6ix.",
+  description: "What Trader6ix is, what is live today and what is still being built.",
 };
 
 export default function FaqPage() {
@@ -15,7 +15,7 @@ export default function FaqPage() {
         <FaqHero />
         <FaqTabs />
         <div className="site-container">
-          <CTA connect />
+          <CTA />
         </div>
       </main>
     </SiteLayout>

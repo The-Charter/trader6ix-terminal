@@ -19,7 +19,6 @@ const mainLinks = [
 const headerLinks = [
   ...mainLinks,
   { label: "FAQ", to: "/faq" },
-  { label: "Contact", to: "/contact" },
 ] as const;
 function SoonLink({ label, className }: { label: string; className?: string }) {
   return (
@@ -50,17 +49,26 @@ export function SiteHeader() {
           <img src={logo.url} alt="Trader6ix" />
         </Link>
         <div className={`nav-links ${menu ? "mobile-open" : ""}`}>
-          {headerLinks.map((l) => (
-            <Link key={l.to} href={l.to} onClick={() => setMenu(false)}>
-              {l.label}
-            </Link>
-          ))}
+          {headerLinks.map((l) => {
+            const current = l.to === "/" ? pathname === "/" : pathname.startsWith(l.to);
+            return (
+              <Link
+                key={l.to}
+                href={l.to}
+                className={current ? "active" : undefined}
+                aria-current={current ? "page" : undefined}
+                onClick={() => setMenu(false)}
+              >
+                {l.label}
+              </Link>
+            );
+          })}
         </div>
         {session ? (
           <>
             <Button variant="hero" className="quote-button" asChild>
-              <Link href="/perps" onClick={() => setMenu(false)}>
-                Go to Perps
+              <Link href="/spot" onClick={() => setMenu(false)}>
+                Open App
               </Link>
             </Button>
             <Button
@@ -178,7 +186,6 @@ export function SiteFooter() {
               </Link>
             ))}
           <SoonLink label="Career" />
-          <Link href="/contact">Contact Us</Link>
         </div>
         <div className="footer-column">
           <h3>Company</h3>

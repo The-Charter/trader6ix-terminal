@@ -43,7 +43,7 @@ export default function HomePage() {
             <FAQ />
           </Reveal>
           <Reveal>
-            <CTA connect />
+            <CTA />
           </Reveal>
         </div>
       </main>

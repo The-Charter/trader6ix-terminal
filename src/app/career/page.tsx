@@ -22,7 +22,7 @@ export default function CareerPage() {
         <CareerWhy />
         <CareerPerks />
         <div className="site-container">
-          <CTA connect />
+          <CTA />
         </div>
       </main>
     </SiteLayout>

@@ -19,11 +19,11 @@ export function FeaturesHero() {
     <section className="features-hero">
       <div className="site-container features-hero-copy">
         <Eyebrow>Features</Eyebrow>
-        <h1>All Your Trading. In One Place.</h1>
+        <h1>Everything A Trader Needs. One Terminal.</h1>
         <p>
-          Trader6ix brings the complete trading workflow together. From wallet connection and
-          real-time market data to risk management, trade execution, portfolio tracking, and
-          seamless on-chain settlement on {ARC_CHAIN_NAME}.
+          Connect your wallet, choose a market, analyze the chart, size the position from your
+          risk, then execute and manage it, all from one interface on {ARC_CHAIN_NAME}. Spot swaps
+          are live today; perpetuals and risk-based sizing are in development.
         </p>
       </div>
     </section>
@@ -35,21 +35,20 @@ export function FeaturesBenefits() {
     <section className="features-benefits site-container">
       <div className="features-heading">
         <h2>
-          Trade Against <span>And More</span>
+          Built Around <span>The Trader</span>
         </h2>
-        <p>Our Financial Management Platform Is Transforming The Way People Manage Their Money.</p>
+        <p>The terminal handles the infrastructure underneath, so you can focus on the trade.</p>
       </div>
       <div className="features-benefit-grid">
         <article className="features-payout">
           <div className="features-card-content">
             <h3>Real-Time Market Access</h3>
             <p>
-              Monitor live prices, charts, order books, and trading opportunities from one powerful
-              terminal.
+              Live prices, charts and order books across crypto and FX markets, in one terminal.
             </p>
           </div>
           <img
-            className="features-technicals"
+            className="features-technicals t6-mono"
             src={technicals.url}
             alt="Technical analysis gauge showing a buy signal"
             loading="lazy"
@@ -57,10 +56,11 @@ export function FeaturesBenefits() {
         </article>
         <article className="features-conditions">
           <div className="features-card-content">
-            <h3>Advanced Risk Management</h3>
+            <h3>Risk-Based Position Sizing</h3>
             <p>
-              Calculate position sizes, estimate margin, set stop-loss levels, and evaluate
-              risk-to-reward ratios before placing a trade.
+              Enter your balance, risk, entry and stop-loss, and Trader6ix sizes the position in
+              lots, normalised around USD. Leverage mode shows the exposure and the actual account
+              risk.
             </p>
           </div>
           <img
@@ -82,13 +82,13 @@ export function FeaturesBenefits() {
           <img
             className="features-platform-image"
             src={platform.url}
-            alt="Trading platform listing bonds and yields to maturity"
+            alt="Illustrative market listing"
             loading="lazy"
           />
           <img
             className="features-account-image"
             src={account.url}
-            alt="ASIX account earnings insight"
+            alt="Illustrative earnings card"
             loading="lazy"
           />
         </article>
@@ -101,7 +101,7 @@ const dashboardTabs = [
   { label: "Market Monitoring", Icon: Workflow, image: monitoring.url },
   { label: "Trading Analytics", Icon: PanelsTopLeft, image: analytics.url },
   { label: "Portfolio Performance", Icon: Gauge, image: performance.url },
-  { label: "Trader Feedback", Icon: MessageSquare, image: feedback.url },
+  { label: "Market Screener", Icon: MessageSquare, image: feedback.url },
 ];
 
 export function FeaturesSolutions() {
@@ -115,8 +115,8 @@ export function FeaturesSolutions() {
             Powerful Tools for <span>Smarter Trading</span>
           </h2>
           <p>
-            Analyze markets, manage risk, and execute trades effortlessly with Trader6ix’s unified
-            dashboard—built with everything you need to trade with greater clarity and confidence.
+            Analyze markets, manage risk and execute from one terminal, built to help you trade
+            with clarity and confidence. Previews below are illustrative.
           </p>
         </div>
         <div className="features-dashboard-tabs" role="tablist" aria-label="Dashboard features">
@@ -153,6 +153,7 @@ export function FeaturesSolutions() {
           aria-labelledby={`features-tab-${selected}`}
         >
           <img
+            className="t6-mono"
             src={active?.image}
             alt={`${active?.label} dashboard showing market performance and trading volume`}
             loading="lazy"
@@ -166,7 +167,7 @@ export function FeaturesSolutions() {
 export function FeaturesCTA() {
   return (
     <div className="site-container features-cta">
-      <CTA connect />
+      <CTA />
     </div>
   );
 }

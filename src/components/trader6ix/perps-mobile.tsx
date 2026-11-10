@@ -67,7 +67,7 @@ const NEWS = [
   { time: "18:00", impact: "high", ccy: "USD", title: "FOMC Meeting Minutes released" },
   { time: "20:00", impact: "med", ccy: "JPY", title: "BoJ Core CPI · Forecast 2.3%" },
 ] as const;
-const IMPACT: Record<string, string> = { high: "#EF4444", med: "#F59E0B", low: "#22C55E" };
+const IMPACT: Record<string, string> = { high: "#EF4444", med: "#9a9e99", low: "#22C55E" };
 
 const TIMEFRAMES = ["M1", "M5", "M15", "H1", "H4", "D1", "W1"];
 
@@ -257,7 +257,7 @@ export function PerpsMobile() {
     setSheetOpen(false);
     showToast(
       `${OT_TOAST[orderType]} ${dir} ${sel.sym} not sent — Perps trading isn't connected yet`,
-      "#F59E0B",
+      "#245B43",
     );
   };
 
@@ -530,7 +530,7 @@ export function PerpsMobile() {
                       <button
                         type="button"
                         className="pm-close-pos pm-close-sm"
-                        onClick={() => showToast("Close not sent — Perps trading isn't connected yet", "#F59E0B")}
+                        onClick={() => showToast("Close not sent — Perps trading isn't connected yet", "#245B43")}
                       >
                         Close
                       </button>
@@ -633,7 +633,7 @@ export function PerpsMobile() {
         toast
           ? {
               background: toast.col,
-              color: ["#22C55E", "#16A34A", "#F59E0B"].includes(toast.col) ? "#000" : "#fff",
+              color: ["#22C55E", "#16A34A"].includes(toast.col) ? "#000" : "#fff",
             }
           : undefined
       }
@@ -1187,7 +1187,7 @@ function CandleChart({ pair, tf, light, accent }: { pair: Pair; tf: string; ligh
     }
 
     // 20-period moving average
-    ctx.strokeStyle = light ? "#D97706" : "#F59E0B";
+    ctx.strokeStyle = light ? "rgba(17, 21, 18, 0.45)" : "rgba(245, 246, 243, 0.5)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     series.forEach((_, i) => {

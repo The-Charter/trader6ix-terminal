@@ -55,7 +55,7 @@
   --pm-line-red-strong: #8c3636;
   --pm-green: #00dfa2;
   --pm-red: #e6424c;
-  --pm-amber: #f59e0b;
+  --pm-amber: #e6424c;
   --pm-text: #f5f6f3;
   --pm-text2: #b7bab6;
   --pm-text3: #7d817c;
@@ -78,7 +78,7 @@
   --pm-line-red-strong: #6e2a2a;
   --pm-green: #00a874;
   --pm-red: #d23a44;
-  --pm-amber: #b45309;
+  --pm-amber: #d23a44;
   --pm-text: #111512;
   --pm-text2: #4a4f4a;
   --pm-text3: #7d817c;
@@ -691,7 +691,7 @@
   border-color: var(--pm-accent);
 }
 .pm-ro {
-  color: var(--pm-amber);
+  color: var(--pm-text);
 }
 .pm-exec-row {
   display: grid;

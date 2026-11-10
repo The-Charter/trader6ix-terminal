@@ -8,9 +8,9 @@ import {
 } from "@/components/trader6ix/features-sections";
 
 export const metadata: Metadata = {
-  title: "Our Features — Trader6ix",
+  title: "Features — Trader6ix",
   description:
-    "Explore Trader6ix's pricing solutions, trading platforms, market insights, and dashboard tools — all your investing in one place.",
+    "Markets, charts, risk-based position sizing and execution in one onchain trading terminal on Arc.",
 };
 
 export default function FeaturesPage() {

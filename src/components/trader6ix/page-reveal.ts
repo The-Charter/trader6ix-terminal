@@ -8,7 +8,6 @@ export const revealPaths = [
   "/integration",
   "/career",
   "/faq",
-  "/contact",
 ];
 
 export function isRevealPath(path: string) {

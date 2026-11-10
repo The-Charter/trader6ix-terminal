@@ -10,7 +10,7 @@ import watchlist from "@/assets/about-watchlist.png.asset.json";
 import platforms from "@/assets/about-platforms.png.asset.json";
 
 const summary =
-  "Our Unified Trading Terminal Is Transforming the Way People Analyze Markets and Execute Trades.";
+  "One terminal for crypto and FX markets and onchain liquidity, built around how traders already work.";
 
 function AboutHeading({ badge, children }: { badge: string; children: React.ReactNode }) {
   return (
@@ -26,11 +26,12 @@ export function AboutHero() {
   return (
     <section className="about-hero">
       <div className="site-container about-hero-content">
-        <Eyebrow>Introducing our Insights</Eyebrow>
-        <h1>We’re Making Multi-Asset Trading Simpler, Faster, and More Accessible.</h1>
+        <Eyebrow>About Trader6ix</Eyebrow>
+        <h1>Onchain Trading Shouldn’t Feel Like A Compromise.</h1>
         <p>
-          Shape your trading strategy effortlessly with Trader6ix’s unified dashboard, powered by
-          real-time data, advanced analytics, and risk-management tools at your fingertips.
+          Trader6ix is a trader-focused terminal bringing multiple markets and onchain liquidity
+          into one professional trading environment, with the workflow traders already know from
+          MetaTrader and centralized exchanges.
         </p>
       </div>
     </section>
@@ -43,17 +44,18 @@ export function AboutMission() {
       <div className="site-container about-section-content">
         <div className="about-mission-copy">
           <h2>
-            What We <span>Do?</span>
+            What We&apos;re <span>Building</span>
           </h2>
           <p>
-            Trader6ix is building an all-in-one trading terminal for crypto and FX markets, bringing
-            spot swaps, perpetual futures, real-time market data, charts, order books, portfolio
-            tracking, and risk-management tools into one streamlined experience. Built on Arc
-            Testnet, the platform gives traders a simpler way to connect their wallet, explore
-            markets, manage positions, and execute trades without switching between multiple
-            platforms. Whether you’re analyzing price action, calculating position size, monitoring
-            portfolio activity, or testing new strategies, Trader6ix provides the tools and insights
-            needed to trade with greater clarity and confidence.
+            The vision is crypto and FX perpetuals, crypto and FX spot markets, stablecoin markets
+            and decentralized liquidity in one terminal. Perpetuals are built around Hibachi; spot
+            liquidity comes from Tower Exchange today, with Curve Finance in development. Separate
+            adapters for each market mean new venues plug in without rebuilding the terminal, and
+            the trader never has to understand the infrastructure underneath a trade. Built on{" "}
+            {ARC_CHAIN_NAME}, where stablecoins are becoming financial infrastructure. The product is
+            still being built, and the direction is clear: the professional trading experience
+            traders already understand, with the liquidity, settlement and composability of onchain
+            markets.
           </p>
         </div>
       </div>
@@ -65,32 +67,32 @@ export function AboutProcess() {
   const steps = [
     {
       title: "1. Connect Your Wallet",
-      description: `Access Trader6ix in minutes by connecting your wallet to ${ARC_CHAIN_NAME} or signing in with your preferred login method.`,
+      description: `Connect your own wallet on ${ARC_CHAIN_NAME}. There is no account or password to create.`,
       Icon: Unplug,
     },
     {
       title: "2. Explore the Markets",
       description:
-        "Review live market data, candlestick charts, order books, and available crypto or FX instruments from one unified terminal.",
+        "Choose a crypto or FX market and analyze it with live prices, candlestick charts and order books.",
       Icon: Telescope,
     },
     {
       title: "3. Plan Your Trade",
       description:
-        "Use the risk calculator and trading tools to define your position size, leverage, stop-loss, take-profit, and overall strategy.",
+        "Define your risk: entry, stop-loss and take-profit set the position size, in lots or through leverage mode.",
       Icon: SquareChartGantt,
     },
     {
       title: "4. Execute With Confidence",
       description:
-        "Place spot or perpetual trades, monitor your positions, and track your portfolio from a streamlined trading dashboard.",
+        "Execute, then manage the position and track your portfolio from the same interface. Spot is live today; perpetuals are in development.",
       Icon: FileTerminal,
     },
   ];
   return (
     <section className="about-process site-container">
-      <AboutHeading badge="Introducing our Insights">
-        The <span>Processed</span>
+      <AboutHeading badge="How It Works">
+        The <span>Process</span>
       </AboutHeading>
       <div className="about-steps">
         {steps.map(({ title, description, Icon }) => (
@@ -111,28 +113,27 @@ export function AboutBenefits() {
   return (
     <section className="about-benefits">
       <div className="site-container about-section-content">
-        <AboutHeading badge="Our Features">
-          Our <span>Benefit</span>
+        <AboutHeading badge="Why Trader6ix">
+          What You <span>Get</span>
         </AboutHeading>
         <div className="about-benefit-grid">
           <article className="about-benefit-small">
             <div>
               <h3>Real-Time Market Access</h3>
               <p>
-                Monitor live prices, charts, order books, and trading opportunities from one
-                powerful terminal.
+                Live prices, charts and order books across crypto and FX markets, in one terminal.
               </p>
             </div>
             <img
-              className="about-benefit-art"
+              className="about-benefit-art t6-mono"
               src={payout.url}
-              alt="Cryptocurrency payout network"
+              alt="Illustrative integrations graphic"
               loading="lazy"
             />
           </article>
           <article className="about-benefit-small">
             <div>
-              <h3>Advanced Risk Management</h3>
+              <h3>Risk-Based Position Sizing</h3>
               <p>
                 Calculate position sizes, estimate margin, set stop-loss levels, and evaluate
                 risk-to-reward ratios before placing a trade.
@@ -157,7 +158,7 @@ export function AboutBenefits() {
             <img
               className="about-platform-art"
               src={platforms.url}
-              alt="Multi-asset investment platform showing bond listings"
+              alt="Illustrative market listing"
               loading="lazy"
             />
           </article>
@@ -170,7 +171,7 @@ export function AboutBenefits() {
 export function AboutCTA() {
   return (
     <div className="site-container about-cta">
-      <CTA connect />
+      <CTA />
     </div>
   );
 }
