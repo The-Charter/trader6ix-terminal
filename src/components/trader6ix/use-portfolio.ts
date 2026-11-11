@@ -32,12 +32,25 @@ export interface TradeItem {
   price?: string;
   timestamp: number;
   pnl?: string;
+  txHash?: string;
+}
+
+interface TradesEnvelope {
+  trades: TradeItem[];
+  /** Block to continue from for older trades, or null once genesis is reached. */
+  nextBefore: number | null;
+  scannedBackTo: string;
 }
 
 interface PortfolioState {
   portfolio: PortfolioSnapshot | null;
   activity: ActivityItem[];
   trades: TradeItem[];
+  /** Cursor for older trades; null when the whole history has been scanned. */
+  tradesNextBefore: number | null;
+  /** Estimated time the trade scan has reached back to. */
+  tradesScannedBackTo: string | null;
+  loadingOlder: boolean;
   /** True only while there is nothing to show yet. */
   loading: boolean;
   error: string | null;
@@ -51,6 +64,9 @@ const EMPTY: PortfolioState = {
   portfolio: null,
   activity: [],
   trades: [],
+  tradesNextBefore: null,
+  tradesScannedBackTo: null,
+  loadingOlder: false,
   loading: false,
   error: null,
   authExpired: false,
@@ -77,6 +93,8 @@ interface CachedPayload {
   portfolio: PortfolioSnapshot | null;
   activity: ActivityItem[];
   trades: TradeItem[];
+  tradesNextBefore?: number | null;
+  tradesScannedBackTo?: string | null;
 }
 
 function cacheKey(address: string): string {
@@ -114,6 +132,23 @@ function errorText(payload: unknown, fallback: string): string {
   return fallback;
 }
 
+function tradeKey(trade: TradeItem): string {
+  return trade.txHash ?? `${trade.timestamp}-${trade.symbol}-${trade.quantity}`;
+}
+
+/** Newest-first union of two trade lists, de-duplicated. */
+function mergeTrades(a: TradeItem[], b: TradeItem[]): TradeItem[] {
+  const byKey = new Map<string, TradeItem>();
+  for (const trade of [...a, ...b]) byKey.set(tradeKey(trade), trade);
+  return [...byKey.values()].sort((x, y) => y.timestamp - x.timestamp);
+}
+
+/** Of two cursors, the one that has scanned further back (null = whole history). */
+function deeperCursor(a: number | null, b: number | null): number | null {
+  if (a === null || b === null) return null;
+  return Math.min(a, b);
+}
+
 /**
  * The connected wallet's portfolio, activity and trades.
  *
@@ -125,6 +160,8 @@ function errorText(payload: unknown, fallback: string): string {
 export function usePortfolioData(address: string | null) {
   const [state, setState] = useState<PortfolioState>(EMPTY);
   const mounted = useRef(true);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   useEffect(() => {
     mounted.current = true;
@@ -175,18 +212,38 @@ export function usePortfolioData(address: string | null) {
 
         const portfolio = portfolioJson as PortfolioSnapshot;
         const activity = activityJson as ActivityItem[];
-        const trades = tradesJson as TradeItem[];
+        const envelope = tradesJson as TradesEnvelope;
 
-        setState({
+        // A background refresh only re-reads the newest window. Merge it into
+        // what is already loaded so trades the user paged back to do not vanish.
+        const prev = stateRef.current;
+        const trades = mergeTrades(prev.trades, envelope.trades);
+        const nextBefore =
+          prev.trades.length > 0 ? deeperCursor(prev.tradesNextBefore, envelope.nextBefore) : envelope.nextBefore;
+        const scannedBackTo =
+          prev.trades.length > 0 && prev.tradesScannedBackTo && prev.tradesScannedBackTo < envelope.scannedBackTo
+            ? prev.tradesScannedBackTo
+            : envelope.scannedBackTo;
+
+        setState((current) => ({
+          ...current,
           portfolio,
           activity,
           trades,
+          tradesNextBefore: nextBefore,
+          tradesScannedBackTo: scannedBackTo,
           loading: false,
           error: null,
           authExpired: false,
           updatedAt: Date.now(),
+        }));
+        writeCache(address, {
+          portfolio,
+          activity,
+          trades,
+          tradesNextBefore: nextBefore,
+          tradesScannedBackTo: scannedBackTo,
         });
-        writeCache(address, { portfolio, activity, trades });
       } catch (err) {
         if (!mounted.current) return;
         const message = err instanceof Error ? err.message : "Failed to load portfolio";
@@ -213,6 +270,9 @@ export function usePortfolioData(address: string | null) {
         portfolio: cached.portfolio,
         activity: cached.activity,
         trades: cached.trades,
+        tradesNextBefore: cached.tradesNextBefore ?? null,
+        tradesScannedBackTo: cached.tradesScannedBackTo ?? null,
+        loadingOlder: false,
         loading: false,
         error: null,
         authExpired: false,
@@ -245,5 +305,46 @@ export function usePortfolioData(address: string | null) {
     };
   }, [address, load]);
 
-  return { ...state, refresh: () => load() };
+  /** Scans further back for older trades and appends them. */
+  const loadOlderTrades = useCallback(async () => {
+    if (!address || state.tradesNextBefore === null || state.loadingOlder) return;
+    setState((prev) => ({ ...prev, loadingOlder: true, error: null }));
+    try {
+      const res = await apiFetch(
+        `/api/data/trades?address=${encodeURIComponent(address)}&before=${state.tradesNextBefore}`
+      );
+      const json = await res.json();
+      if (!mounted.current) return;
+      if (res.status === 401) {
+        setState((prev) => ({ ...prev, loadingOlder: false, authExpired: true }));
+        return;
+      }
+      if (!res.ok) throw new Error(errorText(json, "Failed to load older trades"));
+      const envelope = json as TradesEnvelope;
+      const prev = stateRef.current;
+      const trades = mergeTrades(prev.trades, envelope.trades);
+      setState((current) => ({
+        ...current,
+        trades,
+        tradesNextBefore: envelope.nextBefore,
+        tradesScannedBackTo: envelope.scannedBackTo,
+        loadingOlder: false,
+      }));
+      if (prev.portfolio) {
+        writeCache(address, {
+          portfolio: prev.portfolio,
+          activity: prev.activity,
+          trades,
+          tradesNextBefore: envelope.nextBefore,
+          tradesScannedBackTo: envelope.scannedBackTo,
+        });
+      }
+    } catch (err) {
+      if (!mounted.current) return;
+      const message = err instanceof Error ? err.message : "Failed to load older trades";
+      setState((prev) => ({ ...prev, loadingOlder: false, error: message }));
+    }
+  }, [address, state.tradesNextBefore, state.loadingOlder]);
+
+  return { ...state, refresh: () => load(), loadOlderTrades };
 }

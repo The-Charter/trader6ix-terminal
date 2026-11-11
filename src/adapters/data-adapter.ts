@@ -36,13 +36,15 @@ export interface IndexedTransaction {
 }
 
 export interface IndexedTrade {
-  venue: string; // adapter id this trade came from, e.g. "hibachi", "curve"
+  venue: string; // adapter id this trade came from, e.g. "hibachi", "tower"
   symbol: string;
   side: "buy" | "sell";
   quantity: string;
   price?: string;
   timestamp: number;
   pnl?: string;
+  /** Transaction that executed the trade, when the source knows it. */
+  txHash?: string;
 }
 
 export interface DataAdapter {

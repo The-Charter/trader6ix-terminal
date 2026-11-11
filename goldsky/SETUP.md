@@ -69,6 +69,6 @@ queries in `src/adapters/goldsky-data-adapter.ts` to match that schema.
 
 - `startBlock: 0` in `trader6ix.yaml` indexes from genesis. Set it to the USDC /
   EURC contract deploy block to avoid a full-history backfill.
-- To add more data later (Curve swaps, StableFX settlements), add new
+- To add more data later (StableFX settlements, other onchain events), add new
   `instances` entries to the same config, or a second subgraph if you want them
   versioned separately.

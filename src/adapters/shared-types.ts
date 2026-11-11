@@ -1,8 +1,8 @@
 /**
  * Shared primitives used across all four adapter domains (Perps, FX, Spot, Data).
- * Trader6ix's architecture: the UI never talks to Hibachi, Circle, Curve, or
+ * Trader6ix's architecture: the UI never talks to Hibachi, Circle, Tower, or
  * Goldsky directly — it talks to one of these four interfaces, and a concrete
- * adapter (HibachiAdapter, StableFXAdapter, CurveAdapter, GoldskyDataAdapter)
+ * adapter (HibachiAdapter, StableFXAdapter, TowerAdapter, GoldskyDataAdapter)
  * implements it. Swapping or adding a venue means writing one new adapter file,
  * never touching a component.
  */

@@ -49,7 +49,7 @@ export function AboutMission() {
           <p>
             The vision is crypto and FX perpetuals, crypto and FX spot markets, stablecoin markets
             and decentralized liquidity in one terminal. Perpetuals are built around Hibachi; spot
-            liquidity comes from Tower Exchange today, with Curve Finance in development. Separate
+            liquidity comes from Tower Exchange today. Separate
             adapters for each market mean new venues plug in without rebuilding the terminal, and
             the trader never has to understand the infrastructure underneath a trade. Built on{" "}
             {ARC_CHAIN_NAME}, where stablecoins are becoming financial infrastructure. The product is

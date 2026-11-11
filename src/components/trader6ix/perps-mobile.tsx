@@ -926,9 +926,14 @@ const titleCase = (v: string) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : v
 function HistoryPanel() {
   const session = useSession();
   const address = session?.wallet ?? null;
-  const { trades, loading, error, refresh, authExpired } = usePortfolioData(address);
+  const { trades, loading, error, refresh, authExpired, tradesNextBefore, tradesScannedBackTo, loadingOlder, loadOlderTrades } =
+    usePortfolioData(address);
   const privy = usePrivyOptional();
   const connectWallet = useConnectWallet();
+  const canLoadOlder = Boolean(address) && tradesNextBefore !== null;
+  const searchedTo = tradesScannedBackTo
+    ? new Date(tradesScannedBackTo).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+    : null;
 
   const closed = trades.filter((t) => t.pnl !== undefined);
   const wins = closed.filter((t) => Number(t.pnl) > 0).length;
@@ -981,7 +986,14 @@ function HistoryPanel() {
   } else if (trades.length === 0) {
     empty = {
       title: "No trade history yet",
-      body: "Trades executed from your wallet will appear here. Perpetuals fills will show once Perps trading is connected.",
+      body: canLoadOlder
+        ? `No trades found back to ${searchedTo ?? "the start of the search"}. Older history may exist: search further back.`
+        : "Trades executed from your wallet will appear here. Perpetuals fills will show once Perps trading is connected.",
+      action: canLoadOlder ? (
+        <button type="button" className="pm-empty-cta" onClick={() => void loadOlderTrades()} disabled={loadingOlder}>
+          {loadingOlder ? "Searching…" : "Search older"}
+        </button>
+      ) : undefined,
     };
   }
 
@@ -1016,7 +1028,7 @@ function HistoryPanel() {
             const hasPnl = t.pnl !== undefined;
             const pnl = Number(t.pnl ?? 0);
             return (
-              <li className="pm-card pm-h-row" key={`${t.timestamp}-${i}`}>
+              <li className="pm-card pm-h-row" key={t.txHash ?? `${t.timestamp}-${i}`}>
                 <div className="pm-h-top">
                   <span className="pm-card-sym pm-sm">{t.symbol}</span>
                   <span className={`pm-dir ${sideCls}`}>{t.side.toUpperCase()}</span>
@@ -1037,6 +1049,19 @@ function HistoryPanel() {
               </li>
             );
           })}
+          <li className="pm-h-more">
+            {canLoadOlder ? (
+              <>
+                <span>Searched back to {searchedTo ?? "recent blocks"}.</span>
+                <button type="button" className="pm-empty-cta" onClick={() => void loadOlderTrades()} disabled={loadingOlder}>
+                  {loadingOlder ? "Searching…" : "Load older trades"}
+                </button>
+              </>
+            ) : (
+              <span>That is the start of this wallet’s history.</span>
+            )}
+            {error && <span className="pm-h-more-err">{error}</span>}
+          </li>
         </ul>
       )}
     </section>

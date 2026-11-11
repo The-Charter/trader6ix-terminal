@@ -67,7 +67,7 @@ export function StatusChip({ status }: { status: Status }) {
   return <span className={`t6c-chip t6c-chip-${status}`}>{STATUS_LABEL[status]}</span>;
 }
 
-/** Current integrations: Hibachi (perpetuals), Tower Exchange and Curve Finance (spot). */
+/** Current integrations: Hibachi (perpetuals) and Tower Exchange (spot). */
 export function Integrations() {
   return (
     <section className="t6c-section" aria-labelledby="t6c-integrations">
@@ -80,7 +80,7 @@ export function Integrations() {
           experience.
         </p>
       </div>
-      <div className="t6c-grid t6c-grid-3">
+      <div className="t6c-grid t6c-grid-2">
         <article className="t6c-card">
           <div className="t6c-card-top">
             <span className="t6c-brand">
@@ -110,18 +110,6 @@ export function Integrations() {
           <p>
             Spot swaps on {ARC_CHAIN_NAME} route through Tower Exchange. On Arc mainnet they settle
             in USDC, EURC and cirBTC, signed from your own wallet.
-          </p>
-        </article>
-        <article className="t6c-card">
-          <div className="t6c-card-top">
-            <span className="t6c-brand">Curve Finance</span>
-            <StatusChip status="building" />
-          </div>
-          <h3>Stablecoin liquidity</h3>
-          <p>
-            Curve&apos;s stablecoin pools are being integrated as another source of onchain spot
-            liquidity alongside Tower Exchange, with stablecoins at the centre of the trading
-            experience. Not live yet.
           </p>
         </article>
       </div>
@@ -178,9 +166,8 @@ export function Markets() {
       `Tower Exchange on ${ARC_CHAIN_NAME}${IS_ARC_MAINNET ? " mainnet" : ""}`,
       "live",
     ],
+    ["Spot assets", "USDC, EURC and cirBTC, routed by Tower Exchange", "live"],
     ["Crypto and FX perpetuals", "Hibachi", "building"],
-    ["Stablecoin liquidity", "Curve Finance pools on Arc", "building"],
-    ["Spot assets", "USDC, EURC and cirBTC are the assets Tower routes on Arc mainnet today", "live"],
     ["FX spot markets", "Not yet available", "planned"],
     ["Additional decentralized liquidity", "More venues through the modular adapter layer", "planned"],
   ];
@@ -192,15 +179,30 @@ export function Markets() {
         </h2>
         <p>Current functionality is labelled separately from planned capability.</p>
       </div>
-      <ul className="t6c-rows">
-        {rows.map(([name, detail, status]) => (
-          <li className="t6c-row" key={name}>
-            <span className="t6c-row-name">{name}</span>
-            <span className="t6c-row-detail">{detail}</span>
-            <StatusChip status={status} />
-          </li>
-        ))}
-      </ul>
+      <div className="t6c-table-wrap">
+        <table className="t6c-table">
+          <thead>
+            <tr>
+              <th scope="col">Market</th>
+              <th scope="col">Infrastructure</th>
+              <th scope="col">Availability</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(([name, detail, status]) => (
+              <tr key={name}>
+                <th scope="row" className="t6c-td-name">
+                  {name}
+                </th>
+                <td className="t6c-td-detail">{detail}</td>
+                <td className="t6c-td-status">
+                  <StatusChip status={status} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

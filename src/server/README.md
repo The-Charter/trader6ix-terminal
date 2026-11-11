@@ -74,7 +74,7 @@ returns 401 instead of trusting an unverified token.
 | GET | `/api/v1/admin/users` | bearer + `admin` | RBAC |
 | GET | `/api/data/portfolio` | bearer | balances for one of the caller's wallets |
 | GET | `/api/data/activity` | bearer | recent transfers/swaps, same wallet rule |
-| GET | `/api/data/trades` | bearer | executed swaps + PnL, same wallet rule |
+| GET | `/api/data/trades` | bearer | executed swaps + PnL, same wallet rule. Returns `{ trades, nextBefore, scannedBackTo }`; pass `?before=<nextBefore>` to page further back |
 
 Every response carries `x-request-id`. `GET /api/tower/tokens|prices|dexes`
 remain public market-data proxies.

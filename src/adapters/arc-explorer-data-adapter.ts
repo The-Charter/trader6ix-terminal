@@ -30,6 +30,6 @@ export const arcExplorerDataAdapter: DataAdapter = {
     const res = await fetch(apiUrl(`/api/data/trades?address=${encodeURIComponent(walletAddress)}`));
     const json = await res.json();
     if (!res.ok) throw new Error(json.error ?? "Failed to load trades");
-    return (json as IndexedTrade[]).slice(0, limit);
+    return (json.trades as IndexedTrade[]).slice(0, limit);
   },
 };

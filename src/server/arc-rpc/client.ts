@@ -296,7 +296,8 @@ async function head(): Promise<{ blockNumber: number; timestamp: number }> {
 /** Resolves block timestamps, preferring real headers and falling back to the measured rate. */
 async function resolveTimestamps(
   blockNumbers: number[],
-  anchor: { blockNumber: number; timestamp: number }
+  anchor: { blockNumber: number; timestamp: number },
+  maxLookups: number = MAX_BLOCK_LOOKUPS
 ): Promise<Map<number, number>> {
   const rpc = getProvider();
   const resolved = new Map<number, number>();
@@ -308,7 +309,7 @@ async function resolveTimestamps(
     else missing.push(blockNumber);
   }
 
-  const lookups = missing.slice(0, MAX_BLOCK_LOOKUPS);
+  const lookups = missing.slice(0, maxLookups);
   await Promise.all(
     lookups.map(async (blockNumber) => {
       try {
@@ -403,6 +404,38 @@ function sourceForEmitter(emitter: string): HistorySource | undefined {
   return HISTORY_SOURCES.find((source) => source.emitter.toLowerCase() === lower);
 }
 
+function parseTransfers(
+  selected: ethers.Log[],
+  timestamps: Map<number, number>,
+  methods: Map<string, string | undefined>,
+  anchor: { blockNumber: number; timestamp: number }
+): TokenTransfer[] {
+  return selected.flatMap((log) => {
+    const parsed = TRANSFER_IFACE.parseLog({ topics: [...log.topics], data: log.data });
+    if (!parsed) return [];
+    const timestamp = timestamps.get(log.blockNumber) ?? anchor.timestamp;
+    const source = sourceForEmitter(String(log.address));
+    return [
+      {
+        txHash: log.transactionHash,
+        logIndex: log.index,
+        timestamp: new Date(timestamp * 1000).toISOString(),
+        from: String(parsed.args[0]),
+        to: String(parsed.args[1]),
+        method: methods.get(log.transactionHash),
+        rawValue: String(parsed.args[2]),
+        // Decimals belong to the EMITTER that produced the value: the system log
+        // reports 18-decimal amounts, the ERC-20 contract 6.
+        decimals: source?.decimals ?? 18,
+        tokenSymbol: source?.symbol ?? "UNKNOWN",
+        // Always report the canonical token address, never the system emitter,
+        // so trust checks and token lookups in the routes keep working.
+        tokenAddress: source?.address ?? String(log.address),
+      },
+    ];
+  });
+}
+
 async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
   const anchor = await head();
   const padded = ethers.zeroPadValue(wallet, 32);
@@ -451,30 +484,7 @@ async function scanTransfers(wallet: string): Promise<TokenTransfer[]> {
   );
   const methods = await resolveMethods(selected.map((log) => log.transactionHash));
 
-  return selected.flatMap((log) => {
-    const parsed = TRANSFER_IFACE.parseLog({ topics: [...log.topics], data: log.data });
-    if (!parsed) return [];
-    const timestamp = timestamps.get(log.blockNumber) ?? anchor.timestamp;
-    const source = sourceForEmitter(String(log.address));
-    return [
-      {
-        txHash: log.transactionHash,
-        logIndex: log.index,
-        timestamp: new Date(timestamp * 1000).toISOString(),
-        from: String(parsed.args[0]),
-        to: String(parsed.args[1]),
-        method: methods.get(log.transactionHash),
-        rawValue: String(parsed.args[2]),
-        // Decimals belong to the EMITTER that produced the value: the system log
-        // reports 18-decimal amounts, the ERC-20 contract 6.
-        decimals: source?.decimals ?? 18,
-        tokenSymbol: source?.symbol ?? "UNKNOWN",
-        // Always report the canonical token address, never the system emitter,
-        // so trust checks and token lookups in the routes keep working.
-        tokenAddress: source?.address ?? String(log.address),
-      },
-    ];
-  });
+  return parseTransfers(selected, timestamps, methods, anchor);
 }
 
 /**
@@ -505,4 +515,91 @@ export async function getTokenTransfers(address: string): Promise<TokenTransfer[
 
   inFlightScans.set(key, scan);
   return scan;
+}
+
+/**
+ * One window of an address's transfer history, walking backwards from `before`.
+ *
+ * `scanTransfers` above is deliberately shallow — it feeds the activity feed,
+ * which only needs the latest movements. It covers a few hours and gives up
+ * after a couple of quiet pages, so using it for the trades table meant any
+ * swap older than that was never even queried. This walks back as far as the
+ * time budget allows and hands back a cursor, so the caller can keep going to
+ * genesis instead of silently stopping.
+ *
+ * A window that fails (rate limit) is never skipped: the scan stops there and
+ * the cursor still points at it, so a retry resumes without a hole in history.
+ */
+export interface TransferHistoryPage {
+  transfers: TokenTransfer[];
+  /** Pass as `before` to continue further back, or null when genesis is reached. */
+  nextBefore: number | null;
+  /** Estimated ISO time of the oldest block covered so far. */
+  scannedBackTo: string;
+}
+
+const PAGE_LOG_TARGET = 40;
+const PAGE_BUDGET_MS = 8_000;
+const PAGE_BLOCK_LOOKUPS = 120;
+const PAGE_MAX_LOGS = 400;
+
+export async function getTransferHistoryPage(
+  address: string,
+  options: { before?: number; budgetMs?: number } = {}
+): Promise<TransferHistoryPage> {
+  const wallet = address.toLowerCase();
+  const anchor = await head();
+  const padded = ethers.zeroPadValue(wallet, 32);
+  const emitters = [...new Set(HISTORY_SOURCES.map((source) => source.emitter))];
+  const deadline = Date.now() + (options.budgetMs ?? PAGE_BUDGET_MS);
+
+  let toBlock = Math.min(options.before ?? anchor.blockNumber, anchor.blockNumber);
+  const logs: ethers.Log[] = [];
+  let coveredFrom = toBlock + 1;
+  let scannedAny = false;
+
+  while (toBlock > 0) {
+    const fromBlock = Math.max(0, toBlock - MAX_RANGE + 1);
+    // One query per direction covers every tracked token at once.
+    const filters = [
+      { address: emitters, topics: [TRANSFER_TOPIC, padded], fromBlock, toBlock },
+      { address: emitters, topics: [TRANSFER_TOPIC, null, padded], fromBlock, toBlock },
+    ];
+    const results = await mapLimited(filters, LOG_FANOUT, getLogsWithRetry);
+
+    if (results.some((result) => result.failed)) {
+      if (!scannedAny) {
+        throw new Error("Arc's RPC is rate limiting history requests. Please retry shortly.");
+      }
+      break; // leave this window unscanned; the cursor resumes from it
+    }
+
+    for (const result of results) logs.push(...result.logs);
+    scannedAny = true;
+    coveredFrom = fromBlock;
+    toBlock = fromBlock - 1;
+
+    if (logs.length >= PAGE_LOG_TARGET || logs.length >= PAGE_MAX_LOGS || Date.now() > deadline) break;
+  }
+
+  const unique = new Map<string, ethers.Log>();
+  for (const log of logs) unique.set(`${log.transactionHash}-${log.index}`, log);
+  const selected = [...unique.values()].sort((a, b) => b.blockNumber - a.blockNumber);
+
+  const timestamps = await resolveTimestamps(
+    selected.map((log) => log.blockNumber),
+    anchor,
+    PAGE_BLOCK_LOOKUPS
+  );
+  const methods = await resolveMethods(selected.map((log) => log.transactionHash));
+
+  const scannedBackTo = new Date(
+    Math.floor(anchor.timestamp - (anchor.blockNumber - coveredFrom) * ARC_BLOCK_SECONDS) * 1000
+  ).toISOString();
+
+  return {
+    transfers: parseTransfers(selected, timestamps, methods, anchor),
+    nextBefore: coveredFrom > 1 ? coveredFrom - 1 : null,
+    scannedBackTo,
+  };
 }

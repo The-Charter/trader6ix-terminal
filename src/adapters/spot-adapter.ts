@@ -39,8 +39,8 @@ export interface SwapResult {
 
 /**
  * Spot venues are AMM/DEX pools rather than an orderbook or an RFQ desk.
- * Curve is the first integration; additional DEX adapters (Uniswap, etc.)
- * plug in the same way — implement this interface, add to the registry.
+ * Tower Exchange is the current integration; additional venues plug in the same
+ * way — implement this interface, add to the registry.
  */
 export interface SpotAdapter {
   id: string;

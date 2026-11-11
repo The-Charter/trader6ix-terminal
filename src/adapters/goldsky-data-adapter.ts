@@ -6,7 +6,7 @@ import type { DataAdapter, PortfolioSnapshot, IndexedTransaction, IndexedTrade }
  * generic "give me all Arc data" endpoint. Getting this live requires:
  *   1. A free Goldsky account (no credit card) — sign up at goldsky.com
  *   2. Writing a subgraph manifest targeting the contracts we care about
- *      (USDC/EURC transfers, StableFX settlement events, Curve swap events,
+ *      (USDC/EURC transfers, StableFX settlement events,
  *      Hibachi-related onchain events if any)
  *   3. `goldsky login` + `goldsky subgraph deploy` from an authenticated CLI
  *      session — this has to run from your machine or CI, not from this

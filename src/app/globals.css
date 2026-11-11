@@ -4750,3 +4750,107 @@ html[data-app-theme="light"] body:has(.features-page) .nav-shell {
 html[data-app-theme="light"] body:has(.features-page) .features-cta .cta {
   box-shadow: 0 8px 28px rgba(17, 21, 18, 0.12);
 }
+
+/* Markets table: three aligned columns (market / infrastructure / availability) */
+.t6c-table-wrap {
+  margin-top: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.t6c-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: left;
+}
+.t6c-table col:first-child,
+.t6c-table th:first-child {
+  width: 34%;
+}
+.t6c-table th:last-child,
+.t6c-table td:last-child {
+  width: 190px;
+  text-align: right;
+}
+.t6c-table thead th {
+  padding: 14px 28px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground, rgba(245, 246, 243, 0.68));
+  border-bottom: 1px solid var(--border);
+}
+.t6c-table tbody th,
+.t6c-table tbody td {
+  height: 76px;
+  padding: 0 28px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+  font-size: 16px;
+  line-height: 1.45;
+}
+.t6c-table tbody tr:last-child th,
+.t6c-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.t6c-td-name {
+  font-weight: 500;
+}
+.t6c-td-detail {
+  color: var(--muted-foreground, rgba(245, 246, 243, 0.68));
+}
+@media (max-width: 760px) {
+  .t6c-table,
+  .t6c-table tbody,
+  .t6c-table tr,
+  .t6c-table th,
+  .t6c-table td {
+    display: block;
+    width: auto;
+  }
+  .t6c-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .t6c-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name status" "detail detail";
+    gap: 6px 16px;
+    align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .t6c-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .t6c-table tbody th,
+  .t6c-table tbody td {
+    height: auto;
+    padding: 0;
+    border: 0;
+    font-size: 15px;
+  }
+  .t6c-table tbody .t6c-td-name {
+    grid-area: name;
+  }
+  .t6c-table tbody th:first-child,
+  .t6c-table tbody td:last-child {
+    width: auto;
+  }
+  .t6c-table tbody .t6c-td-status {
+    grid-area: status;
+    width: auto;
+    white-space: nowrap;
+    text-align: right;
+  }
+  .t6c-table tbody .t6c-td-detail {
+    grid-area: detail;
+    font-size: 14px;
+  }
+}

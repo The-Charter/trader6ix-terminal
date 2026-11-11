@@ -3,7 +3,7 @@ import { formatUnits } from "ethers";
 import { withApi } from "@/server/http/with-api";
 import { requireOwnedWallet } from "@/server/auth/ownership";
 import { badRequest } from "@/server/http/errors";
-import { getTokenTransfers, type TokenTransfer } from "@/server/arc-rpc/client";
+import { getTransferHistoryPage, type TokenTransfer } from "@/server/arc-rpc/client";
 import { fetchSpotPrices } from "@/server/prices/spot";
 import { isTrustedArcToken } from "@/lib/arc-tokens";
 import type { IndexedTrade } from "@/adapters/data-adapter";
@@ -21,6 +21,12 @@ const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
  * method selector, so it keeps working across routers (Tower's executor,
  * Uniswap, Kyber, Aerodrome…). Multi-hop legs that net out are ignored by
  * pairing the sold leg with a bought leg of a different token.
+ *
+ * History is read from the chain one window at a time, newest first. The reply
+ * is `{ trades, nextBefore, scannedBackTo }`: pass `nextBefore` back as `?before=`
+ * to continue further into the past; it is null once genesis has been scanned.
+ * There is no "today only" filter — only the time budget of a single request
+ * limits how far one call reaches.
  */
 export const GET = withApi(
   async (req, ctx) => {
@@ -30,9 +36,17 @@ export const GET = withApi(
     }
     await requireOwnedWallet(ctx.user, address);
 
-    const transfers = (await getTokenTransfers(address)).filter((transfer) =>
-      isTrustedArcToken(transfer.tokenAddress)
-    );
+    const beforeParam = req.nextUrl.searchParams.get("before");
+    let before: number | undefined;
+    if (beforeParam !== null) {
+      before = Number(beforeParam);
+      if (!Number.isInteger(before) || before < 1) {
+        throw badRequest("before must be a positive block number.");
+      }
+    }
+
+    const page = await getTransferHistoryPage(address, { before });
+    const transfers = page.transfers.filter((transfer) => isTrustedArcToken(transfer.tokenAddress));
     const wallet = address.toLowerCase();
 
     const grouped = new Map<string, TokenTransfer[]>();
@@ -45,7 +59,7 @@ export const GET = withApi(
     const prices = await fetchSpotPrices().catch(() => ({}) as Record<string, number>);
 
     const trades: IndexedTrade[] = [];
-    for (const group of grouped.values()) {
+    for (const [txHash, group] of grouped) {
       const outgoing = group.filter((transfer) => transfer.from.toLowerCase() === wallet);
       const incoming = group.filter((transfer) => transfer.to.toLowerCase() === wallet);
       if (outgoing.length === 0 || incoming.length === 0) continue;
@@ -74,11 +88,16 @@ export const GET = withApi(
         price: (boughtAmount / soldAmount).toFixed(8),
         timestamp: Math.floor(new Date(sold.timestamp).getTime() / 1000),
         pnl: pnl !== undefined ? pnl.toFixed(2) : undefined,
+        txHash,
       });
     }
 
     trades.sort((a, b) => b.timestamp - a.timestamp);
-    return NextResponse.json(trades);
+    return NextResponse.json({
+      trades,
+      nextBefore: page.nextBefore,
+      scannedBackTo: page.scannedBackTo,
+    });
   },
   { auth: true, rateLimit: { limit: 60 } }
 );
