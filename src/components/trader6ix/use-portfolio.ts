@@ -33,6 +33,13 @@ export interface TradeItem {
   timestamp: number;
   pnl?: string;
   txHash?: string;
+  /** Spot swap detail; absent on records cached before these fields existed. */
+  kind?: "spot";
+  fromSymbol?: string;
+  fromAmount?: string;
+  toSymbol?: string;
+  toAmount?: string;
+  status?: "confirmed";
 }
 
 interface TradesEnvelope {

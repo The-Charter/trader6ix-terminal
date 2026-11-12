@@ -26,6 +26,14 @@ export const ACTIVE_PERPS_PROVIDER: PerpsProvider = {
   network: ARC_CHAIN_NAME,
 };
 
+/**
+ * Whether perpetuals trading is operational for users. While false, Perps
+ * History must show an honest "not available yet" state: no records are read,
+ * borrowed from the spot swap feed, or invented. Flip this only together with a
+ * real provider history source (see `usePerpsHistory`).
+ */
+export const PERPS_TRADING_AVAILABLE = false;
+
 /** e.g. "Hibachi on Arc" */
 export function perpsVenueLabel(provider: PerpsProvider = ACTIVE_PERPS_PROVIDER): string {
   return `${provider.name} on ${provider.network}`;

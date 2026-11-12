@@ -14,7 +14,11 @@ export const dynamic = "force-dynamic";
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
 /**
- * Executed swaps for one of the caller's own wallets.
+ * Executed SPOT swaps for one of the caller's own wallets.
+ *
+ * This feed is spot-only by construction (token-for-token swaps read from Arc
+ * logs). Perpetuals activity must never be merged into it, and spot swaps must
+ * never be shown as perpetuals history.
  *
  * A swap is identified structurally — one transaction where the wallet sends
  * one trusted token and receives a different one — rather than by a venue's
@@ -89,6 +93,12 @@ export const GET = withApi(
         timestamp: Math.floor(new Date(sold.timestamp).getTime() / 1000),
         pnl: pnl !== undefined ? pnl.toFixed(2) : undefined,
         txHash,
+        kind: "spot",
+        fromSymbol: sold.tokenSymbol,
+        fromAmount: String(soldAmount),
+        toSymbol: bought.tokenSymbol,
+        toAmount: String(boughtAmount),
+        status: "confirmed",
       });
     }
 

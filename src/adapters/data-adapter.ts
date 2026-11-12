@@ -45,6 +45,14 @@ export interface IndexedTrade {
   pnl?: string;
   /** Transaction that executed the trade, when the source knows it. */
   txHash?: string;
+  /** Present on spot swaps (Tower): what went in and what came out. */
+  kind?: "spot";
+  fromSymbol?: string;
+  fromAmount?: string;
+  toSymbol?: string;
+  toAmount?: string;
+  /** Spot swaps are read from confirmed logs, so a listed swap has succeeded. */
+  status?: "confirmed";
 }
 
 export interface DataAdapter {

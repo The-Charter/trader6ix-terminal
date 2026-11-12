@@ -20,7 +20,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toggleTheme, useTheme } from "@/components/trader6ix/theme";
 import { useConnectWallet, usePrivyOptional } from "@/components/trader6ix/privy-auth";
 import { clearSession, shortAddress, useSession } from "@/components/trader6ix/session";
-import { usePortfolioData, type TradeItem } from "@/components/trader6ix/use-portfolio";
+import { usePortfolioData } from "@/components/trader6ix/use-portfolio";
+import { usePerpsHistory } from "@/components/trader6ix/use-perps-history";
 import { perpsVenueLabel } from "@/lib/perps-provider";
 import "./perps-mobile.css";
 
@@ -906,11 +907,10 @@ function DeskAccount({ light }: { light: boolean }) {
 }
 
 /* --- history ------------------------------------------------------------
- * Real data only: the wallet's executed trades from the app's own
- * /api/data/trades (via usePortfolioData). Nothing is invented — when the API
- * has no records, or the user is signed out / expired / offline, the matching
- * empty or error state is shown instead. Perps-specific fills will appear here
- * once the Hibachi integration exposes them. */
+ * Perpetuals activity only, from the perpetuals provider (usePerpsHistory).
+ * Spot swaps are a different product with their own history in the Spot
+ * section and must never appear here. Hibachi trading is not live, so this
+ * shows an honest "not available yet" state rather than any record. */
 
 function relTime(unixSeconds: number): string {
   const diff = Math.max(0, Math.floor(Date.now() / 1000) - unixSeconds);
@@ -924,21 +924,12 @@ const usd = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2,
 const titleCase = (v: string) => (v ? v.charAt(0).toUpperCase() + v.slice(1) : v);
 
 function HistoryPanel() {
-  const session = useSession();
-  const address = session?.wallet ?? null;
-  const { trades, loading, error, refresh, authExpired, tradesNextBefore, tradesScannedBackTo, loadingOlder, loadOlderTrades } =
-    usePortfolioData(address);
-  const privy = usePrivyOptional();
-  const connectWallet = useConnectWallet();
-  const canLoadOlder = Boolean(address) && tradesNextBefore !== null;
-  const searchedTo = tradesScannedBackTo
-    ? new Date(tradesScannedBackTo).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
-    : null;
+  // Perpetuals only. Spot swaps live in the Spot section and are never read here.
+  const { available, venue, items } = usePerpsHistory();
 
-  const closed = trades.filter((t) => t.pnl !== undefined);
-  const wins = closed.filter((t) => Number(t.pnl) > 0).length;
-  const realised = closed.reduce((sum, t) => sum + Number(t.pnl ?? 0), 0);
-  const volume = trades.reduce((sum, t) => sum + Number(t.quantity) * Number(t.price ?? 0), 0);
+  const closed = items.filter((t) => t.realisedPnl !== undefined);
+  const realised = closed.reduce((sum, t) => sum + Number(t.realisedPnl ?? 0), 0);
+  const wins = closed.filter((t) => Number(t.realisedPnl) > 0).length;
   const stats: { label: string; value: string; cls?: string }[] = [
     {
       label: "Realised P/L",
@@ -946,60 +937,13 @@ function HistoryPanel() {
       cls: closed.length ? (realised >= 0 ? "pm-up" : "pm-dn") : undefined,
     },
     { label: "Win rate", value: closed.length ? `${((wins / closed.length) * 100).toFixed(1)}%` : "—" },
-    { label: "Volume", value: volume > 0 ? `$${usd(volume)}` : "—" },
-    { label: "Trades", value: String(trades.length) },
+    { label: "Volume", value: "—" },
+    { label: "Trades", value: available ? String(items.length) : "—" },
   ];
-
-  let empty: { title: string; body: string; action?: React.ReactNode } | null = null;
-  if (!address) {
-    empty = {
-      title: "Connect your wallet",
-      body: "Sign in to see the trades executed from your wallet.",
-      action: (
-        <button type="button" className="pm-empty-cta" onClick={connectWallet}>
-          Connect wallet
-        </button>
-      ),
-    };
-  } else if (authExpired) {
-    empty = {
-      title: "Your session has expired",
-      body: "Sign in again to see your history. Nothing has changed on chain.",
-      action: (
-        <button type="button" className="pm-empty-cta" onClick={() => privy?.login()}>
-          Sign in again
-        </button>
-      ),
-    };
-  } else if (loading && trades.length === 0) {
-    empty = { title: "Loading history…", body: "Fetching your executed trades." };
-  } else if (error && trades.length === 0) {
-    empty = {
-      title: "Couldn’t load history",
-      body: "Your trades are safe — this is only a loading problem.",
-      action: (
-        <button type="button" className="pm-empty-cta" onClick={() => void refresh()}>
-          Try again
-        </button>
-      ),
-    };
-  } else if (trades.length === 0) {
-    empty = {
-      title: "No trade history yet",
-      body: canLoadOlder
-        ? `No trades found back to ${searchedTo ?? "the start of the search"}. Older history may exist: search further back.`
-        : "Trades executed from your wallet will appear here. Perpetuals fills will show once Perps trading is connected.",
-      action: canLoadOlder ? (
-        <button type="button" className="pm-empty-cta" onClick={() => void loadOlderTrades()} disabled={loadingOlder}>
-          {loadingOlder ? "Searching…" : "Search older"}
-        </button>
-      ) : undefined,
-    };
-  }
 
   return (
     <section className="pm-page">
-      <div className="pm-hist-stats" aria-label="History summary">
+      <div className="pm-hist-stats" aria-label="Perpetuals history summary">
         {stats.map((st) => (
           <div className="pm-hist-stat" key={st.label}>
             <div className="pm-hist-stat-label">{st.label}</div>
@@ -1007,7 +951,7 @@ function HistoryPanel() {
           </div>
         ))}
       </div>
-      {empty ? (
+      {items.length === 0 ? (
         <div className="pm-empty" role="status">
           <span className="pm-empty-glyph" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -1015,24 +959,31 @@ function HistoryPanel() {
               <path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5" />
             </svg>
           </span>
-          <h2 className="pm-empty-title">{empty.title}</h2>
-          <p className="pm-empty-body">{empty.body}</p>
-          {empty.action}
+          <h2 className="pm-empty-title">
+            {available ? "No perpetuals activity yet" : "Perpetuals history isn’t available yet"}
+          </h2>
+          <p className="pm-empty-body">
+            {available
+              ? "Opened and closed positions, orders and realised P/L will appear here."
+              : `Perpetuals trading on ${venue} isn’t live yet, so there are no positions, orders or realised P/L to show. Your spot swaps are in the Spot section.`}
+          </p>
+          {!available && (
+            <Link className="pm-empty-cta" href="/spot">
+              Open Spot history
+            </Link>
+          )}
         </div>
       ) : (
         <ul className="pm-list pm-pad pm-h-list">
-          {trades.map((t: TradeItem, i: number) => {
-            const side = t.side.toLowerCase();
-            const sideCls = side === "buy" ? "pm-dir-buy" : side === "sell" ? "pm-dir-sell" : "pm-dir-flat";
-            const qty = Number(t.quantity);
-            const hasPnl = t.pnl !== undefined;
-            const pnl = Number(t.pnl ?? 0);
+          {items.map((t) => {
+            const hasPnl = t.realisedPnl !== undefined;
+            const pnl = Number(t.realisedPnl ?? 0);
             return (
-              <li className="pm-card pm-h-row" key={t.txHash ?? `${t.timestamp}-${i}`}>
+              <li className="pm-card pm-h-row" key={t.id}>
                 <div className="pm-h-top">
                   <span className="pm-card-sym pm-sm">{t.symbol}</span>
-                  <span className={`pm-dir ${sideCls}`}>{t.side.toUpperCase()}</span>
-                  <span className="pm-h-venue">{titleCase(t.venue)}</span>
+                  <span className={`pm-dir ${t.side === "long" ? "pm-dir-buy" : "pm-dir-sell"}`}>{t.side.toUpperCase()}</span>
+                  <span className="pm-h-venue">{titleCase(t.kind)}</span>
                   {hasPnl && (
                     <span className={`pm-h-pl ${pnl >= 0 ? "pm-up" : "pm-dn"}`}>
                       {pnl >= 0 ? "+" : "-"}${usd(Math.abs(pnl))}
@@ -1041,27 +992,14 @@ function HistoryPanel() {
                 </div>
                 <div className="pm-h-sub">
                   <span>
-                    {qty.toLocaleString("en-US", { maximumFractionDigits: 6 })}
-                    {t.price !== undefined ? ` @ ${Number(t.price).toLocaleString("en-US", { maximumFractionDigits: 6 })}` : ""}
+                    {t.size}
+                    {t.price !== undefined ? ` @ ${t.price}` : ""}
                   </span>
                   <span title={new Date(t.timestamp * 1000).toLocaleString()}>{relTime(t.timestamp)}</span>
                 </div>
               </li>
             );
           })}
-          <li className="pm-h-more">
-            {canLoadOlder ? (
-              <>
-                <span>Searched back to {searchedTo ?? "recent blocks"}.</span>
-                <button type="button" className="pm-empty-cta" onClick={() => void loadOlderTrades()} disabled={loadingOlder}>
-                  {loadingOlder ? "Searching…" : "Load older trades"}
-                </button>
-              </>
-            ) : (
-              <span>That is the start of this wallet’s history.</span>
-            )}
-            {error && <span className="pm-h-more-err">{error}</span>}
-          </li>
         </ul>
       )}
     </section>

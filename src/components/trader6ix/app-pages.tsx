@@ -1269,7 +1269,18 @@ export function SpotPage() {
   const address = session?.wallet ?? null;
   const privy = usePrivyOptional();
   const wallets = useWalletsOptional();
-  const { portfolio, trades } = usePortfolioData(address);
+  const {
+    portfolio,
+    trades,
+    loading: historyLoading,
+    error: historyError,
+    authExpired: historyAuthExpired,
+    tradesNextBefore,
+    tradesScannedBackTo,
+    loadingOlder,
+    loadOlderTrades,
+    refresh: refreshHistory,
+  } = usePortfolioData(address);
 
   const chainId = ARC_CHAIN_ID;
   const [tokens, setTokens] = useState<SpotToken[]>([]);
@@ -1934,36 +1945,112 @@ export function SpotPage() {
           </aside>
         </div>
 
-        <section className="pf-card">
+        <section className="pf-card" aria-label="Spot swap history">
           <header className="pf-card-head">
-            <h2>Recent swaps</h2>
-            <Link className="pf-muted pf-small" href="/portfolio">
-              View all
-            </Link>
+            <h2>Swap history</h2>
+            <span className="pf-muted pf-small">Spot · Tower Exchange</span>
           </header>
-          {trades.length === 0 ? (
+          {!address ? (
             <div className="pf-empty-block">
-              <p className="pf-empty-title">No swaps yet</p>
-              <p className="pf-empty-body">
-                Your swaps will appear here after your first trade. This wallet needs USDC on Arc
-                mainnet to get started.
+              <p className="pf-empty-title">Connect your wallet</p>
+              <p className="pf-empty-body">Sign in to see the swaps executed from your wallet.</p>
+            </div>
+          ) : historyAuthExpired ? (
+            <div className="pf-empty-block">
+              <p className="pf-empty-title">Your session has expired</p>
+              <p className="pf-empty-body">Sign in again to see your swap history. Nothing has changed on chain.</p>
+            </div>
+          ) : trades.length === 0 ? (
+            <div className="pf-empty-block">
+              <p className="pf-empty-title">
+                {historyLoading ? "Reading on-chain swaps…" : historyError ? "Couldn’t load swaps" : "No swaps found yet"}
               </p>
+              <p className="pf-empty-body">
+                {historyError
+                  ? "Your swaps are safe; this is only a loading problem."
+                  : tradesNextBefore !== null
+                    ? `No swaps found back to ${
+                        tradesScannedBackTo
+                          ? new Date(tradesScannedBackTo).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+                          : "the start of the search"
+                      }. Older swaps may exist.`
+                    : "Your swaps will appear here after your first trade. This wallet needs USDC on Arc mainnet to get started."}
+              </p>
+              {historyError && (
+                <button type="button" className="pf-empty-cta" onClick={() => void refreshHistory()}>
+                  Try again
+                </button>
+              )}
+              {!historyError && tradesNextBefore !== null && (
+                <button type="button" className="pf-empty-cta" onClick={() => void loadOlderTrades()} disabled={loadingOlder}>
+                  {loadingOlder ? "Searching…" : "Search older"}
+                </button>
+              )}
             </div>
           ) : (
-            <ul className="pf-activity">
-              {trades.slice(0, 5).map((trade, index) => (
-                <li key={`${trade.timestamp}-${index}`} className="swap">
-                  <span className="pf-act-glyph" aria-hidden="true">
-                    <ArrowRightLeft size={15} />
-                  </span>
-                  <span className="pf-act-summary">
-                    {trade.symbol} · {Number(trade.quantity).toLocaleString("en-US", { maximumFractionDigits: 6 })}{" "}
-                    at {Number(trade.price ?? 0).toFixed(6)}
-                  </span>
-                  <span className="pf-act-time pf-mono">{relativeTime(trade.timestamp)}</span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ul className="pf-activity pf-swaps">
+                {trades.map((trade, index) => {
+                  const [pairFrom, pairTo] = trade.symbol.split("/");
+                  const fromSym = trade.fromSymbol ?? pairFrom;
+                  const toSym = trade.toSymbol ?? pairTo;
+                  const fromAmt = Number(trade.fromAmount ?? trade.quantity);
+                  const toAmt = Number(trade.toAmount ?? Number(trade.quantity) * Number(trade.price ?? 0));
+                  const fmt = (n: number) => n.toLocaleString("en-US", { maximumFractionDigits: 6 });
+                  return (
+                    <li key={trade.txHash ?? `${trade.timestamp}-${index}`} className="swap">
+                      <span className="pf-act-glyph" aria-hidden="true">
+                        <ArrowRightLeft size={15} />
+                      </span>
+                      <span className="pf-swap-main">
+                        <span className="pf-swap-pair">
+                          {fromSym} → {toSym}
+                        </span>
+                        <span className="pf-swap-amts pf-mono">
+                          {fmt(fromAmt)} {fromSym} → {fmt(toAmt)} {toSym}
+                        </span>
+                      </span>
+                      <span className="pf-swap-meta">
+                        <span className="pf-swap-status">Confirmed</span>
+                        <span className="pf-act-time pf-mono" title={new Date(trade.timestamp * 1000).toLocaleString()}>
+                          {relativeTime(trade.timestamp)}
+                        </span>
+                        {trade.txHash && (
+                          <a
+                            className="pf-swap-hash pf-mono"
+                            href={arcExplorerTxUrl(trade.txHash)}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={trade.txHash}
+                          >
+                            {trade.txHash.slice(0, 6)}…{trade.txHash.slice(-4)}
+                            <ExternalLink size={11} />
+                          </a>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <div className="pf-swap-more">
+                {tradesNextBefore !== null ? (
+                  <>
+                    <span className="pf-muted pf-small">
+                      Searched back to{" "}
+                      {tradesScannedBackTo
+                        ? new Date(tradesScannedBackTo).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
+                        : "recent blocks"}
+                      .
+                    </span>
+                    <button type="button" className="pf-empty-cta" onClick={() => void loadOlderTrades()} disabled={loadingOlder}>
+                      {loadingOlder ? "Searching…" : "Load older swaps"}
+                    </button>
+                  </>
+                ) : (
+                  <span className="pf-muted pf-small">That is the start of this wallet’s swap history.</span>
+                )}
+              </div>
+            </>
           )}
         </section>
       </main>

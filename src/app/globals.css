@@ -4854,3 +4854,62 @@ html[data-app-theme="light"] body:has(.features-page) .features-cta .cta {
     font-size: 14px;
   }
 }
+
+/* Spot swap history */
+.pf-swaps li {
+  align-items: flex-start;
+}
+.pf-swap-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.pf-swap-pair {
+  font-size: 14px;
+  font-weight: 600;
+}
+.pf-swap-amts {
+  color: var(--app-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.pf-swap-meta {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.pf-swap-status {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.pf-swap-hash {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--app-muted);
+  font-size: 11px;
+  text-decoration: none;
+}
+.pf-swap-hash:hover {
+  color: var(--app-ink);
+}
+.pf-swap-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--app-line);
+  text-align: center;
+}
+.pf-empty-cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
