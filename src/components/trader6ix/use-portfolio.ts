@@ -337,6 +337,24 @@ export function usePortfolioData(address: string | null) {
     };
   }, [address, load]);
 
+  // A 401 is often transient (Privy still restoring the login, or mid token
+  // refresh). Instead of leaving "session expired" up until the user refreshes,
+  // quietly retry a few times; a success clears the banner by itself.
+  const authRetries = useRef(0);
+  const [authTick, setAuthTick] = useState(0);
+  useEffect(() => {
+    if (!state.authExpired) {
+      authRetries.current = 0;
+      return;
+    }
+    if (!address || authRetries.current >= 4) return;
+    const timer = window.setTimeout(() => {
+      authRetries.current += 1;
+      void load({ background: true }).finally(() => setAuthTick((n) => n + 1));
+    }, 6_000);
+    return () => window.clearTimeout(timer);
+  }, [state.authExpired, address, load, authTick]);
+
   /** Scans further back for older trades and appends them. */
   const loadOlderTrades = useCallback(async () => {
     if (!address || state.tradesNextBefore === null || state.loadingOlder) return;

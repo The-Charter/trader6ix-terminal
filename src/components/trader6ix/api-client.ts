@@ -16,6 +16,7 @@
  */
 
 import { apiUrl } from "@/lib/api-base";
+import { PRIVY_ENABLED } from "@/lib/privy-app";
 
 type TokenGetter = () => Promise<string | null>;
 
@@ -23,8 +24,34 @@ const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 let tokenGetter: TokenGetter | null = null;
 
+const tokenWaiters = new Set<() => void>();
+
 export function registerAccessTokenGetter(getter: TokenGetter | null): void {
   tokenGetter = getter;
+  if (getter) {
+    for (const wake of [...tokenWaiters]) wake();
+  }
+}
+
+/**
+ * Resolves once Privy has registered its token getter (or after `timeoutMs`).
+ *
+ * The app paints a stored session immediately, but Privy finishes restoring the
+ * login a moment later. A request fired in that gap carries no token, the API
+ * answers 401, and the UI used to announce "Your session has expired" for a user
+ * who was signed in all along. Waiting briefly closes the race at its source.
+ */
+function waitForTokenGetter(timeoutMs: number): Promise<void> {
+  if (tokenGetter || !PRIVY_ENABLED) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      window.clearTimeout(timer);
+      tokenWaiters.delete(done);
+      resolve();
+    };
+    const timer = window.setTimeout(done, timeoutMs);
+    tokenWaiters.add(done);
+  });
 }
 
 export async function getAccessToken(): Promise<string | null> {
@@ -97,17 +124,23 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
     return fetch(apiUrl(path), { ...init, method, headers: attemptHeaders });
   };
 
+  if (typeof window !== "undefined") await waitForTokenGetter(3_000);
   const response = await send(await getAccessToken());
 
   if (response.status === 401) {
-    // A token can lapse between being minted and being used. Mint a fresh one and
-    // retry exactly once — with the SAME idempotency key, so a mutating retry
-    // replays rather than re-executes.
-    const fresh = await getAccessToken();
-    if (fresh) {
+    // A token can lapse between being minted and being used, or Privy can be
+    // mid-refresh. Mint a fresh one and retry — twice, the second time after a
+    // short pause — with the SAME idempotency key, so a mutating retry replays
+    // rather than re-executes.
+    for (const pauseMs of [0, 1_200]) {
+      if (pauseMs) await new Promise((resolve) => setTimeout(resolve, pauseMs));
+      const fresh = await getAccessToken();
+      if (!fresh) continue;
       const retry = await send(fresh);
-      lastUnauthorized = retry.status === 401;
-      return retry;
+      if (retry.status !== 401) {
+        lastUnauthorized = false;
+        return retry;
+      }
     }
     lastUnauthorized = true;
   } else {
