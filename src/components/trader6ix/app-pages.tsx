@@ -1892,6 +1892,7 @@ export function SpotPage() {
                 </div>
               </div>
               <div className="spot-pills">
+                <span className="spot-pill">Tower</span>
                 <span className="spot-pill">{quote ? quote.venue : "Auto-routed"}</span>
                 <span className="spot-pill">50 bps slippage</span>
               </div>
