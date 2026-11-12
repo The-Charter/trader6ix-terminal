@@ -1491,7 +1491,7 @@ export function SpotPage() {
         | { approval?: { to: string; data: string; value?: string } | null; swap: { to: string; data: string; value?: string } }
         | null = null;
       let builtQuote: { outputAmount?: string } | null = null;
-      let lastError = "Tower could not build the swap transaction.";
+      let lastError = "Could not build the swap transaction.";
       for (let attempt = 1; attempt <= 6 && !build; attempt++) {
         const quoteRes = await apiFetch("/api/v1/swap/quote", {
           method: "POST",
@@ -1892,7 +1892,6 @@ export function SpotPage() {
                 </div>
               </div>
               <div className="spot-pills">
-                <span className="spot-pill">Tower</span>
                 <span className="spot-pill">{quote ? quote.venue : "Auto-routed"}</span>
                 <span className="spot-pill">50 bps slippage</span>
               </div>
@@ -1948,7 +1947,7 @@ export function SpotPage() {
         <section className="pf-card" aria-label="Spot swap history">
           <header className="pf-card-head">
             <h2>Swap history</h2>
-            <span className="pf-muted pf-small">Spot · Tower Exchange</span>
+            <span className="pf-muted pf-small">Spot</span>
           </header>
           {!address ? (
             <div className="pf-empty-block">
