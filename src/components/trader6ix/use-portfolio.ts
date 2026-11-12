@@ -46,7 +46,8 @@ interface TradesEnvelope {
   trades: TradeItem[];
   /** Block to continue from for older trades, or null once genesis is reached. */
   nextBefore: number | null;
-  scannedBackTo: string;
+  /** Null when the API could not say how far back it looked (older API). */
+  scannedBackTo: string | null;
 }
 
 interface PortfolioState {
@@ -139,6 +140,30 @@ function errorText(payload: unknown, fallback: string): string {
   return fallback;
 }
 
+/**
+ * Accepts either response shape of /api/data/trades.
+ *
+ * The current API replies `{ trades, nextBefore, scannedBackTo }`. An API that
+ * has not been redeployed yet replies with a bare array. Frontend and API ship
+ * separately (Netlify / Render), so the client must not depend on the two being
+ * released together: a bare array is read as "recent trades, no cursor"
+ * (`scannedBackTo: null`) instead of crashing the whole history load.
+ */
+function normalizeTrades(json: unknown): TradesEnvelope {
+  if (Array.isArray(json)) {
+    return { trades: json as TradeItem[], nextBefore: null, scannedBackTo: null };
+  }
+  const env = json as Partial<TradesEnvelope> | null;
+  if (env && Array.isArray(env.trades)) {
+    return {
+      trades: env.trades,
+      nextBefore: typeof env.nextBefore === "number" ? env.nextBefore : null,
+      scannedBackTo: typeof env.scannedBackTo === "string" ? env.scannedBackTo : (null),
+    };
+  }
+  throw new Error("The trade history response was not in the expected format.");
+}
+
 function tradeKey(trade: TradeItem): string {
   return trade.txHash ?? `${trade.timestamp}-${trade.symbol}-${trade.quantity}`;
 }
@@ -219,7 +244,7 @@ export function usePortfolioData(address: string | null) {
 
         const portfolio = portfolioJson as PortfolioSnapshot;
         const activity = activityJson as ActivityItem[];
-        const envelope = tradesJson as TradesEnvelope;
+        const envelope = normalizeTrades(tradesJson);
 
         // A background refresh only re-reads the newest window. Merge it into
         // what is already loaded so trades the user paged back to do not vanish.
@@ -228,7 +253,7 @@ export function usePortfolioData(address: string | null) {
         const nextBefore =
           prev.trades.length > 0 ? deeperCursor(prev.tradesNextBefore, envelope.nextBefore) : envelope.nextBefore;
         const scannedBackTo =
-          prev.trades.length > 0 && prev.tradesScannedBackTo && prev.tradesScannedBackTo < envelope.scannedBackTo
+          prev.trades.length > 0 && prev.tradesScannedBackTo && envelope.scannedBackTo && prev.tradesScannedBackTo < envelope.scannedBackTo
             ? prev.tradesScannedBackTo
             : envelope.scannedBackTo;
 
@@ -327,7 +352,7 @@ export function usePortfolioData(address: string | null) {
         return;
       }
       if (!res.ok) throw new Error(errorText(json, "Failed to load older trades"));
-      const envelope = json as TradesEnvelope;
+      const envelope = normalizeTrades(json);
       const prev = stateRef.current;
       const trades = mergeTrades(prev.trades, envelope.trades);
       setState((current) => ({
