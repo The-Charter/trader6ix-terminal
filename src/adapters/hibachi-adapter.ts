@@ -1,6 +1,15 @@
 import type { PerpsAdapter, PerpsMarket, PlacePerpsOrderInput, PerpsOrderResult, PerpsPosition, PerpsOrder } from "./perps-adapter";
 import type { AdapterCandle } from "./shared-types";
 import { apiUrl } from "@/lib/api-base";
+import { apiFetch } from "@/components/trader6ix/api-client";
+
+/** Error text from either the legacy `{ error: "…" }` or the API's `{ error: { message } }` shape. */
+function errorText(json: unknown, fallback: string): string {
+  const error = (json as { error?: unknown } | null)?.error;
+  if (typeof error === "string") return error;
+  const message = (error as { message?: unknown } | undefined)?.message;
+  return typeof message === "string" ? message : fallback;
+}
 
 // Known fiat/metal tickers — anything else is treated as crypto. Hibachi
 // doesn't (as far as our docs research found) expose an explicit asset-class
@@ -44,7 +53,7 @@ export const hibachiAdapter: PerpsAdapter = {
   async getMarkets(): Promise<PerpsMarket[]> {
     const res = await fetch(apiUrl("/api/hibachi/exchange-info"));
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Failed to load Hibachi markets");
+    if (!res.ok) throw new Error(errorText(json, "Failed to load Hibachi markets"));
 
     const contracts: { symbol: string; status: string; underlyingSymbol?: string; settlementSymbol?: string }[] =
       json.futureContracts ?? [];
@@ -69,7 +78,7 @@ export const hibachiAdapter: PerpsAdapter = {
   async getOrderbook(symbol) {
     const res = await fetch(apiUrl(`/api/hibachi/orderbook?symbol=${encodeURIComponent(symbol)}`));
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Failed to load orderbook");
+    if (!res.ok) throw new Error(errorText(json, "Failed to load orderbook"));
     const toLevels = (rows: [string, string][]) => rows.map(([price, size]) => ({ price, size }));
     return { bids: toLevels(json.bids ?? []), asks: toLevels(json.asks ?? []) };
   },
@@ -77,14 +86,14 @@ export const hibachiAdapter: PerpsAdapter = {
   async getKlines(symbol, interval) {
     const res = await fetch(apiUrl(`/api/hibachi/klines?symbol=${encodeURIComponent(symbol)}&interval=${interval}`));
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Failed to load chart data");
+    if (!res.ok) throw new Error(errorText(json, "Failed to load chart data"));
     return normalizeKlines(json);
   },
 
   async getPositions(): Promise<PerpsPosition[]> {
-    const res = await fetch(apiUrl("/api/hibachi/account"));
+    const res = await apiFetch("/api/hibachi/account");
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Failed to load account");
+    if (!res.ok) throw new Error(errorText(json, "Failed to load account"));
     const positions = json.account?.positions ?? [];
     return positions.map((p: Record<string, unknown>) => ({
       symbol: String(p.symbol ?? ""),
@@ -96,9 +105,9 @@ export const hibachiAdapter: PerpsAdapter = {
   },
 
   async getOpenOrders(): Promise<PerpsOrder[]> {
-    const res = await fetch(apiUrl("/api/hibachi/account"));
+    const res = await apiFetch("/api/hibachi/account");
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Failed to load account");
+    if (!res.ok) throw new Error(errorText(json, "Failed to load account"));
     const orders = json.orders ?? [];
     return orders.map((o: Record<string, unknown>) => ({
       id: String(o.orderId ?? o.id ?? ""),
@@ -112,7 +121,7 @@ export const hibachiAdapter: PerpsAdapter = {
   },
 
   async placeOrder(input: PlacePerpsOrderInput): Promise<PerpsOrderResult> {
-    const res = await fetch(apiUrl("/api/hibachi/order"), {
+    const res = await apiFetch("/api/hibachi/order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -124,14 +133,14 @@ export const hibachiAdapter: PerpsAdapter = {
       }),
     });
     const json = await res.json();
-    if (!res.ok) return { ok: false, error: json.error ?? "Order failed" };
+    if (!res.ok) return { ok: false, error: errorText(json, "Order failed") };
     return { ok: true, orderId: json.orderId };
   },
 
   async cancelOrder(orderId: string): Promise<PerpsOrderResult> {
-    const res = await fetch(apiUrl(`/api/hibachi/order?orderId=${encodeURIComponent(orderId)}`), { method: "DELETE" });
+    const res = await apiFetch(`/api/hibachi/order?orderId=${encodeURIComponent(orderId)}`, { method: "DELETE" });
     const json = await res.json();
-    if (!res.ok) return { ok: false, error: json.error ?? "Cancel failed" };
+    if (!res.ok) return { ok: false, error: errorText(json, "Cancel failed") };
     return { ok: true };
   },
 
@@ -140,9 +149,9 @@ export const hibachiAdapter: PerpsAdapter = {
     // close-position endpoint — the standard way to close a perp position on
     // venues like this is to place an opposite-side market order for the
     // same size. We fetch the live position first rather than assume size/side.
-    const accountRes = await fetch(apiUrl("/api/hibachi/account"));
+    const accountRes = await apiFetch("/api/hibachi/account");
     const accountJson = await accountRes.json();
-    if (!accountRes.ok) return { ok: false, error: accountJson.error ?? "Failed to load position" };
+    if (!accountRes.ok) return { ok: false, error: errorText(accountJson, "Failed to load position") };
 
     const position = (accountJson.account?.positions ?? []).find((p: Record<string, unknown>) => p.symbol === symbol);
     if (!position) return { ok: false, error: "No open position for that symbol." };

@@ -7,7 +7,8 @@ export type ApiErrorCode =
   | "CONFLICT"
   | "RATE_LIMITED"
   | "IDEMPOTENCY_CONFLICT"
-  | "INTERNAL";
+  | "INTERNAL"
+  | "UNAVAILABLE";
 
 const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
   BAD_REQUEST: 400,
@@ -19,6 +20,7 @@ const STATUS_BY_CODE: Record<ApiErrorCode, number> = {
   RATE_LIMITED: 429,
   IDEMPOTENCY_CONFLICT: 409,
   INTERNAL: 500,
+  UNAVAILABLE: 503,
 };
 
 /** An error safe to surface to API callers. Anything else is treated as internal. */
@@ -44,3 +46,4 @@ export const notFound = (message?: string) => new ApiError("NOT_FOUND", message)
 export const conflict = (message?: string) => new ApiError("CONFLICT", message);
 export const rateLimited = (message?: string) => new ApiError("RATE_LIMITED", message);
 export const idempotencyConflict = (message?: string) => new ApiError("IDEMPOTENCY_CONFLICT", message);
+export const unavailable = (message?: string) => new ApiError("UNAVAILABLE", message);

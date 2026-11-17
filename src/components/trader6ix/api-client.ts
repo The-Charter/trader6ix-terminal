@@ -24,34 +24,53 @@ const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 let tokenGetter: TokenGetter | null = null;
 
-const tokenWaiters = new Set<() => void>();
+/** Whether Privy has finished deciding if anyone is signed in. */
+let authSettled = false;
 
+const authWaiters = new Set<() => void>();
+
+/**
+ * Called by `PrivySessionSync` once Privy is ready: with a getter when someone
+ * is signed in, with `null` when nobody is.
+ */
 export function registerAccessTokenGetter(getter: TokenGetter | null): void {
   tokenGetter = getter;
-  if (getter) {
-    for (const wake of [...tokenWaiters]) wake();
-  }
+  authSettled = true;
+  for (const wake of [...authWaiters]) wake();
+}
+
+/** Called while Privy is still restoring the login, so requests wait for it. */
+export function markAuthPending(): void {
+  if (!tokenGetter) authSettled = false;
 }
 
 /**
- * Resolves once Privy has registered its token getter (or after `timeoutMs`).
+ * Resolves once Privy has settled the login (or after `timeoutMs`).
  *
  * The app paints a stored session immediately, but Privy finishes restoring the
- * login a moment later. A request fired in that gap carries no token, the API
- * answers 401, and the UI used to announce "Your session has expired" for a user
- * who was signed in all along. Waiting briefly closes the race at its source.
+ * login later — seconds later on a slow connection. A request fired in that gap
+ * carries no token and is a guaranteed 401. Waiting for Privy's answer, rather
+ * than a fixed few seconds, closes the race at its source.
  */
-function waitForTokenGetter(timeoutMs: number): Promise<void> {
-  if (tokenGetter || !PRIVY_ENABLED) return Promise.resolve();
+function waitForAuth(timeoutMs: number): Promise<void> {
+  if (authSettled || !PRIVY_ENABLED) return Promise.resolve();
   return new Promise((resolve) => {
     const done = () => {
       window.clearTimeout(timer);
-      tokenWaiters.delete(done);
+      authWaiters.delete(done);
       resolve();
     };
     const timer = window.setTimeout(done, timeoutMs);
-    tokenWaiters.add(done);
+    authWaiters.add(done);
   });
+}
+
+/** A local 401, for when there is no token to send and the API would only say so. */
+function notSignedIn(): Response {
+  return new Response(
+    JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Sign in to continue." } }),
+    { status: 401, headers: { "content-type": "application/json" } }
+  );
 }
 
 export async function getAccessToken(): Promise<string | null> {
@@ -124,16 +143,26 @@ export async function apiFetch(path: string, options: ApiFetchOptions = {}): Pro
     return fetch(apiUrl(path), { ...init, method, headers: attemptHeaders });
   };
 
-  if (typeof window !== "undefined") await waitForTokenGetter(3_000);
-  const response = await send(await getAccessToken());
+  if (typeof window !== "undefined") await waitForAuth(15_000);
+  const token = await getAccessToken();
+
+  // Every first-party route this client calls requires sign-in, so with Privy
+  // on and no token there is nothing to gain from asking the API — it would
+  // only answer 401 and put a red line in the console.
+  if (!token && PRIVY_ENABLED && typeof window !== "undefined") {
+    lastUnauthorized = true;
+    return notSignedIn();
+  }
+
+  const response = await send(token);
 
   if (response.status === 401) {
     // A token can lapse between being minted and being used, or Privy can be
-    // mid-refresh. Mint a fresh one and retry — twice, the second time after a
-    // short pause — with the SAME idempotency key, so a mutating retry replays
+    // mid-refresh. Mint a fresh one and retry — twice, each after a short
+    // pause — with the SAME idempotency key, so a mutating retry replays
     // rather than re-executes.
-    for (const pauseMs of [0, 1_200]) {
-      if (pauseMs) await new Promise((resolve) => setTimeout(resolve, pauseMs));
+    for (const pauseMs of [300, 1_200]) {
+      await new Promise((resolve) => setTimeout(resolve, pauseMs));
       const fresh = await getAccessToken();
       if (!fresh) continue;
       const retry = await send(fresh);

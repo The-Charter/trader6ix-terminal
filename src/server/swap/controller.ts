@@ -92,7 +92,7 @@ export async function buildHandler(req: NextRequest, ctx: RequestContext) {
   const parsed = await parseJson(req, buildRequestSchema);
 
   // Only ever build a transaction for a wallet the caller actually controls.
-  requireOwnedWallet(ctx.user, parsed.userAddress);
+  await requireOwnedWallet(ctx.user, parsed.userAddress);
 
   // The client echoes the quote back, so re-validate it rather than trusting it.
   // (Tower's quote payload carries no chainId — the registry is per-network, so

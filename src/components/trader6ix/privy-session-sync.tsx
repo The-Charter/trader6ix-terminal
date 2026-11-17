@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { privySessionFromUser } from "@/components/trader6ix/privy-auth";
 import { clearSession, readSession, writeSession } from "@/components/trader6ix/session";
-import { apiJson, registerAccessTokenGetter } from "@/components/trader6ix/api-client";
+import { apiJson, markAuthPending, registerAccessTokenGetter } from "@/components/trader6ix/api-client";
 
 interface SessionProfile {
   id: string;
@@ -27,13 +27,18 @@ export function PrivySessionSync() {
   // The getter is deliberately NOT unregistered on re-render: clearing it in the
   // effect's cleanup left a window in which requests went out with no token at
   // all (every one a 401). It is cleared only when authentication ends.
+  // Until Privy is ready, requests wait instead of going out without a token.
   useEffect(() => {
+    if (!ready) {
+      markAuthPending();
+      return;
+    }
     if (!authenticated) {
       registerAccessTokenGetter(null);
       return;
     }
     registerAccessTokenGetter(() => getAccessToken());
-  }, [authenticated, getAccessToken]);
+  }, [ready, authenticated, getAccessToken]);
 
   useEffect(() => {
     if (!ready) return;

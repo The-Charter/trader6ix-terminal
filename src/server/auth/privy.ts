@@ -137,16 +137,26 @@ function walletsFromLinkedAccounts(raw: unknown): string[] {
  * This is the authoritative source for authorization: the access token does not
  * always carry `linked_accounts` (Privy documents its claims as sid/sub/iss/aud/
  * iat/exp only), so ownership checks depend on this lookup — which in turn
- * depends on `PRIVY_APP_SECRET`. When that is missing the lookup cannot work at
- * all, and it says so loudly rather than returning an empty list that would
- * silently lock every user out of their own data.
+ * depends on `PRIVY_APP_SECRET`.
+ *
+ * A failed lookup THROWS rather than returning an empty list: "Privy did not
+ * answer" and "this user has no wallets" must stay distinguishable, or an outage
+ * turns into every user being told their own wallet is not theirs.
  */
 const walletCache = new Map<string, { at: number; wallets: string[] }>();
 const WALLET_CACHE_TTL_MS = 5 * 60 * 1000;
+const LOOKUP_TIMEOUT_MS = 8_000;
 
-export async function fetchLinkedWallets(did: string): Promise<string[]> {
+export class WalletLookupError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "WalletLookupError";
+  }
+}
+
+export async function fetchLinkedWallets(did: string, options: { fresh?: boolean } = {}): Promise<string[]> {
   const cached = walletCache.get(did);
-  if (cached && Date.now() - cached.at < WALLET_CACHE_TTL_MS) return cached.wallets;
+  if (!options.fresh && cached && Date.now() - cached.at < WALLET_CACHE_TTL_MS) return cached.wallets;
 
   const secret = process.env.PRIVY_APP_SECRET;
   if (!secret || secret.trim() === "") {
@@ -154,33 +164,33 @@ export async function fetchLinkedWallets(did: string): Promise<string[]> {
       "PRIVY_APP_SECRET is not set on this host, so a user's linked wallets cannot be resolved. " +
         "Authorization will reject every wallet-scoped request until it is."
     );
-    return [];
+    throw new WalletLookupError("PRIVY_APP_SECRET is not configured.");
   }
 
+  let response: Response;
   try {
-    const response = await fetch(`${PRIVY_API_BASE}/users/${encodeURIComponent(did)}`, {
+    response = await fetch(`${PRIVY_API_BASE}/users/${encodeURIComponent(did)}`, {
       headers: {
         Authorization: `Basic ${Buffer.from(`${appId()}:${secret.trim()}`).toString("base64")}`,
         "privy-app-id": appId(),
         Accept: "application/json",
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     });
-
-    if (!response.ok) {
-      console.warn(`Privy user lookup for ${did} failed with status ${response.status}.`);
-      return [];
-    }
-
-    const user = (await response.json()) as { linked_accounts?: unknown };
-    const wallets = walletsFromLinkedAccounts(user.linked_accounts);
-    if (walletCache.size > 500) walletCache.clear();
-    walletCache.set(did, { at: Date.now(), wallets });
-    return wallets;
   } catch (err) {
-    console.warn("Privy user lookup failed:", err instanceof Error ? err.message : err);
-    return [];
+    throw new WalletLookupError(`Privy user lookup failed: ${err instanceof Error ? err.message : String(err)}`);
   }
+
+  if (!response.ok) {
+    throw new WalletLookupError(`Privy user lookup for ${did} failed with status ${response.status}.`);
+  }
+
+  const user = (await response.json()) as { linked_accounts?: unknown };
+  const wallets = walletsFromLinkedAccounts(user.linked_accounts);
+  if (walletCache.size > 500) walletCache.clear();
+  walletCache.set(did, { at: Date.now(), wallets });
+  return wallets;
 }
 
 /** Verifies a Privy access token and returns the caller's identity. Throws on any failure. */
@@ -190,6 +200,9 @@ export async function verifyPrivyAccessToken(token: string): Promise<PrivyIdenti
     algorithms: [algorithm],
     issuer: ISSUER,
     audience: appId(),
+    // Tolerate small clock drift between Privy and this host so a freshly
+    // minted token is not rejected as "not yet valid" or already expired.
+    clockTolerance: 30,
   });
 
   const did = typeof payload.sub === "string" ? payload.sub : "";
@@ -198,7 +211,14 @@ export async function verifyPrivyAccessToken(token: string): Promise<PrivyIdenti
   }
 
   let wallets = walletsFromLinkedAccounts(payload.linked_accounts);
-  if (wallets.length === 0) wallets = await fetchLinkedWallets(did);
+  if (wallets.length === 0) {
+    // The token itself is genuine; a failed wallet lookup must not turn it into
+    // a 401. Authorization asks again (and reports an outage) if it needs them.
+    wallets = await fetchLinkedWallets(did).catch((err) => {
+      console.warn(err instanceof Error ? err.message : err);
+      return [];
+    });
+  }
   const sessionId = typeof payload.sid === "string" ? payload.sid : null;
 
   return { did, wallet: wallets[0] ?? null, wallets, sessionId };

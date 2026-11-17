@@ -83,11 +83,15 @@ async function authenticate(req: NextRequest, requestId: string): Promise<Authen
 
   try {
     const record = await resolveIdentity(identity);
+    // Privy's current list is authoritative: a wallet the user has since
+    // unlinked must stop granting access. The stored copy is only a fallback
+    // for when Privy could not be asked this time.
+    const wallets = identity.wallets.length > 0 ? identity.wallets : record.wallets;
     return {
       id: record.id,
       did: record.did,
-      wallet: record.wallet,
-      wallets: [...new Set([...identity.wallets, ...record.wallets])],
+      wallet: identity.wallet ?? wallets[0] ?? null,
+      wallets,
       role: record.role,
     };
   } catch (err) {

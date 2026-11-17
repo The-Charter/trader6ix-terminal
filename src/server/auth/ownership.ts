@@ -1,5 +1,5 @@
 import "server-only";
-import { forbidden, unauthorized } from "@/server/http/errors";
+import { forbidden, unauthorized, unavailable } from "@/server/http/errors";
 import { fetchLinkedWallets } from "@/server/auth/privy";
 import { rememberWallets } from "@/server/users/service";
 import type { AuthenticatedUser } from "./types";
@@ -17,9 +17,9 @@ function includes(haystack: string[], needle: string): boolean {
  *
  * The check is deliberately forgiving about WHERE the wallet list comes from:
  * the access token does not always carry `linked_accounts`, so when a wallet is
- * not already known this asks Privy directly (cached), records the answer, and
- * only then rejects. Rejecting on an incomplete list is how users end up locked
- * out of their own portfolio — which is exactly what happened before this.
+ * not already known this asks Privy directly — bypassing the cache, so a wallet
+ * linked a minute ago is accepted — records the answer, and only then rejects.
+ * If Privy cannot be reached the answer is 503, never a false "not your wallet".
  */
 export async function requireOwnedWallet(user: AuthenticatedUser | null, address: string): Promise<void> {
   if (!user) throw unauthorized("Authentication required.");
@@ -29,7 +29,14 @@ export async function requireOwnedWallet(user: AuthenticatedUser | null, address
   );
   if (includes(known, address)) return;
 
-  const fromPrivy = await fetchLinkedWallets(user.did);
+  let fromPrivy: string[];
+  try {
+    fromPrivy = await fetchLinkedWallets(user.did, { fresh: true });
+  } catch (err) {
+    console.error(`[authz] wallet lookup for ${user.did} failed:`, err instanceof Error ? err.message : err);
+    throw unavailable("Wallet verification is temporarily unavailable. Try again in a moment.");
+  }
+
   if (fromPrivy.length > 0) {
     await rememberWallets(user.id, fromPrivy).catch(() => {
       /* persisting is an optimization; the check below still applies */

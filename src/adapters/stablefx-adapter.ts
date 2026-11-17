@@ -1,5 +1,13 @@
 import type { FXAdapter, FxPair, FxQuote, FxTrade, RequestQuoteInput } from "./fx-adapter";
-import { apiUrl } from "@/lib/api-base";
+import { apiFetch } from "@/components/trader6ix/api-client";
+
+/** Error text from either the legacy `{ error: "…" }` or the API's `{ error: { message } }` shape. */
+function errorText(json: unknown, fallback: string): string {
+  const error = (json as { error?: unknown } | null)?.error;
+  if (typeof error === "string") return error;
+  const message = (error as { message?: unknown } | undefined)?.message;
+  return typeof message === "string" ? message : fallback;
+}
 
 /**
  * Circle StableFX on Arc. This is a REAL scaffold against Circle's documented
@@ -39,31 +47,31 @@ export const stableFxAdapter: FXAdapter = {
   },
 
   async requestQuote(input: RequestQuoteInput): Promise<FxQuote> {
-    const res = await fetch(apiUrl("/api/stablefx/quote"), {
+    const res = await apiFetch("/api/stablefx/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Failed to get StableFX quote");
+    if (!res.ok) throw new Error(errorText(json, "Failed to get StableFX quote"));
     return json;
   },
 
   async acceptQuote(quoteId: string, walletAddress: string): Promise<FxTrade> {
-    const res = await fetch(apiUrl("/api/stablefx/trade"), {
+    const res = await apiFetch("/api/stablefx/trade", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ quoteId, walletAddress }),
     });
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Failed to accept StableFX quote");
+    if (!res.ok) throw new Error(errorText(json, "Failed to accept StableFX quote"));
     return json;
   },
 
   async getTradeStatus(tradeId: string): Promise<FxTrade> {
-    const res = await fetch(apiUrl(`/api/stablefx/trade/${encodeURIComponent(tradeId)}`));
+    const res = await apiFetch(`/api/stablefx/trade/${encodeURIComponent(tradeId)}`);
     const json = await res.json();
-    if (!res.ok) throw new Error(json.error ?? "Failed to get trade status");
+    if (!res.ok) throw new Error(errorText(json, "Failed to get trade status"));
     return json;
   },
 };
